@@ -2,6 +2,12 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../dimatokar-at-microsoft/content"
+		},
+		{
+			"path": "../dimatokar-at-microsoft/context"
 		}
 	],
 	"settings": {}

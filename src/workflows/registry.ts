@@ -1,6 +1,6 @@
 import { lazy } from 'react'
 import type { ComponentType } from 'react'
-import { LayoutDashboard } from 'lucide-react'
+import { LayoutDashboard, Wind } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export interface Workflow {
@@ -13,6 +13,14 @@ export interface Workflow {
 }
 
 export const workflows: Workflow[] = [
+  {
+    id: 'adr-namespace',
+    name: 'ADR Namespace',
+    description: 'Texas-Wind namespace with devices, assets, hubs, AIO instances, and jobs',
+    path: '/adr-namespace',
+    icon: Wind,
+    component: lazy(() => import('./adr-namespace/Page')),
+  },
   {
     id: 'resource-overview',
     name: 'Resource Overview',

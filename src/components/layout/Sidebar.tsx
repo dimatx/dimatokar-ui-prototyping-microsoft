@@ -9,7 +9,7 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex h-14 items-center gap-2.5 px-5 border-b border-slate-800">
         <Beaker className="h-5 w-5 text-blue-400" />
-        <span className="text-sm font-semibold tracking-tight">Product Lab</span>
+        <span className="text-sm font-semibold tracking-tight">Dima's Product Lab</span>
       </div>
 
       {/* Home link */}

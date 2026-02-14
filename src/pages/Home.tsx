@@ -16,7 +16,7 @@ export default function HomePage() {
       <div className="space-y-2">
         <div className="flex items-center gap-2.5">
           <Beaker className="h-6 w-6 text-blue-500" />
-          <h1 className="text-2xl font-semibold tracking-tight">Product Lab</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Dima's Product Lab</h1>
         </div>
         <p className="max-w-lg text-sm text-muted-foreground">
           High-fidelity UI prototypes for storytelling, iteration, and
