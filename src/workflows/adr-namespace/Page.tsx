@@ -42,9 +42,9 @@ const namespace = {
 }
 
 const services = [
-  { name: 'Provisioning (DPS)', icon: Upload, status: 'Healthy', details: 'Shared across 3 namespaces' },
-  { name: 'Certificate Management', icon: KeyRound, status: 'Healthy', details: 'Scoped to this namespace' },
-  { name: 'Update (ADU)', icon: RefreshCw, status: 'Warning', details: '2 pending campaigns' },
+  { name: 'Provisioning', icon: Upload, status: 'Healthy' },
+  { name: 'Certificate Management', icon: KeyRound, status: 'Healthy' },
+  { name: 'Device Update', icon: RefreshCw, status: 'Warning' },
 ]
 
 const hubs = [
@@ -56,9 +56,6 @@ const hubs = [
 
 const aioInstances = [
   { name: 'aio-tx-abilene-01', site: 'Abilene Wind Farm', status: 'Running', connectedDevices: 842 },
-  { name: 'aio-tx-permian-01', site: 'Permian Basin Site', status: 'Running', connectedDevices: 1_105 },
-  { name: 'aio-tx-panhandle-01', site: 'Panhandle Wind Park', status: 'Running', connectedDevices: 620 },
-  { name: 'aio-tx-gulf-01', site: 'Gulf Coast Facility', status: 'Warning', connectedDevices: 448 },
 ]
 
 const jobs = [
@@ -119,7 +116,7 @@ export default function AdrNamespacePage() {
         <HeroStat icon={Radio} label="Devices" value={namespace.totalDevices.toLocaleString()} />
         <HeroStat icon={Cpu} label="Assets" value={namespace.totalAssets.toLocaleString()} />
         <HeroStat icon={Server} label="IoT Hubs" value={hubs.length.toString()} />
-        <HeroStat icon={Activity} label="AIO Instances" value={aioInstances.length.toString()} />
+        <HeroStat icon={Activity} label={<><span className="whitespace-nowrap">IoT&nbsp;Operations</span> Instances</>} value={aioInstances.length.toString()} />
       </div>
 
       {/* ── Services Health ──────────────────────────────────── */}
@@ -134,7 +131,6 @@ export default function AdrNamespacePage() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium">{svc.name}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{svc.details}</p>
                   <div className="mt-2">
                     <StatusBadge status={svc.status} />
                   </div>
@@ -174,7 +170,7 @@ export default function AdrNamespacePage() {
 
       {/* ── AIO Instances ────────────────────────────────────── */}
       <div>
-        <SectionHeading title="Azure IoT Operations Instances" count={aioInstances.length} />
+        <SectionHeading title={<><span className="whitespace-nowrap">IoT&nbsp;Operations</span> Instances</>} count={aioInstances.length} />
         <div className="rounded-lg border shadow-sm">
           <Table>
             <TableHeader>
@@ -265,7 +261,7 @@ export default function AdrNamespacePage() {
 
 /* ─── Sub-components ────────────────────────────────────────── */
 
-function HeroStat({ icon: Icon, label, value }: { icon: typeof Radio; label: string; value: string }) {
+function HeroStat({ icon: Icon, label, value }: { icon: typeof Radio; label: React.ReactNode; value: string }) {
   return (
     <Card className="shadow-sm">
       <CardContent className="flex items-center gap-4 p-5">
@@ -281,7 +277,7 @@ function HeroStat({ icon: Icon, label, value }: { icon: typeof Radio; label: str
   )
 }
 
-function SectionHeading({ title, count }: { title: string; count?: number }) {
+function SectionHeading({ title, count }: { title: React.ReactNode; count?: number }) {
   return (
     <div className="mb-4 flex items-center gap-2">
       <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
