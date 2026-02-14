@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
 import {
   Server,
   Cpu,
@@ -15,8 +16,10 @@ import {
   Loader2,
   Plus,
   ChevronRight,
+  ChevronDown,
   Wind,
   ArrowUpRight,
+  X,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -47,11 +50,25 @@ const services = [
   { name: 'Device Update', icon: RefreshCw, status: 'Warning' },
 ]
 
-const hubs = [
-  { name: 'hub-tx-wind-01', region: 'South Central US', devices: 4_250, status: 'Active' },
-  { name: 'hub-tx-wind-02', region: 'South Central US', devices: 3_980, status: 'Active' },
-  { name: 'hub-tx-wind-03', region: 'East US 2', devices: 2_617, status: 'Active' },
+interface Hub {
+  name: string
+  region: string
+  devices: number
+  status: string
+}
+
+const initialHubs: Hub[] = [
+  { name: 'hub-tx-wind-01', region: 'South Central US', devices: 4_250, status: 'Healthy' },
+  { name: 'hub-tx-wind-02', region: 'South Central US', devices: 3_980, status: 'Healthy' },
+  { name: 'hub-tx-wind-03', region: 'East US 2', devices: 2_617, status: 'Healthy' },
   { name: 'hub-tx-wind-04', region: 'East US 2', devices: 2_000, status: 'Degraded' },
+]
+
+const availableHubs: Hub[] = [
+  { name: 'hub-zava-westus-01', region: 'West US 2', devices: 1_820, status: 'Healthy' },
+  { name: 'hub-zava-eastus-05', region: 'East US 2', devices: 3_100, status: 'Healthy' },
+  { name: 'hub-zava-euwest-01', region: 'West Europe', devices: 950, status: 'Healthy' },
+  { name: 'hub-zava-jpeast-01', region: 'Japan East', devices: 420, status: 'Healthy' },
 ]
 
 const aioInstances = [
@@ -83,6 +100,32 @@ const jobStatusIcons: Record<string, typeof CheckCircle2> = {
 /* ─── Page ────────────────────────────────────────────────────── */
 
 export default function AdrNamespacePage() {
+  const [hubsOpen, setHubsOpen] = useState(true)
+  const [aioOpen, setAioOpen] = useState(true)
+  const [linkedHubs, setLinkedHubs] = useState<Hub[]>(initialHubs)
+  const [showHubPicker, setShowHubPicker] = useState(false)
+  const [addedHubNames, setAddedHubNames] = useState<Set<string>>(new Set())
+
+  const unlinkedHubs = availableHubs.filter(
+    (h) => !linkedHubs.some((lh) => lh.name === h.name)
+  )
+
+  function handleAddHub(hub: Hub) {
+    const addingHub = { ...hub, devices: 0, status: 'Adding' }
+    setLinkedHubs((prev) => [...prev, addingHub])
+    setAddedHubNames((prev) => new Set(prev).add(hub.name))
+    setShowHubPicker(false)
+
+    // Simulate transition to Healthy after 3 seconds
+    setTimeout(() => {
+      setLinkedHubs((prev) =>
+        prev.map((h) =>
+          h.name === hub.name ? { ...h, devices: hub.devices, status: 'Healthy' } : h
+        )
+      )
+    }, 3_000)
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -115,7 +158,7 @@ export default function AdrNamespacePage() {
       <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
         <HeroStat icon={Radio} label="Devices" value={namespace.totalDevices.toLocaleString()} />
         <HeroStat icon={Cpu} label="Assets" value={namespace.totalAssets.toLocaleString()} />
-        <HeroStat icon={Server} label="IoT Hubs" value={hubs.length.toString()} />
+        <HeroStat icon={Server} label="IoT Hubs" value={linkedHubs.length.toString()} />
         <HeroStat icon={Activity} label={<><span className="whitespace-nowrap">IoT&nbsp;Operations</span> Instances</>} value={aioInstances.length.toString()} />
       </div>
 
@@ -141,58 +184,170 @@ export default function AdrNamespacePage() {
         </div>
       </div>
 
-      {/* ── IoT Hubs ─────────────────────────────────────────── */}
+      {/* ── IoT Hubs (collapsible) ───────────────────────────── */}
       <div>
-        <SectionHeading title="Linked IoT Hubs" count={hubs.length} />
-        <div className="rounded-lg border shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Hub Name</TableHead>
-                <TableHead>Region</TableHead>
-                <TableHead className="text-right">Connected Devices</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {hubs.map((hub) => (
-                <TableRow key={hub.name}>
-                  <TableCell className="font-medium">{hub.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{hub.region}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{hub.devices.toLocaleString()}</TableCell>
-                  <TableCell><StatusBadge status={hub.status} /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <CollapsibleHeading
+          title="Linked IoT Hubs"
+          count={linkedHubs.length}
+          open={hubsOpen}
+          onToggle={() => setHubsOpen((v) => !v)}
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowHubPicker(true)
+              }}
+              disabled={unlinkedHubs.length === 0}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add Linked Hub
+            </Button>
+          }
+        />
+
+        <AnimatePresence initial={false}>
+          {hubsOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+              className="overflow-hidden"
+            >
+              <div className="rounded-lg border shadow-sm">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Hub Name</TableHead>
+                      <TableHead>Region</TableHead>
+                      <TableHead className="text-right">Connected Devices</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {linkedHubs.map((hub) => (
+                      <TableRow key={hub.name} className={hub.status === 'Adding' ? 'bg-blue-50/30' : ''}>
+                        <TableCell className="font-medium">{hub.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{hub.region}</TableCell>
+                        <TableCell className="text-right font-mono text-sm">
+                          {hub.status === 'Adding' ? '—' : hub.devices.toLocaleString()}
+                        </TableCell>
+                        <TableCell><StatusBadge status={hub.status} /></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Hub picker modal */}
+        <AnimatePresence>
+          {showHubPicker && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+              onClick={() => setShowHubPicker(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                transition={{ duration: 0.2 }}
+                className="w-full max-w-lg rounded-xl border bg-white shadow-xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between border-b px-6 py-4">
+                  <div>
+                    <h3 className="text-base font-semibold">Add Linked Hub</h3>
+                    <p className="text-sm text-muted-foreground">Select an existing hub to link to this namespace</p>
+                  </div>
+                  <button
+                    onClick={() => setShowHubPicker(false)}
+                    className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="max-h-80 overflow-y-auto px-6 py-3">
+                  {unlinkedHubs.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                      No additional hubs available to link.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {unlinkedHubs.map((hub) => (
+                        <button
+                          key={hub.name}
+                          onClick={() => handleAddHub(hub)}
+                          className="flex w-full items-center justify-between rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
+                        >
+                          <div>
+                            <p className="text-sm font-medium">{hub.name}</p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              {hub.region} · {hub.devices.toLocaleString()} devices
+                            </p>
+                          </div>
+                          <Plus className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* ── AIO Instances ────────────────────────────────────── */}
+      {/* ── IoT Operations Instances (collapsible) ───────────── */}
       <div>
-        <SectionHeading title={<><span className="whitespace-nowrap">IoT&nbsp;Operations</span> Instances</>} count={aioInstances.length} />
-        <div className="rounded-lg border shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Instance</TableHead>
-                <TableHead>Site</TableHead>
-                <TableHead className="text-right">Connected Devices</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {aioInstances.map((inst) => (
-                <TableRow key={inst.name}>
-                  <TableCell className="font-medium">{inst.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{inst.site}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{inst.connectedDevices.toLocaleString()}</TableCell>
-                  <TableCell><StatusBadge status={inst.status} /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <CollapsibleHeading
+          title={<><span className="whitespace-nowrap">IoT&nbsp;Operations</span> Instances</>}
+          count={aioInstances.length}
+          open={aioOpen}
+          onToggle={() => setAioOpen((v) => !v)}
+        />
+        <AnimatePresence initial={false}>
+          {aioOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+              className="overflow-hidden"
+            >
+              <div className="rounded-lg border shadow-sm">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Instance</TableHead>
+                      <TableHead>Site</TableHead>
+                      <TableHead className="text-right">Connected Devices</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {aioInstances.map((inst) => (
+                      <TableRow key={inst.name}>
+                        <TableCell className="font-medium">{inst.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{inst.site}</TableCell>
+                        <TableCell className="text-right font-mono text-sm">{inst.connectedDevices.toLocaleString()}</TableCell>
+                        <TableCell><StatusBadge status={inst.status} /></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ── Jobs ─────────────────────────────────────────────── */}
@@ -286,6 +441,42 @@ function SectionHeading({ title, count }: { title: React.ReactNode; count?: numb
           {count}
         </span>
       )}
+    </div>
+  )
+}
+
+function CollapsibleHeading({
+  title,
+  count,
+  open,
+  onToggle,
+  action,
+}: {
+  title: React.ReactNode
+  count?: number
+  open: boolean
+  onToggle: () => void
+  action?: React.ReactNode
+}) {
+  return (
+    <div className="mb-4 flex items-center justify-between">
+      <button
+        onClick={onToggle}
+        className="flex items-center gap-2 rounded-lg -ml-1.5 px-1.5 py-1 hover:bg-muted/50 transition-colors"
+      >
+        <ChevronDown
+          className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+            open ? '' : '-rotate-90'
+          }`}
+        />
+        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+        {count !== undefined && (
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            {count}
+          </span>
+        )}
+      </button>
+      {action}
     </div>
   )
 }
