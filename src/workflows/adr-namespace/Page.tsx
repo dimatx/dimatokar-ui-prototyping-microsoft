@@ -100,8 +100,8 @@ const jobStatusIcons: Record<string, typeof CheckCircle2> = {
 /* ─── Page ────────────────────────────────────────────────────── */
 
 export default function AdrNamespacePage() {
-  const [hubsOpen, setHubsOpen] = useState(true)
-  const [aioOpen, setAioOpen] = useState(true)
+  const [hubsOpen, setHubsOpen] = useState(false)
+  const [aioOpen, setAioOpen] = useState(false)
   const [linkedHubs, setLinkedHubs] = useState<Hub[]>(initialHubs)
   const [showHubPicker, setShowHubPicker] = useState(false)
   const [addedHubNames, setAddedHubNames] = useState<Set<string>>(new Set())
@@ -191,6 +191,7 @@ export default function AdrNamespacePage() {
           count={linkedHubs.length}
           open={hubsOpen}
           onToggle={() => setHubsOpen((v) => !v)}
+          summaryStatus={<SummaryStatusDots statuses={linkedHubs.map((h) => h.status)} />}
           action={
             <Button
               variant="outline"
@@ -313,6 +314,7 @@ export default function AdrNamespacePage() {
           count={aioInstances.length}
           open={aioOpen}
           onToggle={() => setAioOpen((v) => !v)}
+          summaryStatus={<SummaryStatusDots statuses={aioInstances.map((i) => i.status)} />}
         />
         <AnimatePresence initial={false}>
           {aioOpen && (
@@ -451,12 +453,14 @@ function CollapsibleHeading({
   open,
   onToggle,
   action,
+  summaryStatus,
 }: {
   title: React.ReactNode
   count?: number
   open: boolean
   onToggle: () => void
   action?: React.ReactNode
+  summaryStatus?: React.ReactNode
 }) {
   return (
     <div className="mb-4 flex items-center justify-between">
@@ -475,8 +479,44 @@ function CollapsibleHeading({
             {count}
           </span>
         )}
+        {!open && summaryStatus && (
+          <span className="ml-1">{summaryStatus}</span>
+        )}
       </button>
       {action}
     </div>
+  )
+}
+
+const statusToColor: Record<string, string> = {
+  Healthy: 'bg-emerald-500',
+  Running: 'bg-emerald-500',
+  Active: 'bg-emerald-500',
+  Adding: 'bg-blue-500 animate-pulse',
+  Warning: 'bg-amber-500',
+  Degraded: 'bg-amber-500',
+  Error: 'bg-red-500',
+  Critical: 'bg-red-500',
+  Inactive: 'bg-gray-400',
+}
+
+function SummaryStatusDots({ statuses }: { statuses: string[] }) {
+  const allHealthy = statuses.every((s) => s === 'Healthy' || s === 'Running')
+
+  if (allHealthy) {
+    return <StatusBadge status="Healthy" />
+  }
+
+  // Show individual dots when mixed
+  return (
+    <span className="inline-flex items-center gap-1">
+      {statuses.map((status, i) => (
+        <span
+          key={i}
+          title={status}
+          className={`h-2 w-2 rounded-full ${statusToColor[status] || 'bg-gray-400'}`}
+        />
+      ))}
+    </span>
   )
 }
