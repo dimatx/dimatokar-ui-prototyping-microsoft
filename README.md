@@ -84,7 +84,8 @@ src/
 │   └── ...
 ├── workflows/
 │   ├── registry.ts   ← Add new workflows here
-│   ├── resource-overview/  ← Sample dashboard
+│   ├── adr-namespace/     ← ADR namespace with cross-hub jobs
+│   ├── resource-overview/ ← Sample dashboard
 │   └── _template/    ← Copy this to start
 ├── pages/
 │   └── Home.tsx      ← Landing page

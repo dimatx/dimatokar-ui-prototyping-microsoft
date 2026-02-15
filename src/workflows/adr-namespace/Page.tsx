@@ -1,16 +1,15 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Server,
   Cpu,
   Radio,
-  ShieldCheck,
   RefreshCw,
   KeyRound,
   Upload,
   Activity,
   MapPin,
-  Play,
   CheckCircle2,
   Clock,
   Loader2,
@@ -18,11 +17,14 @@ import {
   ChevronRight,
   ChevronDown,
   Wind,
-  ArrowUpRight,
   X,
+  Search,
+  Settings,
+  Shield,
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { StatusBadge } from '@/components/StatusBadge'
 import {
   Table,
@@ -32,11 +34,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { NewJobWizard, type CreatedJob } from './NewJobWizard'
 
 /* ─── Mock Data ───────────────────────────────────────────────── */
 
 const namespace = {
-  name: 'Texas-Wind',
+  name: 'Texas-Wind-Namespace',
   subscription: 'Zava Energy – Production',
   resourceGroup: 'rg-zava-southcentralus',
   region: 'South Central US',
@@ -44,10 +47,21 @@ const namespace = {
   totalAssets: 3_215,
 }
 
-const services = [
+interface NamespaceService {
+  name: string
+  icon: typeof Upload
+  status: string
+  configurable?: boolean
+}
+
+const initialServices: NamespaceService[] = [
   { name: 'Provisioning', icon: Upload, status: 'Healthy' },
-  { name: 'Certificate Management', icon: KeyRound, status: 'Healthy' },
-  { name: 'Device Update', icon: RefreshCw, status: 'Warning' },
+  { name: 'Certificate Management', icon: KeyRound, status: 'Healthy', configurable: true },
+  { name: 'Device Update', icon: RefreshCw, status: 'Disabled', configurable: true },
+]
+
+const addableServices: NamespaceService[] = [
+  { name: 'Firmware Analysis', icon: Shield, status: 'Disabled', configurable: true },
 ]
 
 interface Hub {
@@ -72,10 +86,10 @@ const availableHubs: Hub[] = [
 ]
 
 const aioInstances = [
-  { name: 'aio-tx-abilene-01', site: 'Abilene Wind Farm', status: 'Running', connectedDevices: 842 },
+  { name: 'aio-tx-abilene-01', site: 'Abilene Wind Farm', status: 'Healthy', connectedDevices: 842 },
 ]
 
-const jobs = [
+const initialJobs = [
   { id: 'JOB-1042', name: 'Firmware update – v3.2.1', type: 'Update', status: 'Running', targets: '2,400 devices', started: '35 min ago' },
   { id: 'JOB-1041', name: 'Certificate renewal – Q1 2026', type: 'Certificate', status: 'Completed', targets: '12,847 devices', started: '2 days ago' },
   { id: 'JOB-1040', name: 'Reboot turbine controllers', type: 'Command', status: 'Completed', targets: '620 devices', started: '5 days ago' },
@@ -105,16 +119,95 @@ export default function AdrNamespacePage() {
   const [linkedHubs, setLinkedHubs] = useState<Hub[]>(initialHubs)
   const [showHubPicker, setShowHubPicker] = useState(false)
   const [addedHubNames, setAddedHubNames] = useState<Set<string>>(new Set())
+  const [hubSearch, setHubSearch] = useState('')
+  const [hubSearchResults, setHubSearchResults] = useState<Hub[]>([])
+  const [hubSearching, setHubSearching] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const [hubToConfirm, setHubToConfirm] = useState<Hub | null>(null)
+  const [hubConfirmText, setHubConfirmText] = useState('')
+  const [jobs, setJobs] = useState<(typeof initialJobs[number] & { hubProgress?: { hubName: string; total: number; completed: number; status: string }[] })[]>(initialJobs)
+  const [showNewJobWizard, setShowNewJobWizard] = useState(false)
+  const [expandedJobId, setExpandedJobId] = useState<string | null>(null)
+
+  // Services state
+  const [namespaceSvcs, setNamespaceSvcs] = useState<NamespaceService[]>(initialServices)
+  const [svcConfigTarget, setSvcConfigTarget] = useState<NamespaceService | null>(null)
+  const [disableConfirmText, setDisableConfirmText] = useState('')
+  const [showAddService, setShowAddService] = useState(false)
+
+  // Simulate per-hub progress ticking for running jobs
+  useEffect(() => {
+    const runningJobs = jobs.filter((j) => j.hubProgress && j.status === 'Running')
+    if (runningJobs.length === 0) return
+
+    const interval = setInterval(() => {
+      setJobs((prev) =>
+        prev.map((job) => {
+          if (!job.hubProgress || job.status !== 'Running') return job
+          const updatedProgress = job.hubProgress.map((hp) => {
+            if (hp.status === 'Completed') return hp
+            const increment = Math.floor(Math.random() * Math.ceil(hp.total * 0.15)) + Math.ceil(hp.total * 0.05)
+            const newCompleted = Math.min(hp.completed + increment, hp.total)
+            return {
+              ...hp,
+              completed: newCompleted,
+              status: newCompleted >= hp.total ? 'Completed' : 'Running',
+            }
+          })
+          const allDone = updatedProgress.every((hp) => hp.status === 'Completed')
+          return {
+            ...job,
+            hubProgress: updatedProgress,
+            status: allDone ? 'Completed' : 'Running',
+          }
+        })
+      )
+    }, 2_000)
+
+    return () => clearInterval(interval)
+  }, [jobs])
 
   const unlinkedHubs = availableHubs.filter(
     (h) => !linkedHubs.some((lh) => lh.name === h.name)
   )
+
+  // Debounced hub search with simulated delay
+  useEffect(() => {
+    if (!showHubPicker) return
+    if (hubSearch.trim() === '') {
+      setHubSearchResults(unlinkedHubs)
+      setHubSearching(false)
+      return
+    }
+    setHubSearching(true)
+    const timer = setTimeout(() => {
+      const q = hubSearch.toLowerCase()
+      setHubSearchResults(
+        unlinkedHubs.filter(
+          (h) => h.name.toLowerCase().includes(q) || h.region.toLowerCase().includes(q)
+        )
+      )
+      setHubSearching(false)
+    }, 1_200)
+    return () => clearTimeout(timer)
+  }, [hubSearch, showHubPicker, linkedHubs])
+
+  // Reset search when opening picker
+  useEffect(() => {
+    if (showHubPicker) {
+      setHubSearch('')
+      setHubSearchResults(unlinkedHubs)
+      setHubSearching(false)
+      setTimeout(() => searchInputRef.current?.focus(), 100)
+    }
+  }, [showHubPicker])
 
   function handleAddHub(hub: Hub) {
     const addingHub = { ...hub, devices: 0, status: 'Adding' }
     setLinkedHubs((prev) => [...prev, addingHub])
     setAddedHubNames((prev) => new Set(prev).add(hub.name))
     setShowHubPicker(false)
+    setHubsOpen(true)
 
     // Simulate transition to Healthy after 3 seconds
     setTimeout(() => {
@@ -165,15 +258,26 @@ export default function AdrNamespacePage() {
       {/* ── Services Health ──────────────────────────────────── */}
       <div>
         <SectionHeading title="Namespace Services" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {services.map((svc) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {namespaceSvcs.map((svc) => (
             <Card key={svc.name} className="shadow-sm">
               <CardContent className="flex items-start gap-4 p-5">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
                   <svc.icon className="h-4 w-4 text-foreground" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{svc.name}</p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">{svc.name}</p>
+                    {svc.configurable && (
+                      <button
+                        onClick={() => { setSvcConfigTarget(svc); setDisableConfirmText('') }}
+                        className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                        title={`Configure ${svc.name}`}
+                      >
+                        <Settings className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
                   <div className="mt-2">
                     <StatusBadge status={svc.status} />
                   </div>
@@ -181,6 +285,18 @@ export default function AdrNamespacePage() {
               </CardContent>
             </Card>
           ))}
+          {/* Add Service card */}
+          {addableServices.filter(as => !namespaceSvcs.some(s => s.name === as.name)).length > 0 && (
+            <Card
+              className="shadow-sm border-dashed cursor-pointer hover:bg-muted/20 transition-colors"
+              onClick={() => setShowAddService(true)}
+            >
+              <CardContent className="flex items-center justify-center gap-2 p-5 h-full">
+                <Plus className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Add Service</span>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -247,14 +363,14 @@ export default function AdrNamespacePage() {
         </AnimatePresence>
 
         {/* Hub picker modal */}
-        <AnimatePresence>
-          {showHubPicker && (
+        {showHubPicker && createPortal(
+          <AnimatePresence>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-              onClick={() => setShowHubPicker(false)}
+              onClick={() => { setShowHubPicker(false); setHubToConfirm(null); setHubConfirmText('') }}
             >
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 8 }}
@@ -270,32 +386,110 @@ export default function AdrNamespacePage() {
                     <p className="text-sm text-muted-foreground">Select an existing hub to link to this namespace</p>
                   </div>
                   <button
-                    onClick={() => setShowHubPicker(false)}
+                    onClick={() => { setShowHubPicker(false); setHubToConfirm(null); setHubConfirmText('') }}
                     className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
-                <div className="max-h-80 overflow-y-auto px-6 py-3">
-                  {unlinkedHubs.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
-                      No additional hubs available to link.
+                <div className="border-b px-6 py-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      ref={searchInputRef}
+                      placeholder="Search hubs by name or region…"
+                      value={hubSearch}
+                      onChange={(e) => setHubSearch(e.target.value)}
+                      className="pl-9 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="max-h-72 overflow-y-auto px-6 py-3">
+                  {hubToConfirm ? (
+                    <div className="space-y-4 py-2">
+                      <div className="rounded-lg border p-3">
+                        <p className="text-xs font-medium">{hubToConfirm.name}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {hubToConfirm.region} · {hubToConfirm.devices.toLocaleString()} devices
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                        <p className="text-xs font-medium text-amber-800">This is an irreversible operation.</p>
+                        <p className="text-[11px] text-amber-700 mt-0.5">Once linked, this hub cannot be removed from the namespace.</p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label
+                          className="text-xs font-medium text-foreground cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
+                          onClick={() => setHubConfirmText(hubToConfirm.name)}
+                          title="Click to fill"
+                        >
+                          Type <span className="font-mono text-foreground">{hubToConfirm.name}</span> to confirm
+                          <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span>
+                        </label>
+                        <Input
+                          value={hubConfirmText}
+                          onChange={(e) => setHubConfirmText(e.target.value)}
+                          placeholder={hubToConfirm.name}
+                          className="h-8 text-sm font-mono"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && hubConfirmText === hubToConfirm.name) {
+                              handleAddHub(hubToConfirm)
+                              setHubToConfirm(null)
+                              setHubConfirmText('')
+                            }
+                            if (e.key === 'Escape') {
+                              setHubToConfirm(null)
+                              setHubConfirmText('')
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          className="flex-1 gap-2"
+                          disabled={hubConfirmText !== hubToConfirm.name}
+                          onClick={() => {
+                            handleAddHub(hubToConfirm)
+                            setHubToConfirm(null)
+                            setHubConfirmText('')
+                          }}
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Link Hub
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => { setHubToConfirm(null); setHubConfirmText('') }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : hubSearching ? (
+                    <div className="flex items-center justify-center gap-2 py-10">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Searching…</span>
+                    </div>
+                  ) : hubSearchResults.length === 0 ? (
+                    <p className="py-10 text-center text-sm text-muted-foreground">
+                      {hubSearch.trim() ? 'No hubs matching your search.' : 'No additional hubs available to link.'}
                     </p>
                   ) : (
-                    <div className="space-y-2">
-                      {unlinkedHubs.map((hub) => (
+                    <div className="space-y-1.5">
+                      {hubSearchResults.map((hub) => (
                         <button
                           key={hub.name}
-                          onClick={() => handleAddHub(hub)}
-                          className="flex w-full items-center justify-between rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
+                          onClick={() => { setHubToConfirm(hub); setHubConfirmText('') }}
+                          className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-left transition-colors hover:bg-muted/50"
                         >
                           <div>
-                            <p className="text-sm font-medium">{hub.name}</p>
-                            <p className="mt-0.5 text-xs text-muted-foreground">
+                            <p className="text-xs font-medium">{hub.name}</p>
+                            <p className="text-[11px] text-muted-foreground">
                               {hub.region} · {hub.devices.toLocaleString()} devices
                             </p>
                           </div>
-                          <Plus className="h-4 w-4 text-muted-foreground" />
+                          <Plus className="h-3.5 w-3.5 text-muted-foreground" />
                         </button>
                       ))}
                     </div>
@@ -303,8 +497,9 @@ export default function AdrNamespacePage() {
                 </div>
               </motion.div>
             </motion.div>
-          )}
-        </AnimatePresence>
+          </AnimatePresence>,
+          document.body
+        )}
       </div>
 
       {/* ── IoT Operations Instances (collapsible) ───────────── */}
@@ -356,16 +551,10 @@ export default function AdrNamespacePage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <SectionHeading title="Jobs" />
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-              <Play className="h-3.5 w-3.5" />
-              Run Existing Job
-            </Button>
-            <Button size="sm" className="gap-1.5 text-xs">
-              <Plus className="h-3.5 w-3.5" />
-              New Job
-            </Button>
-          </div>
+          <Button size="sm" className="gap-1.5 text-xs" onClick={() => setShowNewJobWizard(true)}>
+            <Plus className="h-3.5 w-3.5" />
+            New Job
+          </Button>
         </div>
         <div className="rounded-lg border shadow-sm">
           <Table>
@@ -383,35 +572,278 @@ export default function AdrNamespacePage() {
             <TableBody>
               {jobs.map((job) => {
                 const StatusIcon = jobStatusIcons[job.status] || CheckCircle2
+                const isExpandable = !!job.hubProgress
+                const isExpanded = expandedJobId === job.id
                 return (
-                  <TableRow key={job.id}>
-                    <TableCell className="font-mono text-xs text-muted-foreground">{job.id}</TableCell>
-                    <TableCell className="font-medium">{job.name}</TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center rounded-md border bg-muted/40 px-2 py-0.5 text-xs font-medium">
-                        {job.type}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{job.targets}</TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${jobStatusStyles[job.status] || ''}`}>
-                        <StatusIcon className={`h-3 w-3 ${job.status === 'Running' ? 'animate-spin' : ''}`} />
-                        {job.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{job.started}</TableCell>
-                    <TableCell>
-                      <button className="rounded-md p-1 text-muted-foreground hover:bg-muted transition-colors">
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </TableCell>
-                  </TableRow>
+                  <>
+                    <TableRow
+                      key={job.id}
+                      className={isExpandable ? 'cursor-pointer hover:bg-muted/30' : ''}
+                      onClick={() => isExpandable && setExpandedJobId(isExpanded ? null : job.id)}
+                    >
+                      <TableCell className="font-mono text-xs text-muted-foreground">{job.id}</TableCell>
+                      <TableCell className="font-medium">{job.name}</TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center rounded-md border bg-muted/40 px-2 py-0.5 text-xs font-medium">
+                          {job.type}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{job.targets}</TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${jobStatusStyles[job.status] || ''}`}>
+                          <StatusIcon className={`h-3 w-3 ${job.status === 'Running' ? 'animate-spin' : ''}`} />
+                          {job.status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{job.started}</TableCell>
+                      <TableCell>
+                        {isExpandable ? (
+                          <ChevronDown
+                            className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'}`}
+                          />
+                        ) : (
+                          <button className="rounded-md p-1 text-muted-foreground hover:bg-muted transition-colors">
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                    {isExpandable && isExpanded && (
+                      <TableRow key={`${job.id}-detail`}>
+                        <TableCell colSpan={7} className="p-0">
+                          <div className="bg-muted/20 px-6 py-4 space-y-3">
+                            <p className="text-xs font-medium text-muted-foreground">Per-Hub Progress</p>
+                            <div className="space-y-2">
+                              {job.hubProgress!.map((hp) => {
+                                const pct = hp.total > 0 ? Math.round((hp.completed / hp.total) * 100) : 0
+                                const isDone = hp.status === 'Completed'
+                                return (
+                                  <div key={hp.hubName} className="flex items-center gap-4">
+                                    <div className="w-40 shrink-0">
+                                      <p className="text-xs font-medium">{hp.hubName}</p>
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                                        <div
+                                          className={`h-full rounded-full transition-all duration-700 ${isDone ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                          style={{ width: `${pct}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="w-36 shrink-0 text-right">
+                                      {isDone ? (
+                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+                                          <CheckCircle2 className="h-3 w-3" />
+                                          Done
+                                        </span>
+                                      ) : (
+                                        <span className="text-xs text-muted-foreground font-mono">
+                                          {hp.completed.toLocaleString()} / {hp.total.toLocaleString()} devices
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
                 )
               })}
             </TableBody>
           </Table>
         </div>
       </div>
+
+      {/* ── New Job Wizard ───────────────────────────────────── */}
+      <AnimatePresence>
+        {showNewJobWizard && (
+          <NewJobWizard
+            linkedHubs={linkedHubs}
+            existingJobs={initialJobs}
+            onClose={() => setShowNewJobWizard(false)}
+            onCreate={(job: CreatedJob) => {
+              setJobs((prev) => [job, ...prev])
+              setExpandedJobId(job.id)
+              setShowNewJobWizard(false)
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Service Config Dialog ────────────────────────────── */}
+      {svcConfigTarget && createPortal(
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setSvcConfigTarget(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="w-full max-w-sm rounded-xl border bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b px-6 py-4">
+              <div>
+                <h3 className="text-base font-semibold">Configure {svcConfigTarget.name}</h3>
+                <p className="text-sm text-muted-foreground">Manage service availability</p>
+              </div>
+              <button
+                onClick={() => setSvcConfigTarget(null)}
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div>
+                  <p className="text-sm font-medium">Service Status</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {svcConfigTarget.status === 'Disabled'
+                      ? 'This service is currently disabled for the namespace.'
+                      : svcConfigTarget.status === 'Enabling'
+                      ? 'This service is being enabled…'
+                      : 'This service is active and healthy.'}
+                  </p>
+                </div>
+                <StatusBadge status={svcConfigTarget.status} />
+              </div>
+              {svcConfigTarget.status === 'Enabling' ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Enabling service…
+                </div>
+              ) : svcConfigTarget.status === 'Disabled' ? (
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => {
+                    const name = svcConfigTarget.name
+                    // Transition to Enabling
+                    setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Enabling' } : s))
+                    setSvcConfigTarget(prev => prev ? { ...prev, status: 'Enabling' } : null)
+                    // Transition to Healthy after delay
+                    setTimeout(() => {
+                      setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Healthy' } : s))
+                      setSvcConfigTarget(prev => prev && prev.name === name ? { ...prev, status: 'Healthy' } : prev)
+                    }, 3_000)
+                  }}
+                >
+                  <Activity className="h-4 w-4" />
+                  Enable {svcConfigTarget.name}
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label
+                      className="text-xs font-medium text-foreground cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
+                      onClick={() => setDisableConfirmText('disable')}
+                      title="Click to fill"
+                    >
+                      Type <span className="font-mono text-red-600">disable</span> to confirm
+                      <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span>
+                    </label>
+                    <Input
+                      value={disableConfirmText}
+                      onChange={(e) => setDisableConfirmText(e.target.value)}
+                      placeholder="disable"
+                      className="h-8 text-sm font-mono"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && disableConfirmText === 'disable') {
+                          const name = svcConfigTarget.name
+                          setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Disabled' } : s))
+                          setSvcConfigTarget(prev => prev ? { ...prev, status: 'Disabled' } : null)
+                          setDisableConfirmText('')
+                        }
+                      }}
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                    disabled={disableConfirmText !== 'disable'}
+                    onClick={() => {
+                      const name = svcConfigTarget.name
+                      setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Disabled' } : s))
+                      setSvcConfigTarget(prev => prev ? { ...prev, status: 'Disabled' } : null)
+                      setDisableConfirmText('')
+                    }}
+                  >
+                    Disable {svcConfigTarget.name}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>,
+        document.body
+      )}
+
+      {/* ── Add Service Dialog ───────────────────────────────── */}
+      {showAddService && createPortal(
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setShowAddService(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="w-full max-w-sm rounded-xl border bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b px-6 py-4">
+              <div>
+                <h3 className="text-base font-semibold">Add Service</h3>
+                <p className="text-sm text-muted-foreground">Add a new service to this namespace</p>
+              </div>
+              <button
+                onClick={() => setShowAddService(false)}
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="px-6 py-4 space-y-2">
+              {addableServices
+                .filter(as => !namespaceSvcs.some(s => s.name === as.name))
+                .map(svc => (
+                  <button
+                    key={svc.name}
+                    onClick={() => {
+                      setNamespaceSvcs(prev => [...prev, { ...svc, status: 'Disabled' }])
+                      setShowAddService(false)
+                    }}
+                    className="flex w-full items-center gap-3 rounded-lg border p-3 text-left hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                      <svc.icon className="h-4 w-4 text-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{svc.name}</p>
+                      <p className="text-xs text-muted-foreground">Will be added as disabled</p>
+                    </div>
+                    <Plus className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                ))}
+              {addableServices.filter(as => !namespaceSvcs.some(s => s.name === as.name)).length === 0 && (
+                <p className="py-4 text-center text-sm text-muted-foreground">All available services have been added.</p>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>,
+        document.body
+      )}
     </motion.div>
   )
 }
@@ -501,13 +933,6 @@ const statusToColor: Record<string, string> = {
 }
 
 function SummaryStatusDots({ statuses }: { statuses: string[] }) {
-  const allHealthy = statuses.every((s) => s === 'Healthy' || s === 'Running')
-
-  if (allHealthy) {
-    return <StatusBadge status="Healthy" />
-  }
-
-  // Show individual dots when mixed
   return (
     <span className="inline-flex items-center gap-1">
       {statuses.map((status, i) => (
