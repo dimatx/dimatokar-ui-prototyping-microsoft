@@ -543,7 +543,7 @@ function StepJobType({
             >
               {priorityLabel && (
                 <span className={`absolute -right-2 -top-2 z-10 rounded-full border border-dashed px-1.5 py-0.5 text-[9px] font-medium tracking-wide uppercase ${
-                  priorityLabel === 'P0' ? 'border-emerald-300 bg-emerald-50 text-emerald-600' : 'border-red-300 bg-red-50 text-red-600'
+                  priorityLabel === 'P0' ? 'border-red-300 bg-red-50 text-red-600' : 'border-yellow-300 bg-yellow-50 text-yellow-600'
                 }`}>
                   {priorityLabel}
                 </span>
@@ -561,7 +561,7 @@ function StepJobType({
               </div>
               <div className="ml-auto flex items-center gap-2 shrink-0">
                 {isDemo && (
-                  <span className="rounded-full border border-dashed border-amber-300 bg-amber-50 px-2 py-0.5 text-[9px] font-medium text-amber-600 tracking-wide uppercase">
+                  <span className="rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase">
                     try me
                   </span>
                 )}
@@ -1075,7 +1075,7 @@ function StepTargeting({
                   }`}
                 >
                   Use ARG
-                  <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-emerald-300 bg-emerald-50 px-1 py-px text-[7px] font-medium text-emerald-600 tracking-wide uppercase leading-none">P0</span>
+                  <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-red-300 bg-red-50 px-1 py-px text-[7px] font-medium text-red-600 tracking-wide uppercase leading-none">P0</span>
                 </button>
                 <button
                   onClick={() => onTargetingModeChange('across')}
@@ -1086,7 +1086,7 @@ function StepTargeting({
                   }`}
                 >
                   Define across hubs
-                  <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-emerald-300 bg-emerald-50 px-1 py-px text-[7px] font-medium text-emerald-600 tracking-wide uppercase leading-none">P0</span>
+                  <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-red-300 bg-red-50 px-1 py-px text-[7px] font-medium text-red-600 tracking-wide uppercase leading-none">P0</span>
                 </button>
                 <button
                   onClick={() => onTargetingModeChange('per-hub')}
@@ -1097,7 +1097,7 @@ function StepTargeting({
                   }`}
                 >
                   Define per hub
-                  <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-red-300 bg-red-50 px-1 py-px text-[7px] font-medium text-red-600 tracking-wide uppercase leading-none">P1</span>
+                  <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-yellow-300 bg-yellow-50 px-1 py-px text-[7px] font-medium text-yellow-600 tracking-wide uppercase leading-none">P1</span>
                 </button>
               </div>
             </div>

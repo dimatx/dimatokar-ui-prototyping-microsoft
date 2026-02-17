@@ -274,7 +274,7 @@ export default function AdrNamespacePage() {
           {namespaceSvcs.map((svc) => (
             <Card key={svc.name} className="shadow-sm relative">
               {svc.name === 'Device Update' && svc.status === 'Disabled' && (
-                <span className="absolute -right-2 -top-2 z-10 rounded-full border border-dashed border-amber-300 bg-amber-50 px-2 py-0.5 text-[9px] font-medium text-amber-600 tracking-wide uppercase shadow-sm">
+                <span className="absolute -right-2 -top-2 z-10 rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase shadow-sm">
                   try me
                 </span>
               )}
@@ -311,7 +311,7 @@ export default function AdrNamespacePage() {
               className="shadow-sm border-dashed cursor-pointer hover:bg-muted/20 transition-colors relative"
               onClick={() => setShowAddService(true)}
             >
-              <span className="absolute -right-2 -top-2 z-10 rounded-full border border-dashed border-amber-300 bg-amber-50 px-2 py-0.5 text-[9px] font-medium text-amber-600 tracking-wide uppercase shadow-sm">
+              <span className="absolute -right-2 -top-2 z-10 rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase shadow-sm">
                 try me
               </span>
               <CardContent className="flex items-center justify-center gap-2 p-5 h-full">
@@ -342,7 +342,7 @@ export default function AdrNamespacePage() {
               }}
               disabled={unlinkedHubs.length === 0}
             >
-              <span className="absolute -right-2 -top-2 z-10 rounded-full border border-dashed border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 tracking-wide uppercase shadow-sm">
+              <span className="absolute -right-2 -top-2 z-10 rounded-full border border-orange-300 bg-orange-50 px-1.5 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase shadow-sm">
                 try me
               </span>
               <Plus className="h-3.5 w-3.5" />
@@ -578,7 +578,7 @@ export default function AdrNamespacePage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold tracking-tight">Jobs</h2>
           <Button size="sm" className="gap-1.5 text-xs relative" onClick={() => setShowNewJobWizard(true)}>
-            <span className="absolute -right-2 -top-2 z-10 rounded-full border border-dashed border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 tracking-wide uppercase shadow-sm">
+            <span className="absolute -right-2 -top-2 z-10 rounded-full border border-orange-300 bg-orange-50 px-1.5 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase shadow-sm">
               try me
             </span>
             <Plus className="h-3.5 w-3.5" />
