@@ -20,14 +20,14 @@ export const workflows: Workflow[] = [
     icon: Wind,
     component: lazy(() => import('./adr-namespace/Page')),
   },
-  {
-    id: 'resource-overview',
-    name: 'Resource Overview',
-    description: 'SaaS dashboard with metrics, charts, and service status table',
-    path: '/resource-overview',
-    icon: LayoutDashboard,
-    component: lazy(() => import('./resource-overview/Page')),
-  },
+  // {
+  //   id: 'resource-overview',
+  //   name: 'Resource Overview',
+  //   description: 'SaaS dashboard with metrics, charts, and service status table',
+  //   path: '/resource-overview',
+  //   icon: LayoutDashboard,
+  //   component: lazy(() => import('./resource-overview/Page')),
+  // },
   // ──────────────────────────────────────────────
   // ADD NEW WORKFLOWS HERE
   //
