@@ -522,11 +522,12 @@ function StepJobType({
       <div className="space-y-2">
         {JOB_TYPES.map((type) => {
           const isSelected = selected === type.id
+          const isDemo = type.id === 'twin-update' || type.id === 'cert-revocation'
           return (
             <button
               key={type.id}
               onClick={() => onSelect(type.id)}
-              className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all ${
+              className={`relative flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all ${
                 isSelected
                   ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
                   : 'hover:bg-muted/30'
@@ -547,6 +548,11 @@ function StepJobType({
                 <div className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-foreground text-white">
                   <Check className="h-3 w-3" />
                 </div>
+              )}
+              {isDemo && !isSelected && (
+                <span className="absolute right-2.5 top-2.5 rounded-full border border-dashed border-violet-300 bg-violet-50 px-2 py-0.5 text-[9px] font-medium text-violet-500 tracking-wide uppercase">
+                  try me
+                </span>
               )}
             </button>
           )
