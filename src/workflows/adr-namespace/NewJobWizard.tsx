@@ -109,6 +109,9 @@ const JOB_TYPES_MAIN = [
     icon: RefreshCw,
     tags: ['Hub'],
   },
+]
+
+const JOB_TYPES_MORE = [
   {
     id: 'direct-method',
     name: 'Invoke Direct Method',
@@ -116,9 +119,6 @@ const JOB_TYPES_MAIN = [
     icon: Terminal,
     tags: ['Hub'],
   },
-]
-
-const JOB_TYPES_MORE = [
   {
     id: 'cert-revocation',
     name: 'Certificate Revocation',
