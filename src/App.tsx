@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { Suspense } from 'react'
 import { Layout } from '@/components/layout/Layout'
 import { workflows } from '@/workflows/registry'
@@ -8,7 +8,7 @@ export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<Navigate to="/adr-namespace" replace />} />
         {workflows.map((workflow) => (
           <Route
             key={workflow.id}
