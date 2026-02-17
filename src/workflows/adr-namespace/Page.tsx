@@ -272,7 +272,12 @@ export default function AdrNamespacePage() {
         <SectionHeading title="Namespace Services" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {namespaceSvcs.map((svc) => (
-            <Card key={svc.name} className="shadow-sm">
+            <Card key={svc.name} className="shadow-sm relative">
+              {svc.name === 'Device Update' && svc.status === 'Disabled' && (
+                <span className="absolute -right-2 -top-2 z-10 rounded-full border border-dashed border-violet-300 bg-violet-50 px-2 py-0.5 text-[9px] font-medium text-violet-500 tracking-wide uppercase shadow-sm">
+                  try me
+                </span>
+              )}
               <CardContent className="flex items-start gap-4 p-5">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
                   <svc.icon className="h-4 w-4 text-foreground" />
@@ -303,9 +308,12 @@ export default function AdrNamespacePage() {
           {/* Add Service card */}
           {addableServices.filter(as => !namespaceSvcs.some(s => s.name === as.name)).length > 0 && (
             <Card
-              className="shadow-sm border-dashed cursor-pointer hover:bg-muted/20 transition-colors"
+              className="shadow-sm border-dashed cursor-pointer hover:bg-muted/20 transition-colors relative"
               onClick={() => setShowAddService(true)}
             >
+              <span className="absolute -right-2 -top-2 z-10 rounded-full border border-dashed border-violet-300 bg-violet-50 px-2 py-0.5 text-[9px] font-medium text-violet-500 tracking-wide uppercase shadow-sm">
+                try me
+              </span>
               <CardContent className="flex items-center justify-center gap-2 p-5 h-full">
                 <Plus className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">Add Service</span>
@@ -327,13 +335,16 @@ export default function AdrNamespacePage() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 text-xs"
+              className="gap-1.5 text-xs relative"
               onClick={(e) => {
                 e.stopPropagation()
                 setShowHubPicker(true)
               }}
               disabled={unlinkedHubs.length === 0}
             >
+              <span className="absolute -right-2 -top-2 z-10 rounded-full border border-dashed border-violet-300 bg-violet-50 px-1.5 py-0.5 text-[9px] font-medium text-violet-500 tracking-wide uppercase shadow-sm">
+                try me
+              </span>
               <Plus className="h-3.5 w-3.5" />
               Add Linked Hub
             </Button>
@@ -566,7 +577,10 @@ export default function AdrNamespacePage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold tracking-tight">Jobs</h2>
-          <Button size="sm" className="gap-1.5 text-xs" onClick={() => setShowNewJobWizard(true)}>
+          <Button size="sm" className="gap-1.5 text-xs relative" onClick={() => setShowNewJobWizard(true)}>
+            <span className="absolute -right-2 -top-2 z-10 rounded-full border border-dashed border-violet-300 bg-violet-50 px-1.5 py-0.5 text-[9px] font-medium text-violet-500 tracking-wide uppercase shadow-sm">
+              try me
+            </span>
             <Plus className="h-3.5 w-3.5" />
             New Job
           </Button>
