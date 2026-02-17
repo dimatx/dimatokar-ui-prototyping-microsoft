@@ -86,34 +86,39 @@ interface NewJobWizardProps {
 
 const JOB_TYPES = [
   {
+    id: 'outer-loop',
+    name: 'Manage via ARM',
+    description: 'Manage IoT at scale using ADR Asset and ADR Device ARM records.',
+    icon: Globe,
+    tags: ['Hub', 'AIO'],
+  },
+  {
     id: 'twin-update',
     name: 'Device Twin Update',
     description: 'Update desired properties on device twins across hubs',
     icon: Settings2,
+    tags: ['Hub'],
   },
   {
     id: 'cert-revocation',
     name: 'Certificate Revocation',
     description: 'Revoke device certificates across hubs and trigger re-provisioning',
     icon: ShieldX,
+    tags: ['Hub'],
   },
   {
     id: 'software-update',
     name: 'Software Update',
     description: 'Deploy firmware or software packages to targeted devices',
     icon: RefreshCw,
+    tags: ['Hub'],
   },
   {
     id: 'direct-method',
     name: 'Invoke Direct Method',
     description: 'Call a direct method on devices and receive responses',
     icon: Terminal,
-  },
-  {
-    id: 'outer-loop',
-    name: 'Update ARM Records',
-    description: 'Sync device state changes back to ARM resource representations',
-    icon: Globe,
+    tags: ['Hub'],
   },
 ]
 
@@ -130,7 +135,7 @@ const JOB_TYPE_LABELS: Record<string, string> = {
   'cert-revocation': 'Cert Revocation',
   'software-update': 'Software Update',
   'direct-method': 'Direct Method',
-  'outer-loop': 'Update ARM Records',
+  'outer-loop': 'Manage via ARM',
 }
 
 const SAMPLE_SAVED_GROUPS: SavedGroup[] = [
@@ -556,7 +561,12 @@ function StepJobType({
                 <type.icon className="h-4 w-4" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">{type.name}</p>
+                <p className="text-sm font-medium flex items-center gap-1.5">
+                  {type.name}
+                  {type.tags.map((tag) => (
+                    <span key={tag} className="rounded bg-slate-100 px-1.5 py-px text-[9px] font-medium text-slate-500 uppercase tracking-wide">{tag}</span>
+                  ))}
+                </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">{type.description}</p>
               </div>
               <div className="ml-auto flex items-center gap-2 shrink-0">
