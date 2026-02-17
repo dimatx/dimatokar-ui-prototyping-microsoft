@@ -87,7 +87,7 @@ interface NewJobWizardProps {
   onCreate: (job: CreatedJob) => void
 }
 
-const JOB_TYPES = [
+const JOB_TYPES_MAIN = [
   {
     id: 'outer-loop',
     name: 'Manage via ARM',
@@ -100,13 +100,6 @@ const JOB_TYPES = [
     name: 'Device Twin Update',
     description: 'Update desired properties on device twins across hubs',
     icon: Settings2,
-    tags: ['Hub'],
-  },
-  {
-    id: 'cert-revocation',
-    name: 'Certificate Revocation',
-    description: 'Revoke device certificates across hubs and trigger re-provisioning',
-    icon: ShieldX,
     tags: ['Hub'],
   },
   {
@@ -125,9 +118,21 @@ const JOB_TYPES = [
   },
 ]
 
-const TWIN_STEPS = ['Job Type', 'Basics', 'Scope', 'Twin Settings', 'Targeting', 'Review']
-const ARM_STEPS = ['Job Type', 'Basics', 'Scope', 'Details', 'Targeting', 'Review']
-const DEFAULT_STEPS = ['Job Type', 'Basics', 'Scope', 'Targeting', 'Review']
+const JOB_TYPES_MORE = [
+  {
+    id: 'cert-revocation',
+    name: 'Certificate Revocation',
+    description: 'Revoke device certificates across hubs and trigger re-provisioning',
+    icon: ShieldX,
+    tags: ['Hub'],
+  },
+]
+
+const JOB_TYPES = [...JOB_TYPES_MAIN, ...JOB_TYPES_MORE]
+
+const TWIN_STEPS = ['Job Type', 'Basics', 'Scope', 'Twin Settings', 'Target', 'Review']
+const ARM_STEPS = ['Job Type', 'Basics', 'Scope', 'Details', 'Target', 'Review']
+const DEFAULT_STEPS = ['Job Type', 'Basics', 'Scope', 'Target', 'Review']
 
 function getSteps(jobType: string | null) {
   if (jobType === 'twin-update') return TWIN_STEPS
@@ -258,7 +263,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, existingJobs, onClose, 
         }
         return armActionName.trim().length > 0 && armActionPayload.trim().length > 0
       }
-      case 'Targeting': {
+      case 'Target': {
         if (targetingMode === 'per-hub') {
           return perHubTargets.every((t) => t.condition.trim().length > 0) && priority.trim().length > 0
         }
@@ -471,7 +476,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, existingJobs, onClose, 
                   onPayloadChange={setArmActionPayload}
                 />
               )}
-              {currentStepName() === 'Targeting' && (
+              {currentStepName() === 'Target' && (
                 <StepTargeting
                   priority={priority}
                   onPriorityChange={setPriority}
@@ -572,6 +577,66 @@ function StepJobType({
   selected: string | null
   onSelect: (id: string) => void
 }) {
+  const [showMore, setShowMore] = useState(false)
+
+  const visibleTypes = showMore ? JOB_TYPES : JOB_TYPES_MAIN
+
+  // If the selected job is in the "more" section, always show it
+  const hasMoreSelected = JOB_TYPES_MORE.some((t) => t.id === selected)
+
+  const renderJobButton = (type: typeof JOB_TYPES[number]) => {
+    const isSelected = selected === type.id
+    const priorityLabel = ['twin-update', 'software-update', 'direct-method', 'outer-loop'].includes(type.id) ? 'P0' : type.id === 'cert-revocation' ? 'P1' : null
+    const isDemo = type.id === 'twin-update' || type.id === 'cert-revocation'
+    return (
+      <button
+        key={type.id}
+        onClick={() => onSelect(type.id)}
+        className={`relative flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all ${
+          isSelected
+            ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
+            : 'hover:bg-muted/30'
+        }`}
+      >
+        {priorityLabel && (
+          <span className={`absolute -right-2 -top-2 z-10 rounded-full border border-dashed px-1.5 py-0.5 text-[9px] font-medium tracking-wide uppercase ${
+            priorityLabel === 'P0' ? 'border-red-300 bg-red-50 text-red-600' : 'border-yellow-300 bg-yellow-50 text-yellow-600'
+          }`}>
+            {priorityLabel}
+          </span>
+        )}
+        <div
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+            isSelected ? 'bg-foreground text-white' : 'bg-muted text-foreground'
+          }`}
+        >
+          <type.icon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium flex items-center gap-1.5">
+            {type.name}
+            {type.tags.map((tag) => (
+              <span key={tag} className="rounded bg-slate-100 px-1.5 py-px text-[9px] font-medium text-slate-500 uppercase tracking-wide">{tag}</span>
+            ))}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{type.description}</p>
+        </div>
+        <div className="ml-auto flex items-center gap-2 shrink-0">
+          {isDemo && (
+            <span className="rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase">
+              try me
+            </span>
+          )}
+          {isSelected && (
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-white">
+              <Check className="h-3 w-3" />
+            </div>
+          )}
+        </div>
+      </button>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <div>
@@ -581,59 +646,19 @@ function StepJobType({
         </p>
       </div>
       <div className="space-y-2">
-        {JOB_TYPES.map((type) => {
-          const isSelected = selected === type.id
-          const priorityLabel = ['twin-update', 'software-update', 'direct-method', 'outer-loop'].includes(type.id) ? 'P0' : type.id === 'cert-revocation' ? 'P1' : null
-          const isDemo = type.id === 'twin-update' || type.id === 'cert-revocation'
-          return (
-            <button
-              key={type.id}
-              onClick={() => onSelect(type.id)}
-              className={`relative flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all ${
-                isSelected
-                  ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
-                  : 'hover:bg-muted/30'
-              }`}
-            >
-              {priorityLabel && (
-                <span className={`absolute -right-2 -top-2 z-10 rounded-full border border-dashed px-1.5 py-0.5 text-[9px] font-medium tracking-wide uppercase ${
-                  priorityLabel === 'P0' ? 'border-red-300 bg-red-50 text-red-600' : 'border-yellow-300 bg-yellow-50 text-yellow-600'
-                }`}>
-                  {priorityLabel}
-                </span>
-              )}
-              <div
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                  isSelected ? 'bg-foreground text-white' : 'bg-muted text-foreground'
-                }`}
-              >
-                <type.icon className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium flex items-center gap-1.5">
-                  {type.name}
-                  {type.tags.map((tag) => (
-                    <span key={tag} className="rounded bg-slate-100 px-1.5 py-px text-[9px] font-medium text-slate-500 uppercase tracking-wide">{tag}</span>
-                  ))}
-                </p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{type.description}</p>
-              </div>
-              <div className="ml-auto flex items-center gap-2 shrink-0">
-                {isDemo && (
-                  <span className="rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase">
-                    try me
-                  </span>
-                )}
-                {isSelected && (
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-white">
-                    <Check className="h-3 w-3" />
-                  </div>
-                )}
-              </div>
-            </button>
-          )
-        })}
+        {(hasMoreSelected ? JOB_TYPES : visibleTypes).map(renderJobButton)}
       </div>
+
+      {/* Show more / less toggle */}
+      {!hasMoreSelected && (
+        <button
+          onClick={() => setShowMore(!showMore)}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronRight className={`h-3 w-3 transition-transform ${showMore ? 'rotate-90' : ''}`} />
+          {showMore ? 'Show fewer job types' : `Show ${JOB_TYPES_MORE.length} more job type${JOB_TYPES_MORE.length !== 1 ? 's' : ''}`}
+        </button>
+      )}
 
       {/* Separator + Copy from Existing */}
       <div className="relative py-1">
@@ -858,9 +883,9 @@ function StepHubScope({
   selectedAio: Set<string>
   onToggleAio: (name: string) => void
 }) {
-  const showAio = jobType === 'outer-loop'
-  const allDevices = hubs.reduce((s, h) => s + h.devices, 0)
-  const selectedDevices = hubs
+  const allHubDevices = hubs.reduce((s, h) => s + h.devices, 0)
+  const allAioDevices = aioInstances.reduce((s, a) => s + a.connectedDevices, 0)
+  const selectedHubDevices = hubs
     .filter((h) => selectedHubs.has(h.name))
     .reduce((s, h) => s + h.devices, 0)
   const selectedAioDevices = aioInstances
@@ -872,68 +897,64 @@ function StepHubScope({
       <div>
         <h3 className="text-sm font-semibold">Scope</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          {showAio
-            ? 'Choose the scope for this job — target the entire namespace, individual hubs, or IoT\u00a0Operations instances.'
-            : 'Unlike single-hub jobs, namespace jobs can span multiple linked hubs. Choose which hubs to target.'}
+          Choose the scope for this job — target the entire namespace, individual IoT&nbsp;Hubs, or IoT&nbsp;Operations instances.
         </p>
       </div>
 
-      {/* Scope mode selector */}
-      <div className={`grid gap-3 ${showAio ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      {/* Scope mode selector — always 3 options */}
+      <div className="grid grid-cols-3 gap-3">
         <button
           onClick={() => onScopeModeChange('namespace')}
-          className={`flex items-center gap-3 rounded-lg border p-4 text-left transition-all ${
+          className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-all ${
             scopeMode === 'namespace'
               ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
               : 'hover:bg-muted/30'
           }`}
         >
-          <Globe className={`h-5 w-5 ${scopeMode === 'namespace' ? 'text-foreground' : 'text-muted-foreground'}`} />
-          <div>
+          <Globe className={`h-5 w-5 mt-0.5 shrink-0 ${scopeMode === 'namespace' ? 'text-foreground' : 'text-muted-foreground'}`} />
+          <div className="min-w-0">
             <p className="text-sm font-medium">Entire Namespace</p>
-            <p className="text-xs text-muted-foreground">
-              {hubs.length} hubs · {allDevices.toLocaleString()} devices
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {hubs.length} IoT&nbsp;Hubs, {aioInstances.length} AIO instance{aioInstances.length !== 1 ? 's' : ''}, {(allHubDevices + allAioDevices).toLocaleString()} devices
             </p>
           </div>
         </button>
         <button
           onClick={() => onScopeModeChange('select')}
-          className={`flex items-center gap-3 rounded-lg border p-4 text-left transition-all ${
+          className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-all ${
             scopeMode === 'select'
               ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
               : 'hover:bg-muted/30'
           }`}
         >
-          <Server className={`h-5 w-5 ${scopeMode === 'select' ? 'text-foreground' : 'text-muted-foreground'}`} />
-          <div>
-            <p className="text-sm font-medium">Select Hubs</p>
+          <Server className={`h-5 w-5 mt-0.5 shrink-0 ${scopeMode === 'select' ? 'text-foreground' : 'text-muted-foreground'}`} />
+          <div className="min-w-0">
+            <p className="text-sm font-medium">IoT&nbsp;Hubs</p>
             <p className="text-xs text-muted-foreground">
               {selectedHubs.size > 0
-                ? `${selectedHubs.size} selected · ${selectedDevices.toLocaleString()} devices`
-                : 'Pick individual hubs'}
+                ? `${selectedHubs.size} selected · ${selectedHubDevices.toLocaleString()} devices`
+                : `${hubs.length} available`}
             </p>
           </div>
         </button>
-        {showAio && (
-          <button
-            onClick={() => onScopeModeChange('aio')}
-            className={`flex items-center gap-3 rounded-lg border p-4 text-left transition-all ${
-              scopeMode === 'aio'
-                ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
-                : 'hover:bg-muted/30'
-            }`}
-          >
-            <Activity className={`h-5 w-5 ${scopeMode === 'aio' ? 'text-foreground' : 'text-muted-foreground'}`} />
-            <div>
-              <p className="text-sm font-medium">IoT&nbsp;Operations</p>
-              <p className="text-xs text-muted-foreground">
-                {selectedAio.size > 0
-                  ? `${selectedAio.size} selected · ${selectedAioDevices.toLocaleString()} devices`
-                  : `${aioInstances.length} instance${aioInstances.length !== 1 ? 's' : ''}`}
-              </p>
-            </div>
-          </button>
-        )}
+        <button
+          onClick={() => onScopeModeChange('aio')}
+          className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-all ${
+            scopeMode === 'aio'
+              ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
+              : 'hover:bg-muted/30'
+          }`}
+        >
+          <Activity className={`h-5 w-5 mt-0.5 shrink-0 ${scopeMode === 'aio' ? 'text-foreground' : 'text-muted-foreground'}`} />
+          <div className="min-w-0">
+            <p className="text-sm font-medium">IoT&nbsp;Operations</p>
+            <p className="text-xs text-muted-foreground">
+              {selectedAio.size > 0
+                ? `${selectedAio.size} selected · ${selectedAioDevices.toLocaleString()} devices`
+                : `${aioInstances.length} instance${aioInstances.length !== 1 ? 's' : ''}`}
+            </p>
+          </div>
+        </button>
       </div>
 
       {/* Hub list — shown for namespace & select modes */}
@@ -1128,9 +1149,15 @@ function StepArmAction({
   )
 
   function addProperty(fieldId: string) {
-    const fieldDef = ARM_PROPERTY_FIELDS.find((f) => f.id === fieldId)
-    onPropertiesChange([...properties, { field: fieldId, value: fieldDef?.sample ?? '' }])
+    onPropertiesChange([...properties, { field: fieldId, value: '' }])
     setPropDropdownOpen(false)
+  }
+
+  function fillPropertySample(fieldId: string) {
+    const fieldDef = ARM_PROPERTY_FIELDS.find((f) => f.id === fieldId)
+    if (fieldDef) {
+      onPropertiesChange(properties.map((p) => (p.field === fieldId ? { ...p, value: fieldDef.sample } : p)))
+    }
   }
 
   function updatePropertyValue(fieldId: string, value: string) {
@@ -1144,7 +1171,7 @@ function StepArmAction({
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-sm font-semibold">ARM Action</h3>
+        <h3 className="text-sm font-semibold">Details</h3>
         <p className="mt-1 text-xs text-muted-foreground">
           Choose how to manage ARM records — update resource properties or invoke a named action.
         </p>
@@ -1191,9 +1218,13 @@ function StepArmAction({
                     key={prop.field}
                     className="flex items-center gap-2 rounded-lg border bg-muted/10 px-3 py-2"
                   >
-                    <span className="text-xs font-medium text-foreground whitespace-nowrap min-w-[120px]">
+                    <button
+                      onClick={() => fillPropertySample(prop.field)}
+                      className="text-xs font-medium text-foreground whitespace-nowrap min-w-[120px] text-left hover:text-blue-600 transition-colors cursor-pointer"
+                      title={`Click to fill sample: ${fieldDef.sample}`}
+                    >
                       {fieldDef.label}
-                    </span>
+                    </button>
                     <span className="text-xs text-muted-foreground">=</span>
                     <Input
                       value={prop.value}
@@ -1361,7 +1392,7 @@ function StepTargeting({
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-sm font-semibold">Targeting</h3>
+        <h3 className="text-sm font-semibold">Target</h3>
         <p className="mt-1 text-xs text-muted-foreground">
           Define a priority and target condition using IoT Hub query language to scope which devices
           receive this job.
