@@ -430,6 +430,12 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                         setShowCopyPicker(true)
                       } else {
                         setJobType(id)
+                        // Set default targeting mode based on job type
+                        if (id === 'outer-loop' || id === 'cert-revocation') {
+                          setTargetingMode('adr')
+                        } else {
+                          setTargetingMode('across')
+                        }
                       }
                     }}
                   />
@@ -480,6 +486,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
               )}
               {currentStepName() === 'Target' && (
                 <StepTargeting
+                  jobType={jobType}
                   priority={priority}
                   onPriorityChange={setPriority}
                   targetCondition={targetCondition}
@@ -1343,6 +1350,7 @@ function StepArmAction({
 /* ─── Step 4: Targeting ─────────────────────────────────────── */
 
 function StepTargeting({
+  jobType,
   priority,
   onPriorityChange,
   targetCondition,
@@ -1363,6 +1371,7 @@ function StepTargeting({
   justSaved,
   onLoadGroup,
 }: {
+  jobType: string | null
   priority: string
   onPriorityChange: (v: string) => void
   targetCondition: string
@@ -1383,6 +1392,10 @@ function StepTargeting({
   justSaved: boolean
   onLoadGroup: (group: SavedGroup) => void
 }) {
+  // Determine which targeting modes are available for this job type
+  const argOnly = jobType === 'outer-loop' || jobType === 'cert-revocation'
+  const hubOnly = jobType === 'twin-update' || jobType === 'software-update' || jobType === 'direct-method'
+
   const hasCondition =
     targetingMode === 'per-hub'
       ? perHubTargets.some(t => t.condition.trim().length > 0)
@@ -1415,7 +1428,7 @@ function StepTargeting({
       <div>
         <h3 className="text-sm font-semibold">Target</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Define a priority and target condition using IoT Hub query language to scope which devices
+          Define a priority and target definition to scope which devices
           receive this job.
         </p>
       </div>
@@ -1441,40 +1454,49 @@ function StepTargeting({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-medium text-foreground">Target Condition <span className="text-red-500">*</span></span>
+              <span className="text-xs font-medium text-foreground">Target Definition <span className="text-red-500">*</span></span>
               <div className="flex items-center rounded-lg border bg-muted/30 p-0.5">
                 <button
-                  onClick={() => onTargetingModeChange('adr')}
+                  onClick={() => !hubOnly && onTargetingModeChange('adr')}
+                  disabled={hubOnly}
                   className={`relative rounded-md px-3 py-1 text-xs font-medium transition-all ${
-                    targetingMode === 'adr'
+                    hubOnly
+                      ? 'text-muted-foreground/40 cursor-not-allowed'
+                      : targetingMode === 'adr'
                       ? 'bg-white text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  Use ARG
-                  <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-red-300 bg-red-50 px-1 py-px text-[7px] font-medium text-red-600 tracking-wide uppercase leading-none">P0</span>
+                  ARG
+                  {!hubOnly && <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-red-300 bg-red-50 px-1 py-px text-[7px] font-medium text-red-600 tracking-wide uppercase leading-none">P0</span>}
                 </button>
                 <button
-                  onClick={() => onTargetingModeChange('across')}
+                  onClick={() => !argOnly && onTargetingModeChange('across')}
+                  disabled={argOnly}
                   className={`relative rounded-md px-3 py-1 text-xs font-medium transition-all ${
-                    targetingMode === 'across'
+                    argOnly
+                      ? 'text-muted-foreground/40 cursor-not-allowed'
+                      : targetingMode === 'across'
                       ? 'bg-white text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  Define across hubs
-                  <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-red-300 bg-red-50 px-1 py-px text-[7px] font-medium text-red-600 tracking-wide uppercase leading-none">P0</span>
+                  Across Hubs
+                  {!argOnly && <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-red-300 bg-red-50 px-1 py-px text-[7px] font-medium text-red-600 tracking-wide uppercase leading-none">P0</span>}
                 </button>
                 <button
-                  onClick={() => onTargetingModeChange('per-hub')}
+                  onClick={() => !argOnly && onTargetingModeChange('per-hub')}
+                  disabled={argOnly}
                   className={`relative rounded-md px-3 py-1 text-xs font-medium transition-all ${
-                    targetingMode === 'per-hub'
+                    argOnly
+                      ? 'text-muted-foreground/40 cursor-not-allowed'
+                      : targetingMode === 'per-hub'
                       ? 'bg-white text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  Define per hub
-                  <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-yellow-300 bg-yellow-50 px-1 py-px text-[7px] font-medium text-yellow-600 tracking-wide uppercase leading-none">P1</span>
+                  Per Hub
+                  {!argOnly && <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-yellow-300 bg-yellow-50 px-1 py-px text-[7px] font-medium text-yellow-600 tracking-wide uppercase leading-none">P1</span>}
                 </button>
               </div>
             </div>
