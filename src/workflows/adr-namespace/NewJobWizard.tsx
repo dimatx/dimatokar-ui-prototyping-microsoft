@@ -1665,8 +1665,13 @@ function StepTargeting({
                         key={filter.field}
                         className="flex items-center gap-2 rounded-lg border bg-muted/10 px-3 py-2"
                       >
-                        <span className="text-xs font-medium text-foreground whitespace-nowrap min-w-[120px]">
+                        <span
+                          className="text-xs font-medium text-foreground whitespace-nowrap min-w-[120px] cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1 group/lbl"
+                          onClick={() => updateAdrFilterValue(filter.field, fieldDef.sample)}
+                          title="Click to fill with sample value"
+                        >
                           {fieldDef.label}
+                          <span className="opacity-0 group-hover/lbl:opacity-100 text-[10px] text-blue-500 transition-opacity">← fill</span>
                         </span>
                         <span className="text-xs text-muted-foreground">=</span>
                         <Input
