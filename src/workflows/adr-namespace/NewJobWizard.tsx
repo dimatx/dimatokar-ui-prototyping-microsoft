@@ -1250,7 +1250,7 @@ function StepArmAction({
                     <Input
                       value={prop.value}
                       onChange={(e) => updatePropertyValue(prop.field, e.target.value)}
-                      placeholder={fieldDef.sample}
+                      placeholder="Enter a value"
                       className="h-7 text-xs flex-1 font-mono"
                     />
                     <button
