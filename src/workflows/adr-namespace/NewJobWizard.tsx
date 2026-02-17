@@ -1201,7 +1201,7 @@ function StepArmAction({
       <div>
         <h3 className="text-sm font-semibold">Details</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Choose how to manage ARM records — update resource properties or invoke a named action.
+          Update resource properties or invoke a named action.
         </p>
       </div>
 
