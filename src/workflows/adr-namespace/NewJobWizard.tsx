@@ -596,7 +596,7 @@ function StepJobType({
   const renderJobButton = (type: typeof JOB_TYPES[number]) => {
     const isSelected = selected === type.id
     const priorityLabel = ['twin-update', 'software-update', 'direct-method', 'outer-loop'].includes(type.id) ? 'P0' : type.id === 'cert-revocation' ? 'P1' : null
-    const isDemo = type.id === 'twin-update' || type.id === 'cert-revocation'
+    const isDemo = type.id === 'twin-update' || type.id === 'cert-revocation' || type.id === 'outer-loop'
     return (
       <button
         key={type.id}
