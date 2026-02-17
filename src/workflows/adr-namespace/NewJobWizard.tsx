@@ -109,6 +109,12 @@ const JOB_TYPES = [
     description: 'Call a direct method on devices and receive responses',
     icon: Terminal,
   },
+  {
+    id: 'outer-loop',
+    name: 'Outer loop (ARM action)',
+    description: 'Trigger an ARM management action across namespace resources',
+    icon: Globe,
+  },
 ]
 
 const TWIN_STEPS = ['Job Type', 'Details', 'Hubs', 'Twin Settings', 'Targeting', 'Review']
@@ -124,6 +130,7 @@ const JOB_TYPE_LABELS: Record<string, string> = {
   'cert-revocation': 'Cert Revocation',
   'software-update': 'Software Update',
   'direct-method': 'Direct Method',
+  'outer-loop': 'Outer Loop (ARM)',
 }
 
 const SAMPLE_SAVED_GROUPS: SavedGroup[] = [
@@ -1060,6 +1067,7 @@ function StepTargeting({
                   }`}
                 >
                   Use ARG
+                  <span className="ml-1.5 rounded-full border border-dashed border-amber-300 bg-amber-50 px-1.5 py-px text-[8px] font-medium text-amber-600 tracking-wide uppercase leading-none">P0</span>
                 </button>
                 <button
                   onClick={() => onTargetingModeChange('across')}
@@ -1070,6 +1078,7 @@ function StepTargeting({
                   }`}
                 >
                   Define across hubs
+                  <span className="ml-1.5 rounded-full border border-dashed border-amber-300 bg-amber-50 px-1.5 py-px text-[8px] font-medium text-amber-600 tracking-wide uppercase leading-none">P0</span>
                 </button>
                 <button
                   onClick={() => onTargetingModeChange('per-hub')}
@@ -1080,6 +1089,7 @@ function StepTargeting({
                   }`}
                 >
                   Define per hub
+                  <span className="ml-1.5 rounded-full border border-dashed border-amber-300 bg-amber-50 px-1.5 py-px text-[8px] font-medium text-amber-600 tracking-wide uppercase leading-none">P1</span>
                 </button>
               </div>
             </div>
