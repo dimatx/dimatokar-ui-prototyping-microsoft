@@ -124,10 +124,12 @@ const JOB_TYPES = [
 ]
 
 const TWIN_STEPS = ['Job Type', 'Details', 'Hubs', 'Twin Settings', 'Targeting', 'Review']
+const ARM_STEPS = ['Job Type', 'Details', 'Hubs', 'ARM Action', 'Targeting', 'Review']
 const DEFAULT_STEPS = ['Job Type', 'Details', 'Hubs', 'Targeting', 'Review']
 
 function getSteps(jobType: string | null) {
   if (jobType === 'twin-update') return TWIN_STEPS
+  if (jobType === 'outer-loop') return ARM_STEPS
   return DEFAULT_STEPS
 }
 
@@ -172,6 +174,12 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
       value: '',
     },
   ])
+
+  // ARM Action step
+  const [armActionMode, setArmActionMode] = useState<'update-properties' | 'arm-action'>('update-properties')
+  const [armProperties, setArmProperties] = useState<AdrFilter[]>([])
+  const [armActionName, setArmActionName] = useState('')
+  const [armActionPayload, setArmActionPayload] = useState('')
 
   // Step 4: Targeting
   const [priority, setPriority] = useState('10')
@@ -236,6 +244,12 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
       case 'Details': return jobName.trim().length > 0
       case 'Hubs': return scopeMode === 'namespace' || selectedHubs.size > 0
       case 'Twin Settings': return twinSettings.length > 0 && twinSettings.every((s) => s.path.trim() && s.value.trim())
+      case 'ARM Action': {
+        if (armActionMode === 'update-properties') {
+          return armProperties.length > 0 && armProperties.every(p => p.value.trim().length > 0)
+        }
+        return armActionName.trim().length > 0 && armActionPayload.trim().length > 0
+      }
       case 'Targeting': {
         if (targetingMode === 'per-hub') {
           return perHubTargets.every((t) => t.condition.trim().length > 0) && priority.trim().length > 0
@@ -422,6 +436,18 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
                   onAdd={addTwinSetting}
                   onRemove={removeTwinSetting}
                   onUpdate={updateTwinSetting}
+                />
+              )}
+              {currentStepName() === 'ARM Action' && (
+                <StepArmAction
+                  mode={armActionMode}
+                  onModeChange={setArmActionMode}
+                  properties={armProperties}
+                  onPropertiesChange={setArmProperties}
+                  actionName={armActionName}
+                  onActionNameChange={setArmActionName}
+                  payload={armActionPayload}
+                  onPayloadChange={setArmActionPayload}
                 />
               )}
               {currentStepName() === 'Targeting' && (
@@ -970,6 +996,202 @@ function StepTwinSettings({
         <Plus className="h-3.5 w-3.5" />
         Add Another Setting
       </Button>
+    </div>
+  )
+}
+
+/* ─── ARM Action Step ───────────────────────────────────────── */
+
+const ARM_PROPERTY_FIELDS = [
+  { id: 'manufacturer', label: 'Manufacturer', sample: 'Contoso Wind Systems' },
+  { id: 'model', label: 'Model', sample: 'TurbineController-X700' },
+  { id: 'swVersion', label: 'Software Version', sample: '3.2.0' },
+  { id: 'osName', label: 'OS Name', sample: 'Azure RTOS' },
+  { id: 'serialNumber', label: 'Serial Number', sample: 'SN-2026-0042' },
+  { id: 'location', label: 'Location', sample: 'Abilene, TX' },
+]
+
+function StepArmAction({
+  mode,
+  onModeChange,
+  properties,
+  onPropertiesChange,
+  actionName,
+  onActionNameChange,
+  payload,
+  onPayloadChange,
+}: {
+  mode: 'update-properties' | 'arm-action'
+  onModeChange: (m: 'update-properties' | 'arm-action') => void
+  properties: AdrFilter[]
+  onPropertiesChange: (p: AdrFilter[]) => void
+  actionName: string
+  onActionNameChange: (v: string) => void
+  payload: string
+  onPayloadChange: (v: string) => void
+}) {
+  const [propDropdownOpen, setPropDropdownOpen] = useState(false)
+  const availableProps = ARM_PROPERTY_FIELDS.filter(
+    (f) => !properties.some((p) => p.field === f.id)
+  )
+
+  function addProperty(fieldId: string) {
+    const fieldDef = ARM_PROPERTY_FIELDS.find((f) => f.id === fieldId)
+    onPropertiesChange([...properties, { field: fieldId, value: fieldDef?.sample ?? '' }])
+    setPropDropdownOpen(false)
+  }
+
+  function updatePropertyValue(fieldId: string, value: string) {
+    onPropertiesChange(properties.map((p) => (p.field === fieldId ? { ...p, value } : p)))
+  }
+
+  function removeProperty(fieldId: string) {
+    onPropertiesChange(properties.filter((p) => p.field !== fieldId))
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h3 className="text-sm font-semibold">ARM Action</h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Choose how to manage ARM records — update resource properties or invoke a named action.
+        </p>
+      </div>
+
+      {/* Mode toggle */}
+      <div className="flex items-center rounded-lg border bg-muted/30 p-0.5 w-fit">
+        <button
+          onClick={() => onModeChange('update-properties')}
+          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+            mode === 'update-properties'
+              ? 'bg-white text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Update properties
+        </button>
+        <button
+          onClick={() => onModeChange('arm-action')}
+          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+            mode === 'arm-action'
+              ? 'bg-white text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          ARM action
+        </button>
+      </div>
+
+      {mode === 'update-properties' ? (
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Select properties to update on the ARM resource records. Set the new value for each.
+          </p>
+
+          {/* Active property rows */}
+          {properties.length > 0 && (
+            <div className="space-y-2">
+              {properties.map((prop) => {
+                const fieldDef = ARM_PROPERTY_FIELDS.find((f) => f.id === prop.field)
+                if (!fieldDef) return null
+                return (
+                  <div
+                    key={prop.field}
+                    className="flex items-center gap-2 rounded-lg border bg-muted/10 px-3 py-2"
+                  >
+                    <span className="text-xs font-medium text-foreground whitespace-nowrap min-w-[120px]">
+                      {fieldDef.label}
+                    </span>
+                    <span className="text-xs text-muted-foreground">=</span>
+                    <Input
+                      value={prop.value}
+                      onChange={(e) => updatePropertyValue(prop.field, e.target.value)}
+                      placeholder={fieldDef.sample}
+                      className="h-7 text-xs flex-1 font-mono"
+                    />
+                    <button
+                      onClick={() => removeProperty(prop.field)}
+                      className="rounded-md p-1 text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
+                      title="Remove property"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Add property button + dropdown */}
+          {availableProps.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => setPropDropdownOpen(!propDropdownOpen)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+              >
+                <Plus className="h-3 w-3" />
+                Add property
+              </button>
+              {propDropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setPropDropdownOpen(false)} />
+                  <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-lg border bg-white shadow-lg">
+                    <div className="py-1">
+                      {availableProps.map((field) => (
+                        <button
+                          key={field.id}
+                          onClick={() => addProperty(field.id)}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted/40 transition-colors"
+                        >
+                          <span className="font-medium">{field.label}</span>
+                          <span className="text-muted-foreground ml-auto text-[10px]">{field.sample}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Action name */}
+          <div className="space-y-1.5">
+            <ClickableLabel
+              label="Action Name"
+              onFill={() => onActionNameChange('setTargetTemp')}
+            />
+            <Input
+              value={actionName}
+              onChange={(e) => onActionNameChange(e.target.value)}
+              placeholder="setTargetTemp"
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              The name of the ARM action to invoke on each targeted resource.
+            </p>
+          </div>
+
+          {/* Payload */}
+          <div className="space-y-1.5">
+            <ClickableLabel
+              label="JSON Payload"
+              onFill={() => onPayloadChange(JSON.stringify({ targetTemperature: 72, unit: 'F', mode: 'auto' }, null, 2))}
+            />
+            <textarea
+              value={payload}
+              onChange={(e) => onPayloadChange(e.target.value)}
+              placeholder='{ "targetTemperature": 72, "unit": "F" }'
+              rows={6}
+              className="flex w-full rounded-md border border-input bg-muted/30 px-3 py-2 font-mono text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            />
+            <p className="text-xs text-muted-foreground">
+              The JSON payload to send with the action request.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
