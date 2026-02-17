@@ -1510,10 +1510,11 @@ function StepTargeting({
               <div className="relative">
                 <button
                   onClick={() => setGroupDropdownOpen(!groupDropdownOpen)}
-                  className="inline-flex items-center gap-1 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                  className="relative inline-flex items-center gap-1 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                   title="Load from saved targets"
                 >
                   <FolderOpen className="h-3.5 w-3.5" />
+                  <span className="absolute -right-2 -top-2 z-10 rounded-full border border-dashed border-yellow-300 bg-yellow-50 px-1 py-px text-[8px] font-medium tracking-wide uppercase text-yellow-600">P1</span>
                 </button>
                 {groupDropdownOpen && (
                   <>
@@ -1545,7 +1546,7 @@ function StepTargeting({
                 <div className="relative">
                   <button
                     onClick={onToggleSaveGroup}
-                    className="inline-flex items-center gap-1 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                    className="relative inline-flex items-center gap-1 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                     title="Save as target"
                   >
                     {justSaved ? (
@@ -1553,6 +1554,7 @@ function StepTargeting({
                     ) : (
                       <Save className="h-3.5 w-3.5" />
                     )}
+                    <span className="absolute -right-2 -top-2 z-10 rounded-full border border-dashed border-yellow-300 bg-yellow-50 px-1 py-px text-[8px] font-medium tracking-wide uppercase text-yellow-600">P1</span>
                   </button>
                   {showSaveGroupInput && (
                     <>
