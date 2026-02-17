@@ -546,7 +546,7 @@ function StepJobType({
               </div>
               <div className="ml-auto flex items-center gap-2 shrink-0">
                 {isDemo && (
-                  <span className="rounded-full border border-dashed border-violet-300 bg-violet-50 px-2 py-0.5 text-[9px] font-medium text-violet-500 tracking-wide uppercase">
+                  <span className="rounded-full border border-dashed border-amber-300 bg-amber-50 px-2 py-0.5 text-[9px] font-medium text-amber-600 tracking-wide uppercase">
                     try me
                   </span>
                 )}
