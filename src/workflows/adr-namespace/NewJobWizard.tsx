@@ -529,7 +529,8 @@ function StepJobType({
       <div className="space-y-2">
         {JOB_TYPES.map((type) => {
           const isSelected = selected === type.id
-          const badgeLabel = type.id === 'twin-update' ? 'try me' : type.id === 'cert-revocation' ? 'P1' : null
+          const priorityLabel = ['twin-update', 'software-update', 'direct-method'].includes(type.id) ? 'P0' : type.id === 'cert-revocation' ? 'P1' : null
+          const isDemo = type.id === 'twin-update' || type.id === 'cert-revocation'
           return (
             <button
               key={type.id}
@@ -552,9 +553,14 @@ function StepJobType({
                 <p className="mt-0.5 text-xs text-muted-foreground">{type.description}</p>
               </div>
               <div className="ml-auto flex items-center gap-2 shrink-0">
-                {badgeLabel && (
+                {isDemo && (
                   <span className="rounded-full border border-dashed border-amber-300 bg-amber-50 px-2 py-0.5 text-[9px] font-medium text-amber-600 tracking-wide uppercase">
-                    {badgeLabel}
+                    try me
+                  </span>
+                )}
+                {priorityLabel && (
+                  <span className="rounded-full border border-dashed border-amber-300 bg-amber-50 px-2 py-0.5 text-[9px] font-medium text-amber-600 tracking-wide uppercase">
+                    {priorityLabel}
                   </span>
                 )}
                 {isSelected && (
