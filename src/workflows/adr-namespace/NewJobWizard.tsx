@@ -903,6 +903,8 @@ function StepHubScope({
     .filter((a) => selectedAio.has(a.name))
     .reduce((s, a) => s + a.connectedDevices, 0)
 
+  const aioEnabled = jobType === 'outer-loop'
+
   return (
     <div className="space-y-5">
       <div>
@@ -950,9 +952,12 @@ function StepHubScope({
           </div>
         </button>
         <button
-          onClick={() => onScopeModeChange('aio')}
+          onClick={() => aioEnabled && onScopeModeChange('aio')}
+          disabled={!aioEnabled}
           className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-all ${
-            scopeMode === 'aio'
+            !aioEnabled
+              ? 'opacity-40 cursor-not-allowed'
+              : scopeMode === 'aio'
               ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
               : 'hover:bg-muted/30'
           }`}
