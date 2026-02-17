@@ -4,7 +4,7 @@ import { Sidebar } from './Sidebar'
 import { TopNav } from './TopNav'
 
 export function Layout() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
 
   return (
     <div className="flex h-screen overflow-hidden bg-white">
