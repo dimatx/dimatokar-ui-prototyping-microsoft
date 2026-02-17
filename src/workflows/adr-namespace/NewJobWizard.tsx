@@ -535,12 +535,19 @@ function StepJobType({
             <button
               key={type.id}
               onClick={() => onSelect(type.id)}
-              className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all ${
+              className={`relative flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all ${
                 isSelected
                   ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
                   : 'hover:bg-muted/30'
               }`}
             >
+              {priorityLabel && (
+                <span className={`absolute -right-2 -top-2 z-10 rounded-full border border-dashed px-1.5 py-0.5 text-[9px] font-medium tracking-wide uppercase ${
+                  priorityLabel === 'P0' ? 'border-emerald-300 bg-emerald-50 text-emerald-600' : 'border-red-300 bg-red-50 text-red-600'
+                }`}>
+                  {priorityLabel}
+                </span>
+              )}
               <div
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                   isSelected ? 'bg-foreground text-white' : 'bg-muted text-foreground'
@@ -556,13 +563,6 @@ function StepJobType({
                 {isDemo && (
                   <span className="rounded-full border border-dashed border-amber-300 bg-amber-50 px-2 py-0.5 text-[9px] font-medium text-amber-600 tracking-wide uppercase">
                     try me
-                  </span>
-                )}
-                {priorityLabel && (
-                  <span className={`rounded-full border border-dashed px-2 py-0.5 text-[9px] font-medium tracking-wide uppercase ${
-                    priorityLabel === 'P0' ? 'border-emerald-300 bg-emerald-50 text-emerald-600' : 'border-red-300 bg-red-50 text-red-600'
-                  }`}>
-                    {priorityLabel}
                   </span>
                 )}
                 {isSelected && (
@@ -1068,36 +1068,36 @@ function StepTargeting({
               <div className="flex items-center rounded-lg border bg-muted/30 p-0.5">
                 <button
                   onClick={() => onTargetingModeChange('adr')}
-                  className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                  className={`relative rounded-md px-3 py-1 text-xs font-medium transition-all ${
                     targetingMode === 'adr'
                       ? 'bg-white text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Use ARG
-                  <span className="ml-1.5 rounded-full border border-dashed border-emerald-300 bg-emerald-50 px-1.5 py-px text-[8px] font-medium text-emerald-600 tracking-wide uppercase leading-none">P0</span>
+                  <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-emerald-300 bg-emerald-50 px-1 py-px text-[7px] font-medium text-emerald-600 tracking-wide uppercase leading-none">P0</span>
                 </button>
                 <button
                   onClick={() => onTargetingModeChange('across')}
-                  className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                  className={`relative rounded-md px-3 py-1 text-xs font-medium transition-all ${
                     targetingMode === 'across'
                       ? 'bg-white text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Define across hubs
-                  <span className="ml-1.5 rounded-full border border-dashed border-emerald-300 bg-emerald-50 px-1.5 py-px text-[8px] font-medium text-emerald-600 tracking-wide uppercase leading-none">P0</span>
+                  <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-emerald-300 bg-emerald-50 px-1 py-px text-[7px] font-medium text-emerald-600 tracking-wide uppercase leading-none">P0</span>
                 </button>
                 <button
                   onClick={() => onTargetingModeChange('per-hub')}
-                  className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                  className={`relative rounded-md px-3 py-1 text-xs font-medium transition-all ${
                     targetingMode === 'per-hub'
                       ? 'bg-white text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Define per hub
-                  <span className="ml-1.5 rounded-full border border-dashed border-red-300 bg-red-50 px-1.5 py-px text-[8px] font-medium text-red-600 tracking-wide uppercase leading-none">P1</span>
+                  <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-red-300 bg-red-50 px-1 py-px text-[7px] font-medium text-red-600 tracking-wide uppercase leading-none">P1</span>
                 </button>
               </div>
             </div>
