@@ -1117,7 +1117,7 @@ function StepTargeting({
                 <button
                   onClick={() => setGroupDropdownOpen(!groupDropdownOpen)}
                   className="inline-flex items-center gap-1 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                  title="Load from saved group"
+                  title="Load from saved targets"
                 >
                   <FolderOpen className="h-3.5 w-3.5" />
                 </button>
@@ -1126,7 +1126,7 @@ function StepTargeting({
                     <div className="fixed inset-0 z-10" onClick={() => setGroupDropdownOpen(false)} />
                     <div className="absolute right-0 top-full z-20 mt-1 w-72 rounded-lg border bg-white shadow-lg">
                       <div className="px-3 py-2 border-b">
-                        <p className="text-[11px] font-medium text-muted-foreground">Saved Target Groups</p>
+                        <p className="text-[11px] font-medium text-muted-foreground">Saved Targets</p>
                       </div>
                       <div className="max-h-48 overflow-y-auto py-1">
                         {savedGroups.map((group) => (
@@ -1152,7 +1152,7 @@ function StepTargeting({
                   <button
                     onClick={onToggleSaveGroup}
                     className="inline-flex items-center gap-1 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                    title="Save as group"
+                    title="Save as target"
                   >
                     {justSaved ? (
                       <Check className="h-3.5 w-3.5 text-green-600" />
@@ -1165,7 +1165,7 @@ function StepTargeting({
                       <div className="fixed inset-0 z-10" onClick={onToggleSaveGroup} />
                       <div className="absolute right-0 top-full z-20 mt-1 w-72 rounded-lg border bg-white shadow-lg">
                         <div className="px-3 py-2 border-b">
-                          <p className="text-[11px] font-medium text-muted-foreground">Save Target Group</p>
+                          <p className="text-[11px] font-medium text-muted-foreground">Save as Target</p>
                         </div>
                         <div className="flex items-center gap-2 p-3">
                           <Input
