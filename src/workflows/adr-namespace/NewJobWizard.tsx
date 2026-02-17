@@ -111,8 +111,8 @@ const JOB_TYPES = [
   },
   {
     id: 'outer-loop',
-    name: 'Outer loop (ARM action)',
-    description: 'Trigger an ARM management action across namespace resources',
+    name: 'Update ARM Records',
+    description: 'Sync device state changes back to ARM resource representations',
     icon: Globe,
   },
 ]
@@ -130,7 +130,7 @@ const JOB_TYPE_LABELS: Record<string, string> = {
   'cert-revocation': 'Cert Revocation',
   'software-update': 'Software Update',
   'direct-method': 'Direct Method',
-  'outer-loop': 'Outer Loop (ARM)',
+  'outer-loop': 'Update ARM Records',
 }
 
 const SAMPLE_SAVED_GROUPS: SavedGroup[] = [
@@ -529,7 +529,7 @@ function StepJobType({
       <div className="space-y-2">
         {JOB_TYPES.map((type) => {
           const isSelected = selected === type.id
-          const priorityLabel = ['twin-update', 'software-update', 'direct-method'].includes(type.id) ? 'P0' : type.id === 'cert-revocation' ? 'P1' : null
+          const priorityLabel = ['twin-update', 'software-update', 'direct-method', 'outer-loop'].includes(type.id) ? 'P0' : type.id === 'cert-revocation' ? 'P1' : null
           const isDemo = type.id === 'twin-update' || type.id === 'cert-revocation'
           return (
             <button
