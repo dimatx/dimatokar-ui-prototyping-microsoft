@@ -559,7 +559,9 @@ function StepJobType({
                   </span>
                 )}
                 {priorityLabel && (
-                  <span className="rounded-full border border-dashed border-amber-300 bg-amber-50 px-2 py-0.5 text-[9px] font-medium text-amber-600 tracking-wide uppercase">
+                  <span className={`rounded-full border border-dashed px-2 py-0.5 text-[9px] font-medium tracking-wide uppercase ${
+                    priorityLabel === 'P0' ? 'border-emerald-300 bg-emerald-50 text-emerald-600' : 'border-red-300 bg-red-50 text-red-600'
+                  }`}>
                     {priorityLabel}
                   </span>
                 )}
@@ -1073,7 +1075,7 @@ function StepTargeting({
                   }`}
                 >
                   Use ARG
-                  <span className="ml-1.5 rounded-full border border-dashed border-amber-300 bg-amber-50 px-1.5 py-px text-[8px] font-medium text-amber-600 tracking-wide uppercase leading-none">P0</span>
+                  <span className="ml-1.5 rounded-full border border-dashed border-emerald-300 bg-emerald-50 px-1.5 py-px text-[8px] font-medium text-emerald-600 tracking-wide uppercase leading-none">P0</span>
                 </button>
                 <button
                   onClick={() => onTargetingModeChange('across')}
@@ -1084,7 +1086,7 @@ function StepTargeting({
                   }`}
                 >
                   Define across hubs
-                  <span className="ml-1.5 rounded-full border border-dashed border-amber-300 bg-amber-50 px-1.5 py-px text-[8px] font-medium text-amber-600 tracking-wide uppercase leading-none">P0</span>
+                  <span className="ml-1.5 rounded-full border border-dashed border-emerald-300 bg-emerald-50 px-1.5 py-px text-[8px] font-medium text-emerald-600 tracking-wide uppercase leading-none">P0</span>
                 </button>
                 <button
                   onClick={() => onTargetingModeChange('per-hub')}
@@ -1095,7 +1097,7 @@ function StepTargeting({
                   }`}
                 >
                   Define per hub
-                  <span className="ml-1.5 rounded-full border border-dashed border-amber-300 bg-amber-50 px-1.5 py-px text-[8px] font-medium text-amber-600 tracking-wide uppercase leading-none">P1</span>
+                  <span className="ml-1.5 rounded-full border border-dashed border-red-300 bg-red-50 px-1.5 py-px text-[8px] font-medium text-red-600 tracking-wide uppercase leading-none">P1</span>
                 </button>
               </div>
             </div>
