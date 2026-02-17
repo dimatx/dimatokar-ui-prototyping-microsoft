@@ -82,6 +82,7 @@ interface SavedGroup {
 interface NewJobWizardProps {
   linkedHubs: Hub[]
   aioInstances: { name: string; site: string; status: string; connectedDevices: number }[]
+  totalAssets: number
   existingJobs: ExistingJob[]
   onClose: () => void
   onCreate: (job: CreatedJob) => void
@@ -157,7 +158,7 @@ const SAMPLE_SAVED_GROUPS: SavedGroup[] = [
 
 /* ─── Wizard ────────────────────────────────────────────────── */
 
-export function NewJobWizard({ linkedHubs, aioInstances, existingJobs, onClose, onCreate }: NewJobWizardProps) {
+export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJobs, onClose, onCreate }: NewJobWizardProps) {
   const [step, setStep] = useState(0)
 
   // Step 0: Job type
@@ -454,6 +455,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, existingJobs, onClose, 
                   aioInstances={aioInstances}
                   selectedAio={selectedAio}
                   onToggleAio={toggleAio}
+                  totalAssets={totalAssets}
                 />
               )}
               {currentStepName() === 'Twin Settings' && (
@@ -872,6 +874,7 @@ function StepHubScope({
   aioInstances,
   selectedAio,
   onToggleAio,
+  totalAssets,
 }: {
   hubs: Hub[]
   scopeMode: 'namespace' | 'select' | 'aio'
@@ -882,6 +885,7 @@ function StepHubScope({
   aioInstances: { name: string; site: string; status: string; connectedDevices: number }[]
   selectedAio: Set<string>
   onToggleAio: (name: string) => void
+  totalAssets: number
 }) {
   const allHubDevices = hubs.reduce((s, h) => s + h.devices, 0)
   const allAioDevices = aioInstances.reduce((s, a) => s + a.connectedDevices, 0)
@@ -915,7 +919,7 @@ function StepHubScope({
           <div className="min-w-0">
             <p className="text-sm font-medium">Entire Namespace</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              {hubs.length} IoT&nbsp;Hubs, {aioInstances.length} AIO instance{aioInstances.length !== 1 ? 's' : ''}, {(allHubDevices + allAioDevices).toLocaleString()} devices
+              {hubs.length} IoT&nbsp;Hubs, {aioInstances.length} AIO, {(allHubDevices + allAioDevices).toLocaleString()} devices, {totalAssets.toLocaleString()} assets
             </p>
           </div>
         </button>
@@ -957,42 +961,62 @@ function StepHubScope({
         </button>
       </div>
 
-      {/* Hub list — shown for namespace & select modes */}
-      {scopeMode !== 'aio' && (
-        <div className="space-y-2">
+      {/* Resource list */}
+      {scopeMode === 'namespace' && (
+        <div className="space-y-1">
+          {hubs.map((hub) => (
+            <div
+              key={hub.name}
+              className="flex items-center gap-2 rounded-md border border-muted bg-muted/10 px-3 py-2 cursor-default"
+            >
+              <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-muted-foreground/40 bg-muted-foreground/40 text-white">
+                <Check className="h-2.5 w-2.5" />
+              </div>
+              <Server className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
+              <span className="text-xs text-muted-foreground">{hub.name}</span>
+              <span className="text-[10px] text-muted-foreground/60 ml-auto">{hub.devices.toLocaleString()} devices</span>
+            </div>
+          ))}
+          {aioInstances.map((inst) => (
+            <div
+              key={inst.name}
+              className="flex items-center gap-2 rounded-md border border-muted bg-muted/10 px-3 py-2 cursor-default"
+            >
+              <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-muted-foreground/40 bg-muted-foreground/40 text-white">
+                <Check className="h-2.5 w-2.5" />
+              </div>
+              <Activity className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
+              <span className="text-xs text-muted-foreground">{inst.name}</span>
+              <span className="text-[10px] text-muted-foreground/60 ml-auto">{inst.connectedDevices.toLocaleString()} devices</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Hub list — shown for select mode */}
+      {scopeMode === 'select' && (
+        <div className="space-y-1.5">
           {hubs.map((hub) => {
-            const checked = scopeMode === 'namespace' || selectedHubs.has(hub.name)
-            const isDisabled = scopeMode === 'namespace'
+            const checked = selectedHubs.has(hub.name)
             return (
               <button
                 key={hub.name}
-                onClick={() => !isDisabled && onToggleHub(hub.name)}
-                disabled={isDisabled}
-                className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all ${
-                  checked
-                    ? isDisabled
-                      ? 'border-muted bg-muted/10'
-                      : 'border-foreground bg-muted/20'
-                    : 'hover:bg-muted/30'
-                } ${isDisabled ? 'cursor-default' : ''}`}
+                onClick={() => onToggleHub(hub.name)}
+                className={`flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left transition-all ${
+                  checked ? 'border-foreground bg-muted/20' : 'hover:bg-muted/30'
+                }`}
               >
                 <div
-                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
                     checked
-                      ? isDisabled
-                        ? 'border-muted-foreground/40 bg-muted-foreground/40 text-white'
-                        : 'border-foreground bg-foreground text-white'
+                      ? 'border-foreground bg-foreground text-white'
                       : 'border-muted-foreground/30'
                   }`}
                 >
-                  {checked && <Check className="h-3 w-3" />}
+                  {checked && <Check className="h-2.5 w-2.5" />}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className={`text-sm font-medium ${isDisabled ? 'text-muted-foreground' : ''}`}>{hub.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {hub.region} · {hub.devices.toLocaleString()} devices
-                  </p>
-                </div>
+                <span className="text-xs font-medium">{hub.name}</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">{hub.region} · {hub.devices.toLocaleString()} devices</span>
               </button>
             )
           })}
@@ -1001,32 +1025,28 @@ function StepHubScope({
 
       {/* AIO instance list — shown for aio mode */}
       {scopeMode === 'aio' && (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {aioInstances.map((inst) => {
             const checked = selectedAio.has(inst.name)
             return (
               <button
                 key={inst.name}
                 onClick={() => onToggleAio(inst.name)}
-                className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all ${
+                className={`flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left transition-all ${
                   checked ? 'border-foreground bg-muted/20' : 'hover:bg-muted/30'
                 }`}
               >
                 <div
-                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
                     checked
                       ? 'border-foreground bg-foreground text-white'
                       : 'border-muted-foreground/30'
                   }`}
                 >
-                  {checked && <Check className="h-3 w-3" />}
+                  {checked && <Check className="h-2.5 w-2.5" />}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">{inst.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {inst.site} · {inst.connectedDevices.toLocaleString()} devices
-                  </p>
-                </div>
+                <span className="text-xs font-medium">{inst.name}</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">{inst.site} · {inst.connectedDevices.toLocaleString()} devices</span>
               </button>
             )
           })}
