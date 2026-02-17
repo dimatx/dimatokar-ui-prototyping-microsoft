@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Server,
@@ -21,6 +21,7 @@ import {
   Search,
   Settings,
   Shield,
+  Puzzle,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -52,16 +53,27 @@ interface NamespaceService {
   icon: typeof Upload
   status: string
   configurable?: boolean
+  description?: string
+  instanceName?: string
+}
+
+const INSTANCE_NAME_OPTIONS: Record<string, string[]> = {
+  'Provisioning': ['dps-zava-tx-01', 'dps-zava-tx-02', 'dps-zava-global'],
+  'Certificate Management': ['certmgr-zava-tx-01', 'certmgr-zava-prod', 'certmgr-zava-internal'],
+  'Device Update': ['adu-zava-tx-01', 'adu-zava-prod-01', 'adu-zava-staging'],
+  'Firmware Analysis': ['fwa-zava-tx-01', 'fwa-zava-prod-01'],
+  'Future 3P Integration': ['3p-zava-tx-01', '3p-zava-dev-01'],
 }
 
 const initialServices: NamespaceService[] = [
-  { name: 'Provisioning', icon: Upload, status: 'Healthy' },
-  { name: 'Certificate Management', icon: KeyRound, status: 'Healthy', configurable: true },
+  { name: 'Provisioning', icon: Upload, status: 'Healthy', instanceName: 'dps-zava-tx-01' },
+  { name: 'Certificate Management', icon: KeyRound, status: 'Healthy', configurable: true, instanceName: 'certmgr-zava-tx-01' },
   { name: 'Device Update', icon: RefreshCw, status: 'Disabled', configurable: true },
 ]
 
 const addableServices: NamespaceService[] = [
-  { name: 'Firmware Analysis', icon: Shield, status: 'Disabled', configurable: true },
+  { name: 'Firmware Analysis', icon: Shield, status: 'Disabled', configurable: true, description: 'Scan firmware images for known vulnerabilities' },
+  { name: 'Future 3P Integration', icon: Puzzle, status: 'Disabled', configurable: true, description: 'Connect third-party services to the namespace' },
 ]
 
 interface Hub {
@@ -70,6 +82,7 @@ interface Hub {
   devices: number
   status: string
 }
+export type { Hub }
 
 const initialHubs: Hub[] = [
   { name: 'hub-tx-wind-01', region: 'South Central US', devices: 4_250, status: 'Healthy' },
@@ -118,14 +131,13 @@ export default function AdrNamespacePage() {
   const [aioOpen, setAioOpen] = useState(false)
   const [linkedHubs, setLinkedHubs] = useState<Hub[]>(initialHubs)
   const [showHubPicker, setShowHubPicker] = useState(false)
-  const [addedHubNames, setAddedHubNames] = useState<Set<string>>(new Set())
   const [hubSearch, setHubSearch] = useState('')
   const [hubSearchResults, setHubSearchResults] = useState<Hub[]>([])
   const [hubSearching, setHubSearching] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const [hubToConfirm, setHubToConfirm] = useState<Hub | null>(null)
   const [hubConfirmText, setHubConfirmText] = useState('')
-  const [jobs, setJobs] = useState<(typeof initialJobs[number] & { hubProgress?: { hubName: string; total: number; completed: number; status: string }[] })[]>(initialJobs)
+  const [jobs, setJobs] = useState<CreatedJob[]>(initialJobs)
   const [showNewJobWizard, setShowNewJobWizard] = useState(false)
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null)
 
@@ -134,6 +146,7 @@ export default function AdrNamespacePage() {
   const [svcConfigTarget, setSvcConfigTarget] = useState<NamespaceService | null>(null)
   const [disableConfirmText, setDisableConfirmText] = useState('')
   const [showAddService, setShowAddService] = useState(false)
+  const [enableInstanceName, setEnableInstanceName] = useState<string>('')
 
   // Simulate per-hub progress ticking for running jobs
   useEffect(() => {
@@ -205,7 +218,6 @@ export default function AdrNamespacePage() {
   function handleAddHub(hub: Hub) {
     const addingHub = { ...hub, devices: 0, status: 'Adding' }
     setLinkedHubs((prev) => [...prev, addingHub])
-    setAddedHubNames((prev) => new Set(prev).add(hub.name))
     setShowHubPicker(false)
     setHubsOpen(true)
 
@@ -270,7 +282,7 @@ export default function AdrNamespacePage() {
                     <p className="text-sm font-medium">{svc.name}</p>
                     {svc.configurable && (
                       <button
-                        onClick={() => { setSvcConfigTarget(svc); setDisableConfirmText('') }}
+                        onClick={() => { setSvcConfigTarget(svc); setDisableConfirmText(''); setEnableInstanceName(INSTANCE_NAME_OPTIONS[svc.name]?.[0] ?? '') }}
                         className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                         title={`Configure ${svc.name}`}
                       >
@@ -278,6 +290,9 @@ export default function AdrNamespacePage() {
                       </button>
                     )}
                   </div>
+                  {svc.instanceName && (
+                    <p className="text-xs font-mono text-muted-foreground mt-0.5 truncate">{svc.instanceName}</p>
+                  )}
                   <div className="mt-2">
                     <StatusBadge status={svc.status} />
                   </div>
@@ -550,7 +565,7 @@ export default function AdrNamespacePage() {
       {/* ── Jobs ─────────────────────────────────────────────── */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <SectionHeading title="Jobs" />
+          <h2 className="text-lg font-semibold tracking-tight">Jobs</h2>
           <Button size="sm" className="gap-1.5 text-xs" onClick={() => setShowNewJobWizard(true)}>
             <Plus className="h-3.5 w-3.5" />
             New Job
@@ -575,9 +590,8 @@ export default function AdrNamespacePage() {
                 const isExpandable = !!job.hubProgress
                 const isExpanded = expandedJobId === job.id
                 return (
-                  <>
+                  <React.Fragment key={job.id}>
                     <TableRow
-                      key={job.id}
                       className={isExpandable ? 'cursor-pointer hover:bg-muted/30' : ''}
                       onClick={() => isExpandable && setExpandedJobId(isExpanded ? null : job.id)}
                     >
@@ -650,7 +664,7 @@ export default function AdrNamespacePage() {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </React.Fragment>
                 )
               })}
             </TableBody>
@@ -713,6 +727,9 @@ export default function AdrNamespacePage() {
                       ? 'This service is being enabled…'
                       : 'This service is active and healthy.'}
                   </p>
+                  {svcConfigTarget.instanceName && svcConfigTarget.status !== 'Disabled' && (
+                    <p className="text-xs font-mono text-muted-foreground mt-1">{svcConfigTarget.instanceName}</p>
+                  )}
                 </div>
                 <StatusBadge status={svcConfigTarget.status} />
               </div>
@@ -722,23 +739,37 @@ export default function AdrNamespacePage() {
                   Enabling service…
                 </div>
               ) : svcConfigTarget.status === 'Disabled' ? (
-                <Button
-                  className="w-full gap-2"
-                  onClick={() => {
-                    const name = svcConfigTarget.name
-                    // Transition to Enabling
-                    setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Enabling' } : s))
-                    setSvcConfigTarget(prev => prev ? { ...prev, status: 'Enabling' } : null)
-                    // Transition to Healthy after delay
-                    setTimeout(() => {
-                      setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Healthy' } : s))
-                      setSvcConfigTarget(prev => prev && prev.name === name ? { ...prev, status: 'Healthy' } : prev)
-                    }, 3_000)
-                  }}
-                >
-                  <Activity className="h-4 w-4" />
-                  Enable {svcConfigTarget.name}
-                </Button>
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-foreground">Instance Name</label>
+                    <select
+                      value={enableInstanceName}
+                      onChange={(e) => setEnableInstanceName(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono"
+                    >
+                      {(INSTANCE_NAME_OPTIONS[svcConfigTarget.name] ?? []).map(n => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <Button
+                    className="w-full gap-2"
+                    disabled={!enableInstanceName}
+                    onClick={() => {
+                      const name = svcConfigTarget.name
+                      const inst = enableInstanceName
+                      setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Enabling', instanceName: inst } : s))
+                      setSvcConfigTarget(prev => prev ? { ...prev, status: 'Enabling', instanceName: inst } : null)
+                      setTimeout(() => {
+                        setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Healthy' } : s))
+                        setSvcConfigTarget(prev => prev && prev.name === name ? { ...prev, status: 'Healthy' } : prev)
+                      }, 3_000)
+                    }}
+                  >
+                    <Activity className="h-4 w-4" />
+                    Enable {svcConfigTarget.name}
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-3">
                   <div className="space-y-1.5">
@@ -758,8 +789,8 @@ export default function AdrNamespacePage() {
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && disableConfirmText === 'disable') {
                           const name = svcConfigTarget.name
-                          setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Disabled' } : s))
-                          setSvcConfigTarget(prev => prev ? { ...prev, status: 'Disabled' } : null)
+                          setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Disabled', instanceName: undefined } : s))
+                          setSvcConfigTarget(prev => prev ? { ...prev, status: 'Disabled', instanceName: undefined } : null)
                           setDisableConfirmText('')
                         }
                       }}
@@ -771,8 +802,8 @@ export default function AdrNamespacePage() {
                     disabled={disableConfirmText !== 'disable'}
                     onClick={() => {
                       const name = svcConfigTarget.name
-                      setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Disabled' } : s))
-                      setSvcConfigTarget(prev => prev ? { ...prev, status: 'Disabled' } : null)
+                      setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Disabled', instanceName: undefined } : s))
+                      setSvcConfigTarget(prev => prev ? { ...prev, status: 'Disabled', instanceName: undefined } : null)
                       setDisableConfirmText('')
                     }}
                   >
@@ -831,7 +862,7 @@ export default function AdrNamespacePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{svc.name}</p>
-                      <p className="text-xs text-muted-foreground">Will be added as disabled</p>
+                      <p className="text-xs text-muted-foreground">{svc.description}</p>
                     </div>
                     <Plus className="h-4 w-4 text-muted-foreground" />
                   </button>

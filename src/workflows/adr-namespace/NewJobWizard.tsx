@@ -15,8 +15,8 @@ import {
   Server,
   Copy,
   Bookmark,
-  BookmarkPlus,
   FolderOpen,
+  Save,
   ShieldX,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -25,12 +25,7 @@ import { Card, CardContent } from '@/components/ui/card'
 
 /* ─── Types ─────────────────────────────────────────────────── */
 
-interface Hub {
-  name: string
-  region: string
-  devices: number
-  status: string
-}
+import type { Hub } from './Page'
 
 interface TwinSetting {
   id: string
@@ -42,6 +37,20 @@ interface PerHubTarget {
   hubName: string
   condition: string
 }
+
+type TargetingMode = 'across' | 'per-hub' | 'adr'
+
+interface AdrFilter {
+  field: string
+  value: string
+}
+
+const ADR_FILTER_FIELDS = [
+  { id: 'manufacturer', label: 'Manufacturer', sample: 'Contoso Wind Systems' },
+  { id: 'model', label: 'Model', sample: 'TurbineController-X700' },
+  { id: 'swVersion', label: 'Software Version', sample: '3.1.0' },
+  { id: 'osName', label: 'OS Name', sample: 'Azure RTOS' },
+]
 
 export interface CreatedJob {
   id: string
@@ -102,12 +111,12 @@ const JOB_TYPES = [
   },
 ]
 
-const ALL_STEPS = ['Job Type', 'Details', 'Hubs', 'Twin Settings', 'Targeting', 'Review']
-const CERT_STEPS = ['Job Type', 'Details', 'Hubs', 'Targeting', 'Review']
+const TWIN_STEPS = ['Job Type', 'Details', 'Hubs', 'Twin Settings', 'Targeting', 'Review']
+const DEFAULT_STEPS = ['Job Type', 'Details', 'Hubs', 'Targeting', 'Review']
 
 function getSteps(jobType: string | null) {
-  if (jobType === 'cert-revocation') return CERT_STEPS
-  return ALL_STEPS
+  if (jobType === 'twin-update') return TWIN_STEPS
+  return DEFAULT_STEPS
 }
 
 const JOB_TYPE_LABELS: Record<string, string> = {
@@ -154,8 +163,9 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
   // Step 4: Targeting
   const [priority, setPriority] = useState('10')
   const [targetCondition, setTargetCondition] = useState('')
-  const [perHubTargeting, setPerHubTargeting] = useState(false)
+  const [targetingMode, setTargetingMode] = useState<TargetingMode>('adr')
   const [perHubTargets, setPerHubTargets] = useState<PerHubTarget[]>([])
+  const [adrFilters, setAdrFilters] = useState<AdrFilter[]>([])
   const [savedGroups, setSavedGroups] = useState<SavedGroup[]>([...SAMPLE_SAVED_GROUPS])
   const [showSaveGroupInput, setShowSaveGroupInput] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
@@ -165,20 +175,25 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
   const scopedHubs = scopeMode === 'namespace' ? activeHubs : activeHubs.filter((h) => selectedHubs.has(h.name))
   const totalDevices = scopedHubs.reduce((sum, h) => sum + h.devices, 0)
 
-  // Initialize per-hub targets when toggling
-  function togglePerHubTargeting() {
-    if (!perHubTargeting) {
+  // Initialize per-hub targets when switching to per-hub mode
+  function switchTargetingMode(mode: TargetingMode) {
+    if (mode === 'per-hub' && targetingMode !== 'per-hub') {
       setPerHubTargets(
         scopedHubs.map((h) => ({ hubName: h.name, condition: '' }))
       )
     }
-    setPerHubTargeting(!perHubTargeting)
+    setTargetingMode(mode)
   }
 
   function saveCurrentAsGroup() {
     if (!newGroupName.trim()) return
-    const currentCondition = perHubTargeting
+    const currentCondition = targetingMode === 'per-hub'
       ? perHubTargets.map(t => `${t.hubName}: ${t.condition}`).join('; ')
+      : targetingMode === 'adr'
+      ? adrFilters.map(f => {
+          const fd = ADR_FILTER_FIELDS.find(d => d.id === f.field)
+          return `${fd?.label ?? f.field} = ${f.value}`
+        }).join(', ')
       : targetCondition
     setSavedGroups(prev => [
       { id: crypto.randomUUID(), name: newGroupName.trim(), condition: currentCondition },
@@ -192,7 +207,7 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
 
   function loadGroup(group: SavedGroup) {
     setTargetCondition(group.condition)
-    setPerHubTargeting(false)
+    setTargetingMode('across')
   }
 
   // Map step index to step name for validation
@@ -209,8 +224,11 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
       case 'Hubs': return scopeMode === 'namespace' || selectedHubs.size > 0
       case 'Twin Settings': return twinSettings.length > 0 && twinSettings.every((s) => s.path.trim() && s.value.trim())
       case 'Targeting': {
-        if (perHubTargeting) {
+        if (targetingMode === 'per-hub') {
           return perHubTargets.every((t) => t.condition.trim().length > 0) && priority.trim().length > 0
+        }
+        if (targetingMode === 'adr') {
+          return adrFilters.length > 0 && adrFilters.every(f => f.value.trim().length > 0) && priority.trim().length > 0
         }
         return targetCondition.trim().length > 0 && priority.trim().length > 0
       }
@@ -220,7 +238,7 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
   }
 
   function handleCreate() {
-    const nextId = `JOB-${1043 + Math.floor(Math.random() * 100)}`
+    const nextId = `JOB-${1043 + Date.now() % 10000}`
     onCreate({
       id: nextId,
       name: jobName,
@@ -399,10 +417,12 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
                   onPriorityChange={setPriority}
                   targetCondition={targetCondition}
                   onTargetConditionChange={setTargetCondition}
-                  perHubTargeting={perHubTargeting}
-                  onTogglePerHub={togglePerHubTargeting}
+                  targetingMode={targetingMode}
+                  onTargetingModeChange={switchTargetingMode}
                   perHubTargets={perHubTargets}
                   onUpdatePerHubTarget={updatePerHubTarget}
+                  adrFilters={adrFilters}
+                  onAdrFiltersChange={setAdrFilters}
                   scopedHubs={scopedHubs}
                   savedGroups={savedGroups}
                   showSaveGroupInput={showSaveGroupInput}
@@ -422,11 +442,12 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
                   scopeMode={scopeMode}
                   scopedHubs={scopedHubs}
                   totalDevices={totalDevices}
-                  twinSettings={jobType === 'cert-revocation' ? [] : twinSettings}
+                  twinSettings={jobType === 'twin-update' ? twinSettings : []}
                   priority={priority}
                   targetCondition={targetCondition}
-                  perHubTargeting={perHubTargeting}
+                  targetingMode={targetingMode}
                   perHubTargets={perHubTargets}
+                  adrFilters={adrFilters}
                 />
               )}
             </motion.div>
@@ -926,10 +947,12 @@ function StepTargeting({
   onPriorityChange,
   targetCondition,
   onTargetConditionChange,
-  perHubTargeting,
-  onTogglePerHub,
+  targetingMode,
+  onTargetingModeChange,
   perHubTargets,
   onUpdatePerHubTarget,
+  adrFilters,
+  onAdrFiltersChange,
   scopedHubs,
   savedGroups,
   showSaveGroupInput,
@@ -944,10 +967,12 @@ function StepTargeting({
   onPriorityChange: (v: string) => void
   targetCondition: string
   onTargetConditionChange: (v: string) => void
-  perHubTargeting: boolean
-  onTogglePerHub: () => void
+  targetingMode: TargetingMode
+  onTargetingModeChange: (mode: TargetingMode) => void
   perHubTargets: PerHubTarget[]
   onUpdatePerHubTarget: (hubName: string, condition: string) => void
+  adrFilters: AdrFilter[]
+  onAdrFiltersChange: (filters: AdrFilter[]) => void
   scopedHubs: Hub[]
   savedGroups: SavedGroup[]
   showSaveGroupInput: boolean
@@ -958,11 +983,32 @@ function StepTargeting({
   justSaved: boolean
   onLoadGroup: (group: SavedGroup) => void
 }) {
-  const hasCondition = perHubTargeting
-    ? perHubTargets.some(t => t.condition.trim().length > 0)
-    : targetCondition.trim().length > 0
+  const hasCondition =
+    targetingMode === 'per-hub'
+      ? perHubTargets.some(t => t.condition.trim().length > 0)
+      : targetingMode === 'adr'
+      ? adrFilters.some(f => f.value.trim().length > 0)
+      : targetCondition.trim().length > 0
 
   const [groupDropdownOpen, setGroupDropdownOpen] = useState(false)
+  const [adrFieldDropdownOpen, setAdrFieldDropdownOpen] = useState(false)
+
+  const availableAdrFields = ADR_FILTER_FIELDS.filter(
+    f => !adrFilters.some(af => af.field === f.id)
+  )
+
+  function addAdrFilter(fieldId: string) {
+    onAdrFiltersChange([...adrFilters, { field: fieldId, value: '' }])
+    setAdrFieldDropdownOpen(false)
+  }
+
+  function removeAdrFilter(fieldId: string) {
+    onAdrFiltersChange(adrFilters.filter(f => f.field !== fieldId))
+  }
+
+  function updateAdrFilterValue(fieldId: string, value: string) {
+    onAdrFiltersChange(adrFilters.map(f => f.field === fieldId ? { ...f, value } : f))
+  }
 
   return (
     <div className="space-y-5">
@@ -998,9 +1044,19 @@ function StepTargeting({
               <span className="text-xs font-medium text-foreground">Target Condition <span className="text-red-500">*</span></span>
               <div className="flex items-center rounded-lg border bg-muted/30 p-0.5">
                 <button
-                  onClick={() => { if (perHubTargeting) onTogglePerHub() }}
+                  onClick={() => onTargetingModeChange('adr')}
                   className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
-                    !perHubTargeting
+                    targetingMode === 'adr'
+                      ? 'bg-white text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Use ARG
+                </button>
+                <button
+                  onClick={() => onTargetingModeChange('across')}
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                    targetingMode === 'across'
                       ? 'bg-white text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
@@ -1008,9 +1064,9 @@ function StepTargeting({
                   Define across hubs
                 </button>
                 <button
-                  onClick={() => { if (!perHubTargeting) onTogglePerHub() }}
+                  onClick={() => onTargetingModeChange('per-hub')}
                   className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
-                    perHubTargeting
+                    targetingMode === 'per-hub'
                       ? 'bg-white text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
@@ -1020,43 +1076,92 @@ function StepTargeting({
               </div>
             </div>
             {/* Inline group loader */}
-            <div className="relative">
-              <button
-                onClick={() => setGroupDropdownOpen(!groupDropdownOpen)}
-                className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-              >
-                <FolderOpen className="h-3 w-3" />
-                Load from group
-              </button>
-              {groupDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setGroupDropdownOpen(false)} />
-                  <div className="absolute right-0 top-full z-20 mt-1 w-72 rounded-lg border bg-white shadow-lg">
-                    <div className="px-3 py-2 border-b">
-                      <p className="text-[11px] font-medium text-muted-foreground">Saved Target Groups</p>
+            <div className="flex items-center gap-1">
+              <div className="relative">
+                <button
+                  onClick={() => setGroupDropdownOpen(!groupDropdownOpen)}
+                  className="inline-flex items-center gap-1 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                  title="Load from saved group"
+                >
+                  <FolderOpen className="h-3.5 w-3.5" />
+                </button>
+                {groupDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setGroupDropdownOpen(false)} />
+                    <div className="absolute right-0 top-full z-20 mt-1 w-72 rounded-lg border bg-white shadow-lg">
+                      <div className="px-3 py-2 border-b">
+                        <p className="text-[11px] font-medium text-muted-foreground">Saved Target Groups</p>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto py-1">
+                        {savedGroups.map((group) => (
+                          <button
+                            key={group.id}
+                            onClick={() => { onLoadGroup(group); setGroupDropdownOpen(false) }}
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-muted/40 transition-colors"
+                          >
+                            <Bookmark className="h-3 w-3 text-muted-foreground shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium">{group.name}</p>
+                              <p className="text-[10px] font-mono text-muted-foreground truncate">{group.condition}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="max-h-48 overflow-y-auto py-1">
-                      {savedGroups.map((group) => (
-                        <button
-                          key={group.id}
-                          onClick={() => { onLoadGroup(group); setGroupDropdownOpen(false) }}
-                          className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-muted/40 transition-colors"
-                        >
-                          <Bookmark className="h-3 w-3 text-muted-foreground shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-medium">{group.name}</p>
-                            <p className="text-[10px] font-mono text-muted-foreground truncate">{group.condition}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
+                  </>
+                )}
+              </div>
+              {hasCondition && (
+                <div className="relative">
+                  <button
+                    onClick={onToggleSaveGroup}
+                    className="inline-flex items-center gap-1 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                    title="Save as group"
+                  >
+                    {justSaved ? (
+                      <Check className="h-3.5 w-3.5 text-green-600" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                  {showSaveGroupInput && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={onToggleSaveGroup} />
+                      <div className="absolute right-0 top-full z-20 mt-1 w-72 rounded-lg border bg-white shadow-lg">
+                        <div className="px-3 py-2 border-b">
+                          <p className="text-[11px] font-medium text-muted-foreground">Save Target Group</p>
+                        </div>
+                        <div className="flex items-center gap-2 p-3">
+                          <Input
+                            value={newGroupName}
+                            onChange={(e) => onNewGroupNameChange(e.target.value)}
+                            placeholder="e.g. All Abilene turbines"
+                            className="h-7 text-xs flex-1"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && newGroupName.trim()) onSaveGroup()
+                              if (e.key === 'Escape') onToggleSaveGroup()
+                            }}
+                          />
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs gap-1 px-2 shrink-0"
+                            disabled={!newGroupName.trim()}
+                            onClick={onSaveGroup}
+                          >
+                            <Check className="h-3 w-3" />
+                            Save
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           </div>
 
-          {!perHubTargeting ? (
+          {targetingMode === 'across' ? (
             <div className="space-y-1.5">
               <ClickableLabel
                 label="Query"
@@ -1074,7 +1179,7 @@ function StepTargeting({
                 or reported properties (e.g. <code className="rounded bg-muted px-1 py-0.5 text-xs">properties.reported.firmware.version = '3.1.0'</code>).
               </p>
             </div>
-          ) : (
+          ) : targetingMode === 'per-hub' ? (
             <div className="space-y-3">
               {scopedHubs.map((hub, idx) => {
                 const target = perHubTargets.find((t) => t.hubName === hub.name)
@@ -1112,76 +1217,97 @@ function StepTargeting({
                 )
               })}
             </div>
-          )}
-        </div>
+          ) : (
+            /* ADR targeting mode */
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Target devices using Azure Device Registry attributes. Add one or more criteria to narrow the scope.
+              </p>
 
-        {/* Save current targeting as a group */}
-        {hasCondition && (
-          <div className="space-y-2 pt-1">
-            <AnimatePresence mode="wait">
-              {!showSaveGroupInput ? (
-                <motion.button
-                  key="save-btn"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={onToggleSaveGroup}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
-                >
-                  {justSaved ? (
+              {/* Active filter pills */}
+              {adrFilters.length > 0 && (
+                <div className="space-y-2">
+                  {adrFilters.map((filter) => {
+                    const fieldDef = ADR_FILTER_FIELDS.find(f => f.id === filter.field)
+                    if (!fieldDef) return null
+                    return (
+                      <div
+                        key={filter.field}
+                        className="flex items-center gap-2 rounded-lg border bg-muted/10 px-3 py-2"
+                      >
+                        <span className="text-xs font-medium text-foreground whitespace-nowrap min-w-[120px]">
+                          {fieldDef.label}
+                        </span>
+                        <span className="text-xs text-muted-foreground">=</span>
+                        <Input
+                          value={filter.value}
+                          onChange={(e) => updateAdrFilterValue(filter.field, e.target.value)}
+                          placeholder="Enter a value"
+                          className="h-7 text-xs flex-1 font-mono"
+                        />
+                        <button
+                          onClick={() => removeAdrFilter(filter.field)}
+                          className="rounded-md p-1 text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
+                          title="Remove filter"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Add filter button + dropdown */}
+              {availableAdrFields.length > 0 && (
+                <div className="relative">
+                  <button
+                    onClick={() => setAdrFieldDropdownOpen(!adrFieldDropdownOpen)}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Add criteria
+                  </button>
+                  {adrFieldDropdownOpen && (
                     <>
-                      <Check className="h-3.5 w-3.5 text-green-600" />
-                      <span className="text-green-600">Saved to groups</span>
-                    </>
-                  ) : (
-                    <>
-                      <BookmarkPlus className="h-3.5 w-3.5" />
-                      Save as Group for future use
+                      <div className="fixed inset-0 z-10" onClick={() => setAdrFieldDropdownOpen(false)} />
+                      <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-lg border bg-white shadow-lg">
+                        <div className="py-1">
+                          {availableAdrFields.map((field) => (
+                            <button
+                              key={field.id}
+                              onClick={() => addAdrFilter(field.id)}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted/40 transition-colors"
+                            >
+                              <span className="font-medium">{field.label}</span>
+                              <span className="text-muted-foreground ml-auto font-mono text-[10px]">{field.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </>
                   )}
-                </motion.button>
-              ) : (
-                <motion.div
-                  key="save-input"
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 4 }}
-                  className="flex items-center gap-2"
-                >
-                  <Bookmark className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <Input
-                    value={newGroupName}
-                    onChange={(e) => onNewGroupNameChange(e.target.value)}
-                    placeholder="Group name, e.g. 'All Abilene turbines'"
-                    className="h-8 text-xs flex-1"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') onSaveGroup()
-                      if (e.key === 'Escape') onToggleSaveGroup()
-                    }}
-                  />
-                  <Button
-                    size="sm"
-                    className="h-8 text-xs gap-1"
-                    disabled={!newGroupName.trim()}
-                    onClick={onSaveGroup}
-                  >
-                    <Check className="h-3 w-3" />
-                    Save
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs"
-                    onClick={onToggleSaveGroup}
-                  >
-                    Cancel
-                  </Button>
-                </motion.div>
+                </div>
               )}
-            </AnimatePresence>
-          </div>
-        )}
+
+              {/* Click-to-fill all */}
+              {adrFilters.length > 0 && adrFilters.some(f => !f.value.trim()) && (
+                <button
+                  onClick={() => {
+                    onAdrFiltersChange(adrFilters.map(f => {
+                      if (f.value.trim()) return f
+                      const fieldDef = ADR_FILTER_FIELDS.find(fd => fd.id === f.field)
+                      return { ...f, value: fieldDef?.sample ?? '' }
+                    }))
+                  }}
+                  className="text-[11px] text-muted-foreground hover:text-blue-600 transition-colors cursor-pointer"
+                >
+                  ← click to fill all with sample values
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -1199,8 +1325,9 @@ function StepReview({
   twinSettings,
   priority,
   targetCondition,
-  perHubTargeting,
+  targetingMode,
   perHubTargets,
+  adrFilters,
 }: {
   jobName: string
   jobDescription: string
@@ -1211,8 +1338,9 @@ function StepReview({
   twinSettings: TwinSetting[]
   priority: string
   targetCondition: string
-  perHubTargeting: boolean
+  targetingMode: TargetingMode
   perHubTargets: PerHubTarget[]
+  adrFilters: AdrFilter[]
 }) {
   return (
     <div className="space-y-5">
@@ -1258,7 +1386,7 @@ function StepReview({
           {/* Targeting */}
           <div className="px-4 py-3">
             <p className="text-xs font-medium text-muted-foreground mb-2">Target Condition</p>
-            {perHubTargeting ? (
+            {targetingMode === 'per-hub' ? (
               <div className="space-y-2">
                 {perHubTargets.map((t) => (
                   <div key={t.hubName} className="rounded border bg-muted/20 p-3">
@@ -1266,6 +1394,23 @@ function StepReview({
                     <p className="mt-1 text-xs font-mono text-muted-foreground">{t.condition}</p>
                   </div>
                 ))}
+              </div>
+            ) : targetingMode === 'adr' ? (
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-medium text-muted-foreground mb-1">ARG Attributes</p>
+                <div className="flex flex-wrap gap-2">
+                  {adrFilters.map((f) => {
+                    const fieldDef = ADR_FILTER_FIELDS.find(fd => fd.id === f.field)
+                    return (
+                      <span
+                        key={f.field}
+                        className="inline-flex items-center gap-1.5 rounded-full border bg-blue-50 border-blue-200 px-3 py-1 text-xs font-medium text-blue-700"
+                      >
+                        {fieldDef?.label} = {f.value}
+                      </span>
+                    )
+                  })}
+                </div>
               </div>
             ) : (
               <p className="rounded border bg-muted/20 p-3 text-xs font-mono text-muted-foreground">
