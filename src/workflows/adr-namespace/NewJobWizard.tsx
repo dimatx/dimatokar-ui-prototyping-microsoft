@@ -19,6 +19,7 @@ import {
   Save,
   ShieldX,
   FileCode2,
+  Activity,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -80,6 +81,7 @@ interface SavedGroup {
 
 interface NewJobWizardProps {
   linkedHubs: Hub[]
+  aioInstances: { name: string; site: string; status: string; connectedDevices: number }[]
   existingJobs: ExistingJob[]
   onClose: () => void
   onCreate: (job: CreatedJob) => void
@@ -123,9 +125,9 @@ const JOB_TYPES = [
   },
 ]
 
-const TWIN_STEPS = ['Job Type', 'Details', 'Hubs', 'Twin Settings', 'Targeting', 'Review']
-const ARM_STEPS = ['Job Type', 'Details', 'Hubs', 'ARM Action', 'Targeting', 'Review']
-const DEFAULT_STEPS = ['Job Type', 'Details', 'Hubs', 'Targeting', 'Review']
+const TWIN_STEPS = ['Job Type', 'Basics', 'Scope', 'Twin Settings', 'Targeting', 'Review']
+const ARM_STEPS = ['Job Type', 'Basics', 'Scope', 'Details', 'Targeting', 'Review']
+const DEFAULT_STEPS = ['Job Type', 'Basics', 'Scope', 'Targeting', 'Review']
 
 function getSteps(jobType: string | null) {
   if (jobType === 'twin-update') return TWIN_STEPS
@@ -150,7 +152,7 @@ const SAMPLE_SAVED_GROUPS: SavedGroup[] = [
 
 /* ─── Wizard ────────────────────────────────────────────────── */
 
-export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: NewJobWizardProps) {
+export function NewJobWizard({ linkedHubs, aioInstances, existingJobs, onClose, onCreate }: NewJobWizardProps) {
   const [step, setStep] = useState(0)
 
   // Step 0: Job type
@@ -158,13 +160,14 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
   const [showCopyPicker, setShowCopyPicker] = useState(false)
   const [selectedCopyJob, setSelectedCopyJob] = useState<ExistingJob | null>(null)
 
-  // Step 1: Details
+  // Step 1: Basics
   const [jobName, setJobName] = useState('')
   const [jobDescription, setJobDescription] = useState('')
 
-  // Step 2: Hub scope
-  const [scopeMode, setScopeMode] = useState<'namespace' | 'select'>('namespace')
+  // Step 2: Scope
+  const [scopeMode, setScopeMode] = useState<'namespace' | 'select' | 'aio'>('namespace')
   const [selectedHubs, setSelectedHubs] = useState<Set<string>>(new Set())
+  const [selectedAio, setSelectedAio] = useState<Set<string>>(new Set())
 
   // Step 3: Twin settings
   const [twinSettings, setTwinSettings] = useState<TwinSetting[]>([
@@ -241,10 +244,15 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
     const name = currentStepName()
     switch (name) {
       case 'Job Type': return jobType !== null && !showCopyPicker
-      case 'Details': return jobName.trim().length > 0
-      case 'Hubs': return scopeMode === 'namespace' || selectedHubs.size > 0
+      case 'Basics': return jobName.trim().length > 0
+      case 'Scope': {
+        if (scopeMode === 'namespace') return true
+        if (scopeMode === 'select') return selectedHubs.size > 0
+        if (scopeMode === 'aio') return selectedAio.size > 0
+        return false
+      }
       case 'Twin Settings': return twinSettings.length > 0 && twinSettings.every((s) => s.path.trim() && s.value.trim())
-      case 'ARM Action': {
+      case 'Details': {
         if (armActionMode === 'update-properties') {
           return armProperties.length > 0 && armProperties.every(p => p.value.trim().length > 0)
         }
@@ -287,6 +295,15 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
       const next = new Set(prev)
       if (next.has(hubName)) next.delete(hubName)
       else next.add(hubName)
+      return next
+    })
+  }
+
+  function toggleAio(name: string) {
+    setSelectedAio((prev) => {
+      const next = new Set(prev)
+      if (next.has(name)) next.delete(name)
+      else next.add(name)
       return next
     })
   }
@@ -412,7 +429,7 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
                   />
                 )
               )}
-              {currentStepName() === 'Details' && (
+              {currentStepName() === 'Basics' && (
                 <StepDetails
                   name={jobName}
                   description={jobDescription}
@@ -421,13 +438,17 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
                   onDescriptionChange={setJobDescription}
                 />
               )}
-              {currentStepName() === 'Hubs' && (
+              {currentStepName() === 'Scope' && (
                 <StepHubScope
                   hubs={activeHubs}
                   scopeMode={scopeMode}
                   onScopeModeChange={setScopeMode}
                   selectedHubs={selectedHubs}
                   onToggleHub={toggleHub}
+                  jobType={jobType}
+                  aioInstances={aioInstances}
+                  selectedAio={selectedAio}
+                  onToggleAio={toggleAio}
                 />
               )}
               {currentStepName() === 'Twin Settings' && (
@@ -438,7 +459,7 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
                   onUpdate={updateTwinSetting}
                 />
               )}
-              {currentStepName() === 'ARM Action' && (
+              {currentStepName() === 'Details' && (
                 <StepArmAction
                   mode={armActionMode}
                   onModeChange={setArmActionMode}
@@ -480,6 +501,7 @@ export function NewJobWizard({ linkedHubs, existingJobs, onClose, onCreate }: Ne
                   jobType={JOB_TYPES.find((t) => t.id === jobType)?.name ?? 'Job'}
                   scopeMode={scopeMode}
                   scopedHubs={scopedHubs}
+                  selectedAio={selectedAio}
                   totalDevices={totalDevices}
                   twinSettings={jobType === 'twin-update' ? twinSettings : []}
                   priority={priority}
@@ -813,7 +835,7 @@ function StepDetails({
   )
 }
 
-/* ─── Step 2: Hubs ──────────────────────────────────────────── */
+/* ─── Step 2: Scope ─────────────────────────────────────────── */
 
 function StepHubScope({
   hubs,
@@ -821,29 +843,43 @@ function StepHubScope({
   onScopeModeChange,
   selectedHubs,
   onToggleHub,
+  jobType,
+  aioInstances,
+  selectedAio,
+  onToggleAio,
 }: {
   hubs: Hub[]
-  scopeMode: 'namespace' | 'select'
-  onScopeModeChange: (m: 'namespace' | 'select') => void
+  scopeMode: 'namespace' | 'select' | 'aio'
+  onScopeModeChange: (m: 'namespace' | 'select' | 'aio') => void
   selectedHubs: Set<string>
   onToggleHub: (name: string) => void
+  jobType: string | null
+  aioInstances: { name: string; site: string; status: string; connectedDevices: number }[]
+  selectedAio: Set<string>
+  onToggleAio: (name: string) => void
 }) {
+  const showAio = jobType === 'outer-loop'
   const allDevices = hubs.reduce((s, h) => s + h.devices, 0)
   const selectedDevices = hubs
     .filter((h) => selectedHubs.has(h.name))
     .reduce((s, h) => s + h.devices, 0)
+  const selectedAioDevices = aioInstances
+    .filter((a) => selectedAio.has(a.name))
+    .reduce((s, a) => s + a.connectedDevices, 0)
 
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-sm font-semibold">Hubs</h3>
+        <h3 className="text-sm font-semibold">Scope</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Unlike single-hub jobs, namespace jobs can span multiple linked hubs. Choose which hubs to target.
+          {showAio
+            ? 'Choose the scope for this job — target the entire namespace, individual hubs, or IoT\u00a0Operations instances.'
+            : 'Unlike single-hub jobs, namespace jobs can span multiple linked hubs. Choose which hubs to target.'}
         </p>
       </div>
 
       {/* Scope mode selector */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className={`grid gap-3 ${showAio ? 'grid-cols-3' : 'grid-cols-2'}`}>
         <button
           onClick={() => onScopeModeChange('namespace')}
           className={`flex items-center gap-3 rounded-lg border p-4 text-left transition-all ${
@@ -878,47 +914,103 @@ function StepHubScope({
             </p>
           </div>
         </button>
+        {showAio && (
+          <button
+            onClick={() => onScopeModeChange('aio')}
+            className={`flex items-center gap-3 rounded-lg border p-4 text-left transition-all ${
+              scopeMode === 'aio'
+                ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
+                : 'hover:bg-muted/30'
+            }`}
+          >
+            <Activity className={`h-5 w-5 ${scopeMode === 'aio' ? 'text-foreground' : 'text-muted-foreground'}`} />
+            <div>
+              <p className="text-sm font-medium">IoT&nbsp;Operations</p>
+              <p className="text-xs text-muted-foreground">
+                {selectedAio.size > 0
+                  ? `${selectedAio.size} selected · ${selectedAioDevices.toLocaleString()} devices`
+                  : `${aioInstances.length} instance${aioInstances.length !== 1 ? 's' : ''}`}
+              </p>
+            </div>
+          </button>
+        )}
       </div>
 
-      {/* Hub list - always visible */}
-      <div className="space-y-2">
-        {hubs.map((hub) => {
-          const checked = scopeMode === 'namespace' || selectedHubs.has(hub.name)
-          const isDisabled = scopeMode === 'namespace'
-          return (
-            <button
-              key={hub.name}
-              onClick={() => !isDisabled && onToggleHub(hub.name)}
-              disabled={isDisabled}
-              className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all ${
-                checked
-                  ? isDisabled
-                    ? 'border-muted bg-muted/10'
-                    : 'border-foreground bg-muted/20'
-                  : 'hover:bg-muted/30'
-              } ${isDisabled ? 'cursor-default' : ''}`}
-            >
-              <div
-                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
+      {/* Hub list — shown for namespace & select modes */}
+      {scopeMode !== 'aio' && (
+        <div className="space-y-2">
+          {hubs.map((hub) => {
+            const checked = scopeMode === 'namespace' || selectedHubs.has(hub.name)
+            const isDisabled = scopeMode === 'namespace'
+            return (
+              <button
+                key={hub.name}
+                onClick={() => !isDisabled && onToggleHub(hub.name)}
+                disabled={isDisabled}
+                className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all ${
                   checked
                     ? isDisabled
-                      ? 'border-muted-foreground/40 bg-muted-foreground/40 text-white'
-                      : 'border-foreground bg-foreground text-white'
-                    : 'border-muted-foreground/30'
+                      ? 'border-muted bg-muted/10'
+                      : 'border-foreground bg-muted/20'
+                    : 'hover:bg-muted/30'
+                } ${isDisabled ? 'cursor-default' : ''}`}
+              >
+                <div
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
+                    checked
+                      ? isDisabled
+                        ? 'border-muted-foreground/40 bg-muted-foreground/40 text-white'
+                        : 'border-foreground bg-foreground text-white'
+                      : 'border-muted-foreground/30'
+                  }`}
+                >
+                  {checked && <Check className="h-3 w-3" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm font-medium ${isDisabled ? 'text-muted-foreground' : ''}`}>{hub.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {hub.region} · {hub.devices.toLocaleString()} devices
+                  </p>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* AIO instance list — shown for aio mode */}
+      {scopeMode === 'aio' && (
+        <div className="space-y-2">
+          {aioInstances.map((inst) => {
+            const checked = selectedAio.has(inst.name)
+            return (
+              <button
+                key={inst.name}
+                onClick={() => onToggleAio(inst.name)}
+                className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all ${
+                  checked ? 'border-foreground bg-muted/20' : 'hover:bg-muted/30'
                 }`}
               >
-                {checked && <Check className="h-3 w-3" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className={`text-sm font-medium ${isDisabled ? 'text-muted-foreground' : ''}`}>{hub.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {hub.region} · {hub.devices.toLocaleString()} devices
-                </p>
-              </div>
-            </button>
-          )
-        })}
-      </div>
+                <div
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
+                    checked
+                      ? 'border-foreground bg-foreground text-white'
+                      : 'border-muted-foreground/30'
+                  }`}
+                >
+                  {checked && <Check className="h-3 w-3" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">{inst.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {inst.site} · {inst.connectedDevices.toLocaleString()} devices
+                  </p>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -1580,6 +1672,7 @@ function StepReview({
   jobType,
   scopeMode,
   scopedHubs,
+  selectedAio,
   totalDevices,
   twinSettings,
   priority,
@@ -1591,8 +1684,9 @@ function StepReview({
   jobName: string
   jobDescription: string
   jobType: string
-  scopeMode: 'namespace' | 'select'
+  scopeMode: 'namespace' | 'select' | 'aio'
   scopedHubs: Hub[]
+  selectedAio: Set<string>
   totalDevices: number
   twinSettings: TwinSetting[]
   priority: string
@@ -1617,10 +1711,12 @@ function StepReview({
           <ReviewRow label="Name" value={jobName} />
           {jobDescription && <ReviewRow label="Description" value={jobDescription} />}
           <ReviewRow
-            label="Hubs"
+            label="Scope"
             value={
               scopeMode === 'namespace'
                 ? `Entire namespace (${scopedHubs.length} hubs)`
+                : scopeMode === 'aio'
+                ? `IoT Operations (${selectedAio.size} instance${selectedAio.size !== 1 ? 's' : ''})`
                 : scopedHubs.map((h) => h.name).join(', ')
             }
           />

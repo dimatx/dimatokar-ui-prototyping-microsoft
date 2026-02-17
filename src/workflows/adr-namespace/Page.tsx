@@ -691,6 +691,7 @@ export default function AdrNamespacePage() {
         {showNewJobWizard && (
           <NewJobWizard
             linkedHubs={linkedHubs}
+            aioInstances={aioInstances}
             existingJobs={initialJobs}
             onClose={() => setShowNewJobWizard(false)}
             onCreate={(job: CreatedJob) => {
