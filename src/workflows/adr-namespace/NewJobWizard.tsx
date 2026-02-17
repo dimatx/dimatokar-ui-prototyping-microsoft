@@ -81,7 +81,7 @@ interface SavedGroup {
 
 interface NewJobWizardProps {
   linkedHubs: Hub[]
-  aioInstances: { name: string; site: string; status: string; connectedDevices: number }[]
+  aioInstances: { name: string; site: string; status: string; connectedDevices: number; assets: number }[]
   totalAssets: number
   existingJobs: ExistingJob[]
   onClose: () => void
@@ -882,7 +882,7 @@ function StepHubScope({
   selectedHubs: Set<string>
   onToggleHub: (name: string) => void
   jobType: string | null
-  aioInstances: { name: string; site: string; status: string; connectedDevices: number }[]
+  aioInstances: { name: string; site: string; status: string; connectedDevices: number; assets: number }[]
   selectedAio: Set<string>
   onToggleAio: (name: string) => void
   totalAssets: number
@@ -919,7 +919,8 @@ function StepHubScope({
           <div className="min-w-0">
             <p className="text-sm font-medium">Entire Namespace</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              {hubs.length} IoT&nbsp;Hubs, {aioInstances.length} AIO, {(allHubDevices + allAioDevices).toLocaleString()} devices, {totalAssets.toLocaleString()} assets
+              {hubs.length} IoT&nbsp;Hubs<br />
+              {aioInstances.length} AIO instance{aioInstances.length !== 1 ? 's' : ''}
             </p>
           </div>
         </button>
@@ -987,7 +988,7 @@ function StepHubScope({
               </div>
               <Activity className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
               <span className="text-xs text-muted-foreground">{inst.name}</span>
-              <span className="text-[10px] text-muted-foreground/60 ml-auto">{inst.connectedDevices.toLocaleString()} devices</span>
+              <span className="text-[10px] text-muted-foreground/60 ml-auto">{inst.connectedDevices.toLocaleString()} devices · {inst.assets.toLocaleString()} assets</span>
             </div>
           ))}
         </div>
@@ -1046,7 +1047,7 @@ function StepHubScope({
                   {checked && <Check className="h-2.5 w-2.5" />}
                 </div>
                 <span className="text-xs font-medium">{inst.name}</span>
-                <span className="text-[10px] text-muted-foreground ml-auto">{inst.site} · {inst.connectedDevices.toLocaleString()} devices</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">{inst.site} · {inst.connectedDevices.toLocaleString()} devices · {inst.assets.toLocaleString()} assets</span>
               </button>
             )
           })}

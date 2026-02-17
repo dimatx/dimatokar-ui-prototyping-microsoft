@@ -99,7 +99,7 @@ const availableHubs: Hub[] = [
 ]
 
 const aioInstances = [
-  { name: 'aio-tx-abilene-01', site: 'Abilene Wind Farm', status: 'Healthy', connectedDevices: 842 },
+  { name: 'aio-tx-abilene-01', site: 'Abilene Wind Farm', status: 'Healthy', connectedDevices: 842, assets: 434 },
 ]
 
 const initialJobs = [
