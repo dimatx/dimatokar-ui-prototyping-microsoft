@@ -774,7 +774,7 @@ export default function AdrNamespacePage() {
                           ) : (
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {fw.cves.critical > 0 && (
-                                <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold bg-red-600 text-white">
+                                <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold bg-red-600 text-white animate-pulse">
                                   {fw.cves.critical} Critical
                                 </span>
                               )}
