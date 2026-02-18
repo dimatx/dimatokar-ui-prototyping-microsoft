@@ -1426,7 +1426,7 @@ function ClickableLabel({
     >
       {label}
       {required && <span className="text-red-500">*</span>}
-      <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">? click to fill</span>
+      <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span>
     </label>
   )
 }
