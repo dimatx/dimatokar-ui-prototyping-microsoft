@@ -72,14 +72,14 @@ const JOB_TYPES_MAIN = [
   {
     id: 'management-action',
     name: 'Management Action',
-    description: 'Invoke a named action on devices and assets.',
+    description: 'Take an action on devices and assets.',
     icon: Activity,
     tags: ['Hub', 'AIO'],
   },
   {
     id: 'management-update',
     name: 'Management Update',
-    description: 'Update properties on devices and assets across the namespace.',
+    description: 'Update properties on devices and assets.',
     icon: Settings2,
     tags: ['Hub', 'AIO'],
   },
@@ -959,6 +959,15 @@ function StepHubScope({
 
 /* ─── ARM Action Step ───────────────────────────────────────── */
 
+const COMMON_ACTIONS = [
+  { name: 'restart',           label: 'Restart',             payload: '{}' },
+  { name: 'setOperatingMode',  label: 'Set Operating Mode',  payload: JSON.stringify({ mode: 'eco', scheduleId: 'sched-042' }, null, 2) },
+  { name: 'setTargetRPM',      label: 'Set Target RPM',      payload: JSON.stringify({ targetRPM: 14, pitchAngle: 3.5 }, null, 2) },
+  { name: 'runDiagnostics',    label: 'Run Diagnostics',     payload: JSON.stringify({ level: 'full', uploadResults: true }, null, 2) },
+  { name: 'emergencyStop',     label: 'Emergency Stop',      payload: JSON.stringify({ reason: 'overvoltage', notify: true }, null, 2) },
+  { name: 'calibrateSensors',  label: 'Calibrate Sensors',   payload: JSON.stringify({ sensorGroup: 'wind', zeroBias: true }, null, 2) },
+]
+
 const ARM_PROPERTY_FIELDS = [
   { id: 'manufacturer', label: 'Manufacturer', sample: 'Contoso Wind Systems' },
   { id: 'model', label: 'Model', sample: 'TurbineController-X700' },
@@ -1104,26 +1113,37 @@ function StepArmAction({
       ) : (
         <div className="space-y-4">
           {/* Action name */}
-          <div className="space-y-1.5">
-            <ClickableLabel
-              label="Action Name"
-              onFill={() => onActionNameChange('setTargetTemp')}
-            />
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-foreground">Action Name</label>
+            {/* Preset action chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {COMMON_ACTIONS.map((action) => (
+                <button
+                  key={action.name}
+                  onClick={() => { onActionNameChange(action.name); onPayloadChange(action.payload) }}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                    actionName === action.name
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-border bg-muted/30 text-foreground hover:bg-muted/60'
+                  }`}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+            {/* Custom entry */}
             <Input
               value={actionName}
               onChange={(e) => onActionNameChange(e.target.value)}
-              placeholder="setTargetTemp"
+              placeholder="or type a custom action name…"
               className="font-mono text-sm"
             />
-            <p className="text-xs text-muted-foreground">
-              The name of the ARM action to invoke on each targeted resource.
-            </p>
           </div>
 
           {/* Payload */}
           <div className="space-y-1.5">
             <ClickableLabel
-              label="JSON Payload"
+              label="Payload"
               onFill={() => onPayloadChange(JSON.stringify({ targetTemperature: 72, unit: 'F', mode: 'auto' }, null, 2))}
             />
             <textarea
@@ -1134,7 +1154,7 @@ function StepArmAction({
               className="flex w-full rounded-md border border-input bg-muted/30 px-3 py-2 font-mono text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             />
             <p className="text-xs text-muted-foreground">
-              The JSON payload to send with the action request.
+              JSON payload sent with the action request.
             </p>
           </div>
         </div>
