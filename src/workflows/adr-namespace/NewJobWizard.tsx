@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion'
+﻿import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
@@ -25,34 +25,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 
-/* ─── Types ─────────────────────────────────────────────────── */
+/* â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 import type { Hub } from './Page'
-
-interface TwinSetting {
-  id: string
-  path: string
-  value: string
-}
-
-interface PerHubTarget {
-  hubName: string
-  condition: string
-}
-
-type TargetingMode = 'across' | 'per-hub' | 'adr'
 
 interface AdrFilter {
   field: string
   value: string
 }
-
-const ADR_FILTER_FIELDS = [
-  { id: 'manufacturer', label: 'Manufacturer', sample: 'Contoso Wind Systems' },
-  { id: 'model', label: 'Model', sample: 'TurbineController-X700' },
-  { id: 'swVersion', label: 'Software Version', sample: '3.1.0' },
-  { id: 'osName', label: 'OS Name', sample: 'Azure RTOS' },
-]
 
 export interface CreatedJob {
   id: string
@@ -90,25 +70,18 @@ interface NewJobWizardProps {
 
 const JOB_TYPES_MAIN = [
   {
-    id: 'outer-loop',
-    name: 'Manage via ARM',
-    description: 'Manage IoT at scale using ADR Asset and ADR Device ARM records.',
-    icon: FileCode2,
+    id: 'management-action',
+    name: 'Management Action',
+    description: 'Invoke a named operation or direct method on devices and assets.',
+    icon: Activity,
     tags: ['Hub', 'AIO'],
   },
   {
-    id: 'twin-update',
-    name: 'Device Twin Update',
-    description: 'Update desired properties on device twins across hubs',
+    id: 'management-update',
+    name: 'Management Update',
+    description: 'Update properties on devices and assets across the namespace.',
     icon: Settings2,
-    tags: ['Hub'],
-  },
-  {
-    id: 'direct-method',
-    name: 'Invoke Direct Method',
-    description: 'Call a direct method on devices and receive responses',
-    icon: Terminal,
-    tags: ['Hub'],
+    tags: ['Hub', 'AIO'],
   },
 ]
 
@@ -131,32 +104,29 @@ const JOB_TYPES_MORE = [
 
 const JOB_TYPES = [...JOB_TYPES_MAIN, ...JOB_TYPES_MORE]
 
-const TWIN_STEPS = ['Job Type', 'Basics', 'Scope', 'Twin Settings', 'Target', 'Review']
-const ARM_STEPS = ['Job Type', 'Basics', 'Scope', 'Details', 'Target', 'Review']
+const DETAILS_STEPS = ['Job Type', 'Basics', 'Scope', 'Details', 'Target', 'Review']
 const DEFAULT_STEPS = ['Job Type', 'Basics', 'Scope', 'Target', 'Review']
 
 function getSteps(jobType: string | null) {
-  if (jobType === 'twin-update') return TWIN_STEPS
-  if (jobType === 'outer-loop') return ARM_STEPS
+  if (jobType === 'management-action' || jobType === 'management-update') return DETAILS_STEPS
   return DEFAULT_STEPS
 }
 
 const JOB_TYPE_LABELS: Record<string, string> = {
-  'twin-update': 'Twin Update',
+  'management-action': 'Management Action',
+  'management-update': 'Management Update',
   'cert-revocation': 'Cert Revocation',
   'software-update': 'Software Update',
-  'direct-method': 'Direct Method',
-  'outer-loop': 'Manage via ARM',
 }
 
 const SAMPLE_SAVED_GROUPS: SavedGroup[] = [
-  { id: 'g1', name: 'All Abilene turbines', condition: "tags.site = 'abilene' AND tags.assetType = 'turbine'" },
-  { id: 'g2', name: 'Edge devices – firmware < 3.2', condition: "properties.reported.firmware.version < '3.2.0'" },
-  { id: 'g3', name: 'Critical wind sensors', condition: "tags.priority = 'critical' AND tags.assetType = 'sensor'" },
-  { id: 'g4', name: 'Sweetwater cluster', condition: "tags.site = 'sweetwater' AND tags.cluster = 'sw-main'" },
+  { id: 'g1', name: 'All Abilene turbines', condition: 'all turbines at Abilene Wind Farm' },
+  { id: 'g2', name: 'Outdated firmware devices', condition: 'devices running firmware older than 3.2.0' },
+  { id: 'g3', name: 'Critical wind sensors', condition: 'critical sensors at any site' },
+  { id: 'g4', name: 'Sweetwater cluster', condition: 'all devices in Sweetwater cluster' },
 ]
 
-/* ─── Wizard ────────────────────────────────────────────────── */
+/* â”€â”€â”€ Wizard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJobs, onClose, onCreate }: NewJobWizardProps) {
   const [step, setStep] = useState(0)
@@ -175,27 +145,15 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
   const [selectedHubs, setSelectedHubs] = useState<Set<string>>(new Set())
   const [selectedAio, setSelectedAio] = useState<Set<string>>(new Set())
 
-  // Step 3: Twin settings
-  const [twinSettings, setTwinSettings] = useState<TwinSetting[]>([
-    {
-      id: crypto.randomUUID(),
-      path: '',
-      value: '',
-    },
-  ])
-
-  // ARM Action step
+  // ARM Detail step
   const [armActionMode, setArmActionMode] = useState<'update-properties' | 'arm-action'>('update-properties')
   const [armProperties, setArmProperties] = useState<AdrFilter[]>([])
   const [armActionName, setArmActionName] = useState('')
   const [armActionPayload, setArmActionPayload] = useState('')
 
-  // Step 4: Targeting
+  // Step: Targeting
   const [priority, setPriority] = useState('10')
   const [targetCondition, setTargetCondition] = useState('')
-  const [targetingMode, setTargetingMode] = useState<TargetingMode>('adr')
-  const [perHubTargets, setPerHubTargets] = useState<PerHubTarget[]>([])
-  const [adrFilters, setAdrFilters] = useState<AdrFilter[]>([])
   const [savedGroups, setSavedGroups] = useState<SavedGroup[]>([...SAMPLE_SAVED_GROUPS])
   const [showSaveGroupInput, setShowSaveGroupInput] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
@@ -205,28 +163,10 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
   const scopedHubs = scopeMode === 'namespace' ? activeHubs : activeHubs.filter((h) => selectedHubs.has(h.name))
   const totalDevices = scopedHubs.reduce((sum, h) => sum + h.devices, 0)
 
-  // Initialize per-hub targets when switching to per-hub mode
-  function switchTargetingMode(mode: TargetingMode) {
-    if (mode === 'per-hub' && targetingMode !== 'per-hub') {
-      setPerHubTargets(
-        scopedHubs.map((h) => ({ hubName: h.name, condition: '' }))
-      )
-    }
-    setTargetingMode(mode)
-  }
-
   function saveCurrentAsGroup() {
     if (!newGroupName.trim()) return
-    const currentCondition = targetingMode === 'per-hub'
-      ? perHubTargets.map(t => `${t.hubName}: ${t.condition}`).join('; ')
-      : targetingMode === 'adr'
-      ? adrFilters.map(f => {
-          const fd = ADR_FILTER_FIELDS.find(d => d.id === f.field)
-          return `${fd?.label ?? f.field} = ${f.value}`
-        }).join(', ')
-      : targetCondition
     setSavedGroups(prev => [
-      { id: crypto.randomUUID(), name: newGroupName.trim(), condition: currentCondition },
+      { id: crypto.randomUUID(), name: newGroupName.trim(), condition: targetCondition },
       ...prev,
     ])
     setNewGroupName('')
@@ -237,7 +177,6 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
 
   function loadGroup(group: SavedGroup) {
     setTargetCondition(group.condition)
-    setTargetingMode('across')
   }
 
   // Map step index to step name for validation
@@ -257,22 +196,13 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
         if (scopeMode === 'aio') return selectedAio.size > 0
         return false
       }
-      case 'Twin Settings': return twinSettings.length > 0 && twinSettings.every((s) => s.path.trim() && s.value.trim())
       case 'Details': {
-        if (armActionMode === 'update-properties') {
+        if (jobType === 'management-update') {
           return armProperties.length > 0 && armProperties.every(p => p.value.trim().length > 0)
         }
         return armActionName.trim().length > 0 && armActionPayload.trim().length > 0
       }
-      case 'Target': {
-        if (targetingMode === 'per-hub') {
-          return perHubTargets.every((t) => t.condition.trim().length > 0) && priority.trim().length > 0
-        }
-        if (targetingMode === 'adr') {
-          return adrFilters.length > 0 && adrFilters.every(f => f.value.trim().length > 0) && priority.trim().length > 0
-        }
-        return targetCondition.trim().length > 0 && priority.trim().length > 0
-      }
+      case 'Target': return targetCondition.trim().length > 0 && priority.trim().length > 0
       case 'Review': return true
       default: return false
     }
@@ -314,29 +244,6 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
     })
   }
 
-  function addTwinSetting() {
-    setTwinSettings((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), path: 'properties.desired.', value: '' },
-    ])
-  }
-
-  function removeTwinSetting(id: string) {
-    setTwinSettings((prev) => prev.filter((s) => s.id !== id))
-  }
-
-  function updateTwinSetting(id: string, field: 'path' | 'value', val: string) {
-    setTwinSettings((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, [field]: val } : s))
-    )
-  }
-
-  function updatePerHubTarget(hubName: string, condition: string) {
-    setPerHubTargets((prev) =>
-      prev.map((t) => (t.hubName === hubName ? { ...t, condition } : t))
-    )
-  }
-
   return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
@@ -353,7 +260,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
         className="flex h-[min(90vh,720px)] w-full max-w-2xl flex-col rounded-xl border bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Header ─────────────────────────────────────────── */}
+        {/* â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div>
             <h2 className="text-base font-semibold">New Job</h2>
@@ -369,7 +276,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
           </button>
         </div>
 
-        {/* ── Step indicator ─────────────────────────────────── */}
+        {/* â”€â”€ Step indicator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="border-b px-6 py-3">
           <div className="flex items-center gap-1">
             {steps.map((label, i) => (
@@ -400,7 +307,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
           </div>
         </div>
 
-        {/* ── Content ────────────────────────────────────────── */}
+        {/* â”€â”€ Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
           <AnimatePresence mode="wait">
             <motion.div
@@ -430,12 +337,9 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                         setShowCopyPicker(true)
                       } else {
                         setJobType(id)
-                        // Set default targeting mode based on job type
-                        if (id === 'outer-loop' || id === 'cert-revocation') {
-                          setTargetingMode('adr')
-                        } else {
-                          setTargetingMode('across')
-                        }
+                        // Auto-select arm detail mode based on job type
+                        if (id === 'management-update') setArmActionMode('update-properties')
+                        if (id === 'management-action') setArmActionMode('arm-action')
                       }
                     }}
                   />
@@ -464,16 +368,9 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                   totalAssets={totalAssets}
                 />
               )}
-              {currentStepName() === 'Twin Settings' && (
-                <StepTwinSettings
-                  settings={twinSettings}
-                  onAdd={addTwinSetting}
-                  onRemove={removeTwinSetting}
-                  onUpdate={updateTwinSetting}
-                />
-              )}
               {currentStepName() === 'Details' && (
                 <StepArmAction
+                  jobType={jobType}
                   mode={armActionMode}
                   onModeChange={setArmActionMode}
                   properties={armProperties}
@@ -486,18 +383,10 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
               )}
               {currentStepName() === 'Target' && (
                 <StepTargeting
-                  jobType={jobType}
                   priority={priority}
                   onPriorityChange={setPriority}
                   targetCondition={targetCondition}
                   onTargetConditionChange={setTargetCondition}
-                  targetingMode={targetingMode}
-                  onTargetingModeChange={switchTargetingMode}
-                  perHubTargets={perHubTargets}
-                  onUpdatePerHubTarget={updatePerHubTarget}
-                  adrFilters={adrFilters}
-                  onAdrFiltersChange={setAdrFilters}
-                  scopedHubs={scopedHubs}
                   savedGroups={savedGroups}
                   showSaveGroupInput={showSaveGroupInput}
                   onToggleSaveGroup={() => setShowSaveGroupInput(!showSaveGroupInput)}
@@ -517,19 +406,15 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                   scopedHubs={scopedHubs}
                   selectedAio={selectedAio}
                   totalDevices={totalDevices}
-                  twinSettings={jobType === 'twin-update' ? twinSettings : []}
                   priority={priority}
                   targetCondition={targetCondition}
-                  targetingMode={targetingMode}
-                  perHubTargets={perHubTargets}
-                  adrFilters={adrFilters}
                 />
               )}
             </motion.div>
           </AnimatePresence>
         </div>
 
-        {/* ── Footer ─────────────────────────────────────────── */}
+        {/* â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="flex items-center justify-between border-t px-6 py-4">
           <Button
             variant="ghost"
@@ -577,7 +462,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
   )
 }
 
-/* ─── Step 0: Job Type ──────────────────────────────────────── */
+/* â”€â”€â”€ Step 0: Job Type â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function StepJobType({
   selected,
@@ -595,8 +480,8 @@ function StepJobType({
 
   const renderJobButton = (type: typeof JOB_TYPES[number]) => {
     const isSelected = selected === type.id
-    const priorityLabel = ['twin-update', 'software-update', 'direct-method', 'outer-loop'].includes(type.id) ? 'P0' : type.id === 'cert-revocation' ? 'P1' : null
-    const isDemo = type.id === 'twin-update' || type.id === 'cert-revocation' || type.id === 'outer-loop'
+    const priorityLabel = ['management-action', 'management-update'].includes(type.id) ? 'P0' : ['software-update', 'cert-revocation'].includes(type.id) ? 'P1' : null
+    const isDemo = type.id === 'management-update' || type.id === 'management-action' || type.id === 'cert-revocation'
     return (
       <button
         key={type.id}
@@ -710,7 +595,7 @@ function StepJobType({
   )
 }
 
-/* ─── Copy from Existing (dead end) ─────────────────────────── */
+/* â”€â”€â”€ Copy from Existing (dead end) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function StepCopyFromExisting({
   existingJobs,
@@ -764,11 +649,11 @@ function StepCopyFromExisting({
                 </div>
                 <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
                   <span className="font-mono">{job.id}</span>
-                  <span>·</span>
+                  <span>Â·</span>
                   <span>{job.type}</span>
-                  <span>·</span>
+                  <span>Â·</span>
                   <span>{job.targets}</span>
-                  <span>·</span>
+                  <span>Â·</span>
                   <span className="flex items-center gap-1">
                     <span className={`inline-block h-1.5 w-1.5 rounded-full ${statusDot[job.status] || 'bg-gray-400'}`} />
                     {job.status}
@@ -803,7 +688,7 @@ function StepCopyFromExisting({
   )
 }
 
-/* ─── Step 1: Details ───────────────────────────────────────── */
+/* â”€â”€â”€ Step 1: Details â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function StepDetails({
   name,
@@ -820,14 +705,14 @@ function StepDetails({
 }) {
   const isCert = jobType === 'cert-revocation'
   const sampleName = isCert
-    ? 'Certificate revocation – compromised Abilene edge gateways'
-    : 'Turbine pitch calibration – Abilene Wind Farm'
+    ? 'Certificate revocation â€“ compromised Abilene edge gateways'
+    : 'Turbine pitch calibration â€“ Abilene Wind Farm'
   const sampleDesc = isCert
     ? 'Revoke X.509 device certificates for edge gateways flagged in the February 2026 security audit. Affected devices will be re-provisioned with new certificates via DPS.'
     : 'Update pitch angle and RPM targets for all turbine controllers in the Abilene wind farm cluster to optimize output for spring wind patterns.'
   const placeholder = isCert
-    ? 'e.g. Certificate revocation – compromised Abilene edge gateways'
-    : 'e.g. Turbine pitch calibration – Abilene Wind Farm'
+    ? 'e.g. Certificate revocation â€“ compromised Abilene edge gateways'
+    : 'e.g. Turbine pitch calibration â€“ Abilene Wind Farm'
 
   return (
     <div className="space-y-5">
@@ -857,7 +742,7 @@ function StepDetails({
             onFill={() => onDescriptionChange(sampleDesc)}
           />
           <textarea
-            placeholder="Describe the purpose and scope of this job…"
+            placeholder="Describe the purpose and scope of this jobâ€¦"
             value={description}
             onChange={(e) => onDescriptionChange(e.target.value)}
             rows={3}
@@ -869,7 +754,7 @@ function StepDetails({
   )
 }
 
-/* ─── Step 2: Scope ─────────────────────────────────────────── */
+/* â”€â”€â”€ Step 2: Scope â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function StepHubScope({
   hubs,
@@ -903,18 +788,18 @@ function StepHubScope({
     .filter((a) => selectedAio.has(a.name))
     .reduce((s, a) => s + a.connectedDevices, 0)
 
-  const aioEnabled = jobType === 'outer-loop'
+  const aioEnabled = jobType === 'management-action' || jobType === 'management-update'
 
   return (
     <div className="space-y-5">
       <div>
         <h3 className="text-sm font-semibold">Scope</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Choose the scope for this job — target the entire namespace, individual IoT&nbsp;Hubs, or IoT&nbsp;Operations instances.
+          Choose the scope for this job â€” target the entire namespace, individual IoT&nbsp;Hubs, or IoT&nbsp;Operations instances.
         </p>
       </div>
 
-      {/* Scope mode selector — always 3 options */}
+      {/* Scope mode selector â€” always 3 options */}
       <div className="grid grid-cols-3 gap-3">
         <button
           onClick={() => onScopeModeChange('namespace')}
@@ -948,7 +833,7 @@ function StepHubScope({
             <p className="text-sm font-medium">IoT&nbsp;Hubs</p>
             <p className="text-xs text-muted-foreground">
               {selectedHubs.size > 0
-                ? `${selectedHubs.size} selected · ${selectedHubDevices.toLocaleString()} devices`
+                ? `${selectedHubs.size} selected Â· ${selectedHubDevices.toLocaleString()} devices`
                 : `${hubs.length} available`}
             </p>
           </div>
@@ -969,7 +854,7 @@ function StepHubScope({
             <p className="text-sm font-medium">IoT&nbsp;Operations</p>
             <p className="text-xs text-muted-foreground">
               {selectedAio.size > 0
-                ? `${selectedAio.size} selected · ${selectedAioDevices.toLocaleString()} devices`
+                ? `${selectedAio.size} selected Â· ${selectedAioDevices.toLocaleString()} devices`
                 : `${aioInstances.length} instance${aioInstances.length !== 1 ? 's' : ''}`}
             </p>
           </div>
@@ -1003,13 +888,13 @@ function StepHubScope({
               <Activity className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
               <span className="text-xs text-muted-foreground">{inst.name}</span>
               {!aioEnabled && <span className="text-[10px] text-muted-foreground/50 ml-1 italic">not supported for this job type</span>}
-              <span className="text-[10px] text-muted-foreground/60 ml-auto">{inst.connectedDevices.toLocaleString()} devices · {inst.assets.toLocaleString()} assets</span>
+              <span className="text-[10px] text-muted-foreground/60 ml-auto">{inst.connectedDevices.toLocaleString()} devices Â· {inst.assets.toLocaleString()} assets</span>
             </div>
           ))}
         </div>
       )}
 
-      {/* Hub list — shown for select mode */}
+      {/* Hub list â€” shown for select mode */}
       {scopeMode === 'select' && (
         <div className="space-y-1.5">
           {hubs.map((hub) => {
@@ -1032,14 +917,14 @@ function StepHubScope({
                   {checked && <Check className="h-2.5 w-2.5" />}
                 </div>
                 <span className="text-xs font-medium">{hub.name}</span>
-                <span className="text-[10px] text-muted-foreground ml-auto">{hub.region} · {hub.devices.toLocaleString()} devices</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">{hub.region} Â· {hub.devices.toLocaleString()} devices</span>
               </button>
             )
           })}
         </div>
       )}
 
-      {/* AIO instance list — shown for aio mode */}
+      {/* AIO instance list â€” shown for aio mode */}
       {scopeMode === 'aio' && (
         <div className="space-y-1.5">
           {aioInstances.map((inst) => {
@@ -1062,7 +947,7 @@ function StepHubScope({
                   {checked && <Check className="h-2.5 w-2.5" />}
                 </div>
                 <span className="text-xs font-medium">{inst.name}</span>
-                <span className="text-[10px] text-muted-foreground ml-auto">{inst.site} · {inst.connectedDevices.toLocaleString()} devices · {inst.assets.toLocaleString()} assets</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">{inst.site} Â· {inst.connectedDevices.toLocaleString()} devices Â· {inst.assets.toLocaleString()} assets</span>
               </button>
             )
           })}
@@ -1072,84 +957,9 @@ function StepHubScope({
   )
 }
 
-/* ─── Step 3: Twin Settings ─────────────────────────────────── */
+/* â”€â”€â”€ Step 3: Twin Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
-function StepTwinSettings({
-  settings,
-  onAdd,
-  onRemove,
-  onUpdate,
-}: {
-  settings: TwinSetting[]
-  onAdd: () => void
-  onRemove: (id: string) => void
-  onUpdate: (id: string, field: 'path' | 'value', val: string) => void
-}) {
-  return (
-    <div className="space-y-5">
-      <div>
-        <h3 className="text-sm font-semibold">Device Twin Settings</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Specify the desired properties to set on targeted device twins. Add the twin path and the JSON value.
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        {settings.map((setting, idx) => (
-          <Card key={setting.id} className="shadow-sm">
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Setting {idx + 1}
-                </span>
-                {settings.length > 1 && (
-                  <button
-                    onClick={() => onRemove(setting.id)}
-                    className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-colors"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                <ClickableLabel
-                  label="Twin Path"
-                  onFill={() => onUpdate(setting.id, 'path', 'properties.desired.turbineConfig')}
-                />
-                <Input
-                  value={setting.path}
-                  onChange={(e) => onUpdate(setting.id, 'path', e.target.value)}
-                  placeholder="properties.desired.turbineConfig"
-                  className="font-mono text-sm"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <ClickableLabel
-                  label="JSON Value"
-                  onFill={() => onUpdate(setting.id, 'value', JSON.stringify({ targetRPM: 14, pitchAngle: 3.5, cutOutWindSpeed: 25 }, null, 2))}
-                />
-                <textarea
-                  value={setting.value}
-                  onChange={(e) => onUpdate(setting.id, 'value', e.target.value)}
-                  placeholder='{ "targetRPM": 14, "pitchAngle": 3.5 }'
-                  rows={6}
-                  className="flex w-full rounded-md border border-input bg-muted/30 px-3 py-2 font-mono text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={onAdd}>
-        <Plus className="h-3.5 w-3.5" />
-        Add Another Setting
-      </Button>
-    </div>
-  )
-}
-
-/* ─── ARM Action Step ───────────────────────────────────────── */
+/* â”€â”€â”€ ARM Action Step â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const ARM_PROPERTY_FIELDS = [
   { id: 'manufacturer', label: 'Manufacturer', sample: 'Contoso Wind Systems' },
@@ -1161,6 +971,7 @@ const ARM_PROPERTY_FIELDS = [
 ]
 
 function StepArmAction({
+  jobType,
   mode,
   onModeChange,
   properties,
@@ -1170,6 +981,7 @@ function StepArmAction({
   payload,
   onPayloadChange,
 }: {
+  jobType: string | null
   mode: 'update-properties' | 'arm-action'
   onModeChange: (m: 'update-properties' | 'arm-action') => void
   properties: AdrFilter[]
@@ -1209,32 +1021,10 @@ function StepArmAction({
       <div>
         <h3 className="text-sm font-semibold">Details</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Update resource properties or invoke a named action.
+          {jobType === 'management-update'
+            ? 'Set the properties to update on the target devices and assets.'
+            : 'Define the operation to invoke on the target devices and assets.'}
         </p>
-      </div>
-
-      {/* Mode toggle */}
-      <div className="flex items-center rounded-lg border bg-muted/30 p-0.5 w-fit">
-        <button
-          onClick={() => onModeChange('update-properties')}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-            mode === 'update-properties'
-              ? 'bg-white text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Update properties
-        </button>
-        <button
-          onClick={() => onModeChange('arm-action')}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-            mode === 'arm-action'
-              ? 'bg-white text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          ARM action
-        </button>
       </div>
 
       {mode === 'update-properties' ? (
@@ -1355,21 +1145,13 @@ function StepArmAction({
   )
 }
 
-/* ─── Step 4: Targeting ─────────────────────────────────────── */
+/* â”€â”€â”€ Step 4: Targeting â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function StepTargeting({
-  jobType,
   priority,
   onPriorityChange,
   targetCondition,
   onTargetConditionChange,
-  targetingMode,
-  onTargetingModeChange,
-  perHubTargets,
-  onUpdatePerHubTarget,
-  adrFilters,
-  onAdrFiltersChange,
-  scopedHubs,
   savedGroups,
   showSaveGroupInput,
   onToggleSaveGroup,
@@ -1379,18 +1161,10 @@ function StepTargeting({
   justSaved,
   onLoadGroup,
 }: {
-  jobType: string | null
   priority: string
   onPriorityChange: (v: string) => void
   targetCondition: string
   onTargetConditionChange: (v: string) => void
-  targetingMode: TargetingMode
-  onTargetingModeChange: (mode: TargetingMode) => void
-  perHubTargets: PerHubTarget[]
-  onUpdatePerHubTarget: (hubName: string, condition: string) => void
-  adrFilters: AdrFilter[]
-  onAdrFiltersChange: (filters: AdrFilter[]) => void
-  scopedHubs: Hub[]
   savedGroups: SavedGroup[]
   showSaveGroupInput: boolean
   onToggleSaveGroup: () => void
@@ -1400,44 +1174,15 @@ function StepTargeting({
   justSaved: boolean
   onLoadGroup: (group: SavedGroup) => void
 }) {
-  // Determine which targeting modes are available for this job type
-  const argOnly = jobType === 'outer-loop' || jobType === 'cert-revocation'
-  const hubOnly = jobType === 'twin-update' || jobType === 'software-update' || jobType === 'direct-method'
-
-  const hasCondition =
-    targetingMode === 'per-hub'
-      ? perHubTargets.some(t => t.condition.trim().length > 0)
-      : targetingMode === 'adr'
-      ? adrFilters.some(f => f.value.trim().length > 0)
-      : targetCondition.trim().length > 0
-
   const [groupDropdownOpen, setGroupDropdownOpen] = useState(false)
-  const [adrFieldDropdownOpen, setAdrFieldDropdownOpen] = useState(false)
-
-  const availableAdrFields = ADR_FILTER_FIELDS.filter(
-    f => !adrFilters.some(af => af.field === f.id)
-  )
-
-  function addAdrFilter(fieldId: string) {
-    onAdrFiltersChange([...adrFilters, { field: fieldId, value: '' }])
-    setAdrFieldDropdownOpen(false)
-  }
-
-  function removeAdrFilter(fieldId: string) {
-    onAdrFiltersChange(adrFilters.filter(f => f.field !== fieldId))
-  }
-
-  function updateAdrFilterValue(fieldId: string, value: string) {
-    onAdrFiltersChange(adrFilters.map(f => f.field === fieldId ? { ...f, value } : f))
-  }
+  const hasCondition = targetCondition.trim().length > 0
 
   return (
     <div className="space-y-5">
       <div>
         <h3 className="text-sm font-semibold">Target</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Define a priority and target definition to scope which devices
-          receive this job.
+          Define a priority and describe which devices should receive this job.
         </p>
       </div>
 
@@ -1458,57 +1203,15 @@ function StepTargeting({
           </p>
         </div>
 
-        {/* Target condition mode toggle + Load from group */}
-        <div className="space-y-3">
+        {/* Target pseudo-language input */}
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-medium text-foreground">Target Definition <span className="text-red-500">*</span></span>
-              <div className="flex items-center rounded-lg border bg-muted/30 p-0.5">
-                <button
-                  onClick={() => !hubOnly && onTargetingModeChange('adr')}
-                  disabled={hubOnly}
-                  className={`relative rounded-md px-3 py-1 text-xs font-medium transition-all ${
-                    hubOnly
-                      ? 'text-muted-foreground/40 cursor-not-allowed'
-                      : targetingMode === 'adr'
-                      ? 'bg-white text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  ARG
-                  {!hubOnly && <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-red-300 bg-red-50 px-1 py-px text-[7px] font-medium text-red-600 tracking-wide uppercase leading-none">P0</span>}
-                </button>
-                <button
-                  onClick={() => !argOnly && onTargetingModeChange('across')}
-                  disabled={argOnly}
-                  className={`relative rounded-md px-3 py-1 text-xs font-medium transition-all ${
-                    argOnly
-                      ? 'text-muted-foreground/40 cursor-not-allowed'
-                      : targetingMode === 'across'
-                      ? 'bg-white text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  Across Hubs
-                  {!argOnly && <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-red-300 bg-red-50 px-1 py-px text-[7px] font-medium text-red-600 tracking-wide uppercase leading-none">P0</span>}
-                </button>
-                <button
-                  onClick={() => !argOnly && onTargetingModeChange('per-hub')}
-                  disabled={argOnly}
-                  className={`relative rounded-md px-3 py-1 text-xs font-medium transition-all ${
-                    argOnly
-                      ? 'text-muted-foreground/40 cursor-not-allowed'
-                      : targetingMode === 'per-hub'
-                      ? 'bg-white text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  Per Hub
-                  {!argOnly && <span className="absolute -right-1.5 -top-1.5 rounded-full border border-dashed border-yellow-300 bg-yellow-50 px-1 py-px text-[7px] font-medium text-yellow-600 tracking-wide uppercase leading-none">P1</span>}
-                </button>
-              </div>
-            </div>
-            {/* Inline group loader */}
+            <ClickableLabel
+              label="Target"
+              required
+              onFill={() => onTargetConditionChange('all turbines at Abilene Wind Farm')}
+            />
+            {/* Saved Targets buttons */}
             <div className="flex items-center gap-1">
               <div className="relative">
                 <button
@@ -1536,7 +1239,7 @@ function StepTargeting({
                             <Bookmark className="h-3 w-3 text-muted-foreground shrink-0" />
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-medium">{group.name}</p>
-                              <p className="text-[10px] font-mono text-muted-foreground truncate">{group.condition}</p>
+                              <p className="text-[10px] text-muted-foreground truncate italic">{group.condition}</p>
                             </div>
                           </button>
                         ))}
@@ -1595,165 +1298,23 @@ function StepTargeting({
               )}
             </div>
           </div>
-
-          {targetingMode === 'across' ? (
-            <div className="space-y-1.5">
-              <ClickableLabel
-                label="Query"
-                onFill={() => onTargetConditionChange("tags.site = 'abilene' AND tags.assetType = 'turbine'")}
-              />
-              <textarea
-                value={targetCondition}
-                onChange={(e) => onTargetConditionChange(e.target.value)}
-                placeholder="tags.site = 'abilene' AND tags.assetType = 'turbine'"
-                rows={2}
-                className="flex w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              />
-              <p className="text-xs text-muted-foreground">
-                Use twin tags (e.g. <code className="rounded bg-muted px-1 py-0.5 text-xs">tags.site = 'abilene'</code>)
-                or reported properties (e.g. <code className="rounded bg-muted px-1 py-0.5 text-xs">properties.reported.firmware.version = '3.1.0'</code>).
-              </p>
-            </div>
-          ) : targetingMode === 'per-hub' ? (
-            <div className="space-y-3">
-              {scopedHubs.map((hub, idx) => {
-                const target = perHubTargets.find((t) => t.hubName === hub.name)
-                const sampleQueries = [
-                  "tags.site = 'abilene' AND tags.assetType = 'turbine'",
-                  "tags.site = 'sweetwater' AND properties.reported.firmware.version < '3.2.0'",
-                  "tags.cluster = 'eastus-edge' AND tags.priority = 'critical'",
-                  "tags.assetType = 'sensor' AND tags.category = 'vibration'",
-                ]
-                const sampleQuery = sampleQueries[idx % sampleQueries.length]
-                return (
-                  <div key={hub.name} className="rounded-lg border p-3 space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <Server className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span
-                        className="text-xs font-medium cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1 group/hub"
-                        onClick={() => onUpdatePerHubTarget(hub.name, sampleQuery)}
-                        title="Click to fill with sample value"
-                      >
-                        {hub.name}
-                        <span className="opacity-0 group-hover/hub:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span>
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {hub.region} · {hub.devices.toLocaleString()} devices
-                      </span>
-                    </div>
-                    <textarea
-                      value={target?.condition ?? ''}
-                      onChange={(e) => onUpdatePerHubTarget(hub.name, e.target.value)}
-                      placeholder={sampleQuery}
-                      rows={1}
-                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    />
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            /* ADR targeting mode */
-            <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Target devices using Azure Device Registry attributes. Add one or more criteria to narrow the scope.
-              </p>
-
-              {/* Active filter pills */}
-              {adrFilters.length > 0 && (
-                <div className="space-y-2">
-                  {adrFilters.map((filter) => {
-                    const fieldDef = ADR_FILTER_FIELDS.find(f => f.id === filter.field)
-                    if (!fieldDef) return null
-                    return (
-                      <div
-                        key={filter.field}
-                        className="flex items-center gap-2 rounded-lg border bg-muted/10 px-3 py-2"
-                      >
-                        <span
-                          className="text-xs font-medium text-foreground whitespace-nowrap min-w-[120px] cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1 group/lbl"
-                          onClick={() => updateAdrFilterValue(filter.field, fieldDef.sample)}
-                          title="Click to fill with sample value"
-                        >
-                          {fieldDef.label}
-                          <span className="opacity-0 group-hover/lbl:opacity-100 text-[10px] text-blue-500 transition-opacity">← fill</span>
-                        </span>
-                        <span className="text-xs text-muted-foreground">=</span>
-                        <Input
-                          value={filter.value}
-                          onChange={(e) => updateAdrFilterValue(filter.field, e.target.value)}
-                          placeholder="Enter a value"
-                          className="h-7 text-xs flex-1 font-mono"
-                        />
-                        <button
-                          onClick={() => removeAdrFilter(filter.field)}
-                          className="rounded-md p-1 text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
-                          title="Remove filter"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-
-              {/* Add filter button + dropdown */}
-              {availableAdrFields.length > 0 && (
-                <div className="relative">
-                  <button
-                    onClick={() => setAdrFieldDropdownOpen(!adrFieldDropdownOpen)}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
-                  >
-                    <Plus className="h-3 w-3" />
-                    Add criteria
-                  </button>
-                  {adrFieldDropdownOpen && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setAdrFieldDropdownOpen(false)} />
-                      <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-lg border bg-white shadow-lg">
-                        <div className="py-1">
-                          {availableAdrFields.map((field) => (
-                            <button
-                              key={field.id}
-                              onClick={() => addAdrFilter(field.id)}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted/40 transition-colors"
-                            >
-                              <span className="font-medium">{field.label}</span>
-                              <span className="text-muted-foreground ml-auto font-mono text-[10px]">{field.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Click-to-fill all */}
-              {adrFilters.length > 0 && adrFilters.some(f => !f.value.trim()) && (
-                <button
-                  onClick={() => {
-                    onAdrFiltersChange(adrFilters.map(f => {
-                      if (f.value.trim()) return f
-                      const fieldDef = ADR_FILTER_FIELDS.find(fd => fd.id === f.field)
-                      return { ...f, value: fieldDef?.sample ?? '' }
-                    }))
-                  }}
-                  className="text-[11px] text-muted-foreground hover:text-blue-600 transition-colors cursor-pointer"
-                >
-                  ← click to fill all with sample values
-                </button>
-              )}
-            </div>
-          )}
+          <textarea
+            value={targetCondition}
+            onChange={(e) => onTargetConditionChange(e.target.value)}
+            placeholder="e.g. all turbines at Abilene Wind Farm"
+            rows={3}
+            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+          />
+          <p className="text-xs text-muted-foreground">
+            Describe the devices to target â€” e.g. <span className="italic">turbines with firmware older than 3.2.0</span> or <span className="italic">all sensors at Sweetwater farm</span>.
+          </p>
         </div>
       </div>
     </div>
   )
 }
 
-/* ─── Step 5: Review ────────────────────────────────────────── */
+/* â”€â”€â”€ Step 5: Review â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function StepReview({
   jobName,
@@ -1763,12 +1324,8 @@ function StepReview({
   scopedHubs,
   selectedAio,
   totalDevices,
-  twinSettings,
   priority,
   targetCondition,
-  targetingMode,
-  perHubTargets,
-  adrFilters,
 }: {
   jobName: string
   jobDescription: string
@@ -1777,12 +1334,8 @@ function StepReview({
   scopedHubs: Hub[]
   selectedAio: Set<string>
   totalDevices: number
-  twinSettings: TwinSetting[]
   priority: string
   targetCondition: string
-  targetingMode: TargetingMode
-  perHubTargets: PerHubTarget[]
-  adrFilters: AdrFilter[]
 }) {
   return (
     <div className="space-y-5">
@@ -1812,56 +1365,15 @@ function StepReview({
           <ReviewRow label="Total Devices" value={totalDevices.toLocaleString()} />
           <ReviewRow label="Priority" value={priority} />
 
-          {/* Twin settings */}
-          {twinSettings.length > 0 && (
+          {/* Target */}
+          {targetCondition.trim() && (
             <div className="px-4 py-3">
-              <p className="text-xs font-medium text-muted-foreground mb-2">Twin Settings</p>
-              <div className="space-y-2">
-                {twinSettings.map((s) => (
-                  <div key={s.id} className="rounded border bg-muted/20 p-3">
-                    <p className="text-xs font-mono font-medium">{s.path}</p>
-                    <pre className="mt-1 text-xs font-mono text-muted-foreground whitespace-pre-wrap">{s.value}</pre>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Targeting */}
-          <div className="px-4 py-3">
-            <p className="text-xs font-medium text-muted-foreground mb-2">Target Condition</p>
-            {targetingMode === 'per-hub' ? (
-              <div className="space-y-2">
-                {perHubTargets.map((t) => (
-                  <div key={t.hubName} className="rounded border bg-muted/20 p-3">
-                    <p className="text-xs font-medium">{t.hubName}</p>
-                    <p className="mt-1 text-xs font-mono text-muted-foreground">{t.condition}</p>
-                  </div>
-                ))}
-              </div>
-            ) : targetingMode === 'adr' ? (
-              <div className="space-y-1.5">
-                <p className="text-[11px] font-medium text-muted-foreground mb-1">ARG Attributes</p>
-                <div className="flex flex-wrap gap-2">
-                  {adrFilters.map((f) => {
-                    const fieldDef = ADR_FILTER_FIELDS.find(fd => fd.id === f.field)
-                    return (
-                      <span
-                        key={f.field}
-                        className="inline-flex items-center gap-1.5 rounded-full border bg-blue-50 border-blue-200 px-3 py-1 text-xs font-medium text-blue-700"
-                      >
-                        {fieldDef?.label} = {f.value}
-                      </span>
-                    )
-                  })}
-                </div>
-              </div>
-            ) : (
-              <p className="rounded border bg-muted/20 p-3 text-xs font-mono text-muted-foreground">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Target</p>
+              <p className="rounded border bg-muted/20 p-3 text-xs text-foreground">
                 {targetCondition}
               </p>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1877,7 +1389,7 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-/* ─── Clickable Label (demo helper) ─────────────────────────── */
+/* â”€â”€â”€ Clickable Label (demo helper) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function ClickableLabel({
   label,
@@ -1896,7 +1408,7 @@ function ClickableLabel({
     >
       {label}
       {required && <span className="text-red-500">*</span>}
-      <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span>
+      <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">â† click to fill</span>
     </label>
   )
 }
