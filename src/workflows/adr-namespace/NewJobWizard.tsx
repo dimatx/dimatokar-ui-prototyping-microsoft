@@ -993,13 +993,14 @@ function StepHubScope({
           {aioInstances.map((inst) => (
             <div
               key={inst.name}
-              className="flex items-center gap-2 rounded-md border border-muted bg-muted/10 px-3 py-2 cursor-default"
+              className={`flex items-center gap-2 rounded-md border px-3 py-2 cursor-default ${aioEnabled ? 'border-muted bg-muted/10' : 'border-muted/50 bg-muted/5 opacity-50'}`}
             >
-              <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-muted-foreground/40 bg-muted-foreground/40 text-white">
-                <Check className="h-2.5 w-2.5" />
+              <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${aioEnabled ? 'border-muted-foreground/40 bg-muted-foreground/40 text-white' : 'border-muted-foreground/30 bg-transparent'}`}>
+                {aioEnabled && <Check className="h-2.5 w-2.5" />}
               </div>
               <Activity className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
               <span className="text-xs text-muted-foreground">{inst.name}</span>
+              {!aioEnabled && <span className="text-[10px] text-muted-foreground/50 ml-1 italic">not supported for this job type</span>}
               <span className="text-[10px] text-muted-foreground/60 ml-auto">{inst.connectedDevices.toLocaleString()} devices · {inst.assets.toLocaleString()} assets</span>
             </div>
           ))}
