@@ -929,7 +929,9 @@ function StepHubScope({
             <p className="text-sm font-medium">Entire Namespace</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               {hubs.length} IoT&nbsp;Hubs<br />
-              {aioInstances.length} AIO instance{aioInstances.length !== 1 ? 's' : ''}
+              <span className={!aioEnabled ? 'line-through opacity-40' : ''}>
+                {aioInstances.length} AIO instance{aioInstances.length !== 1 ? 's' : ''}
+              </span>
             </p>
           </div>
         </button>
