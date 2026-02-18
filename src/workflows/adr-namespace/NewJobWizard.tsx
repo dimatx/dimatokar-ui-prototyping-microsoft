@@ -1,4 +1,4 @@
-﻿import { motion, AnimatePresence } from 'framer-motion'
+?import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
@@ -25,7 +25,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 
-/* â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Types ─────────────────────────────────────────────────── */
 
 import type { Hub } from './Page'
 
@@ -126,7 +126,7 @@ const SAMPLE_SAVED_GROUPS: SavedGroup[] = [
   { id: 'g4', name: 'Sweetwater cluster', condition: 'all devices in Sweetwater cluster' },
 ]
 
-/* â”€â”€â”€ Wizard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Wizard ────────────────────────────────────────────────── */
 
 export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJobs, onClose, onCreate }: NewJobWizardProps) {
   const [step, setStep] = useState(0)
@@ -260,7 +260,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
         className="flex h-[min(90vh,720px)] w-full max-w-2xl flex-col rounded-xl border bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ── Header ─────────────────────────────────────────── */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div>
             <h2 className="text-base font-semibold">New Job</h2>
@@ -276,7 +276,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
           </button>
         </div>
 
-        {/* â”€â”€ Step indicator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ── Step indicator ─────────────────────────────────── */}
         <div className="border-b px-6 py-3">
           <div className="flex items-center gap-1">
             {steps.map((label, i) => (
@@ -307,7 +307,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
           </div>
         </div>
 
-        {/* â”€â”€ Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ── Content ────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
           <AnimatePresence mode="wait">
             <motion.div
@@ -414,7 +414,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
           </AnimatePresence>
         </div>
 
-        {/* â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ── Footer ─────────────────────────────────────────── */}
         <div className="flex items-center justify-between border-t px-6 py-4">
           <Button
             variant="ghost"
@@ -462,7 +462,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
   )
 }
 
-/* â”€â”€â”€ Step 0: Job Type â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Step 0: Job Type ──────────────────────────────────────── */
 
 function StepJobType({
   selected,
@@ -595,7 +595,7 @@ function StepJobType({
   )
 }
 
-/* â”€â”€â”€ Copy from Existing (dead end) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Copy from Existing (dead end) ─────────────────────────── */
 
 function StepCopyFromExisting({
   existingJobs,
@@ -649,11 +649,11 @@ function StepCopyFromExisting({
                 </div>
                 <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
                   <span className="font-mono">{job.id}</span>
-                  <span>Â·</span>
+                  <span>·</span>
                   <span>{job.type}</span>
-                  <span>Â·</span>
+                  <span>·</span>
                   <span>{job.targets}</span>
-                  <span>Â·</span>
+                  <span>·</span>
                   <span className="flex items-center gap-1">
                     <span className={`inline-block h-1.5 w-1.5 rounded-full ${statusDot[job.status] || 'bg-gray-400'}`} />
                     {job.status}
@@ -688,7 +688,7 @@ function StepCopyFromExisting({
   )
 }
 
-/* â”€â”€â”€ Step 1: Details â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Step 1: Details ───────────────────────────────────────── */
 
 function StepDetails({
   name,
@@ -705,14 +705,14 @@ function StepDetails({
 }) {
   const isCert = jobType === 'cert-revocation'
   const sampleName = isCert
-    ? 'Certificate revocation â€“ compromised Abilene edge gateways'
-    : 'Turbine pitch calibration â€“ Abilene Wind Farm'
+    ? 'Certificate revocation – compromised Abilene edge gateways'
+    : 'Turbine pitch calibration – Abilene Wind Farm'
   const sampleDesc = isCert
     ? 'Revoke X.509 device certificates for edge gateways flagged in the February 2026 security audit. Affected devices will be re-provisioned with new certificates via DPS.'
     : 'Update pitch angle and RPM targets for all turbine controllers in the Abilene wind farm cluster to optimize output for spring wind patterns.'
   const placeholder = isCert
-    ? 'e.g. Certificate revocation â€“ compromised Abilene edge gateways'
-    : 'e.g. Turbine pitch calibration â€“ Abilene Wind Farm'
+    ? 'e.g. Certificate revocation – compromised Abilene edge gateways'
+    : 'e.g. Turbine pitch calibration – Abilene Wind Farm'
 
   return (
     <div className="space-y-5">
@@ -742,7 +742,7 @@ function StepDetails({
             onFill={() => onDescriptionChange(sampleDesc)}
           />
           <textarea
-            placeholder="Describe the purpose and scope of this jobâ€¦"
+            placeholder="Describe the purpose and scope of this job…"
             value={description}
             onChange={(e) => onDescriptionChange(e.target.value)}
             rows={3}
@@ -754,7 +754,7 @@ function StepDetails({
   )
 }
 
-/* â”€â”€â”€ Step 2: Scope â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Step 2: Scope ─────────────────────────────────────────── */
 
 function StepHubScope({
   hubs,
@@ -795,11 +795,11 @@ function StepHubScope({
       <div>
         <h3 className="text-sm font-semibold">Scope</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Choose the scope for this job â€” target the entire namespace, individual IoT&nbsp;Hubs, or IoT&nbsp;Operations instances.
+          Choose the scope for this job — target the entire namespace, individual IoT&nbsp;Hubs, or IoT&nbsp;Operations instances.
         </p>
       </div>
 
-      {/* Scope mode selector â€” always 3 options */}
+      {/* Scope mode selector — always 3 options */}
       <div className="grid grid-cols-3 gap-3">
         <button
           onClick={() => onScopeModeChange('namespace')}
@@ -833,7 +833,7 @@ function StepHubScope({
             <p className="text-sm font-medium">IoT&nbsp;Hubs</p>
             <p className="text-xs text-muted-foreground">
               {selectedHubs.size > 0
-                ? `${selectedHubs.size} selected Â· ${selectedHubDevices.toLocaleString()} devices`
+                ? `${selectedHubs.size} selected · ${selectedHubDevices.toLocaleString()} devices`
                 : `${hubs.length} available`}
             </p>
           </div>
@@ -854,7 +854,7 @@ function StepHubScope({
             <p className="text-sm font-medium">IoT&nbsp;Operations</p>
             <p className="text-xs text-muted-foreground">
               {selectedAio.size > 0
-                ? `${selectedAio.size} selected Â· ${selectedAioDevices.toLocaleString()} devices`
+                ? `${selectedAio.size} selected · ${selectedAioDevices.toLocaleString()} devices`
                 : `${aioInstances.length} instance${aioInstances.length !== 1 ? 's' : ''}`}
             </p>
           </div>
@@ -888,13 +888,13 @@ function StepHubScope({
               <Activity className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
               <span className="text-xs text-muted-foreground">{inst.name}</span>
               {!aioEnabled && <span className="text-[10px] text-muted-foreground/50 ml-1 italic">not supported for this job type</span>}
-              <span className="text-[10px] text-muted-foreground/60 ml-auto">{inst.connectedDevices.toLocaleString()} devices Â· {inst.assets.toLocaleString()} assets</span>
+              <span className="text-[10px] text-muted-foreground/60 ml-auto">{inst.connectedDevices.toLocaleString()} devices · {inst.assets.toLocaleString()} assets</span>
             </div>
           ))}
         </div>
       )}
 
-      {/* Hub list â€” shown for select mode */}
+      {/* Hub list — shown for select mode */}
       {scopeMode === 'select' && (
         <div className="space-y-1.5">
           {hubs.map((hub) => {
@@ -917,14 +917,14 @@ function StepHubScope({
                   {checked && <Check className="h-2.5 w-2.5" />}
                 </div>
                 <span className="text-xs font-medium">{hub.name}</span>
-                <span className="text-[10px] text-muted-foreground ml-auto">{hub.region} Â· {hub.devices.toLocaleString()} devices</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">{hub.region} · {hub.devices.toLocaleString()} devices</span>
               </button>
             )
           })}
         </div>
       )}
 
-      {/* AIO instance list â€” shown for aio mode */}
+      {/* AIO instance list — shown for aio mode */}
       {scopeMode === 'aio' && (
         <div className="space-y-1.5">
           {aioInstances.map((inst) => {
@@ -947,7 +947,7 @@ function StepHubScope({
                   {checked && <Check className="h-2.5 w-2.5" />}
                 </div>
                 <span className="text-xs font-medium">{inst.name}</span>
-                <span className="text-[10px] text-muted-foreground ml-auto">{inst.site} Â· {inst.connectedDevices.toLocaleString()} devices Â· {inst.assets.toLocaleString()} assets</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">{inst.site} · {inst.connectedDevices.toLocaleString()} devices · {inst.assets.toLocaleString()} assets</span>
               </button>
             )
           })}
@@ -957,9 +957,9 @@ function StepHubScope({
   )
 }
 
-/* â”€â”€â”€ Step 3: Twin Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Step 3: Twin Settings ─────────────────────────────────── */
 
-/* â”€â”€â”€ ARM Action Step â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── ARM Action Step ───────────────────────────────────────── */
 
 const ARM_PROPERTY_FIELDS = [
   { id: 'manufacturer', label: 'Manufacturer', sample: 'Contoso Wind Systems' },
@@ -1145,7 +1145,7 @@ function StepArmAction({
   )
 }
 
-/* â”€â”€â”€ Step 4: Targeting â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Step 4: Targeting ─────────────────────────────────────── */
 
 function StepTargeting({
   priority,
@@ -1306,7 +1306,7 @@ function StepTargeting({
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
           />
           <p className="text-xs text-muted-foreground">
-            Describe the devices to target â€” e.g. <span className="italic">turbines with firmware older than 3.2.0</span> or <span className="italic">all sensors at Sweetwater farm</span>.
+            Describe the devices to target — e.g. <span className="italic">turbines with firmware older than 3.2.0</span> or <span className="italic">all sensors at Sweetwater farm</span>.
           </p>
         </div>
       </div>
@@ -1314,7 +1314,7 @@ function StepTargeting({
   )
 }
 
-/* â”€â”€â”€ Step 5: Review â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Step 5: Review ────────────────────────────────────────── */
 
 function StepReview({
   jobName,
@@ -1389,7 +1389,7 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-/* â”€â”€â”€ Clickable Label (demo helper) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Clickable Label (demo helper) ─────────────────────────── */
 
 function ClickableLabel({
   label,
@@ -1408,7 +1408,7 @@ function ClickableLabel({
     >
       {label}
       {required && <span className="text-red-500">*</span>}
-      <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">â† click to fill</span>
+      <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span>
     </label>
   )
 }
