@@ -22,6 +22,8 @@ import {
   Settings,
   Shield,
   Puzzle,
+  FileText,
+  ExternalLink,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -100,6 +102,49 @@ const availableHubs: Hub[] = [
 
 const aioInstances = [
   { name: 'aio-tx-abilene-01', site: 'Abilene Wind Farm', status: 'Healthy', connectedDevices: 842, assets: 434 },
+]
+
+const firmwareImages = [
+  {
+    file: 'turbine-ctrl-x700-v3.2.1.bin',
+    manufacturer: 'Contoso Wind Systems',
+    model: 'TurbineController-X700',
+    version: '3.2.1',
+    cves: { critical: 0, high: 1, medium: 3, low: 5 },
+    devicesAffected: 2_847,
+  },
+  {
+    file: 'turbine-ctrl-x700-v3.1.0.bin',
+    manufacturer: 'Contoso Wind Systems',
+    model: 'TurbineController-X700',
+    version: '3.1.0',
+    cves: { critical: 2, high: 4, medium: 6, low: 8 },
+    devicesAffected: 6_203,
+  },
+  {
+    file: 'anem-sensor-fw-v2.4.0.bin',
+    manufacturer: 'Zephyr Sensors Inc.',
+    model: 'AnemometerPro-2400',
+    version: '2.4.0',
+    cves: { critical: 0, high: 0, medium: 1, low: 2 },
+    devicesAffected: 1_412,
+  },
+  {
+    file: 'edge-gateway-v1.9.3.bin',
+    manufacturer: 'Meridian Edge Technologies',
+    model: 'EdgeGateway-1900',
+    version: '1.9.3',
+    cves: { critical: 1, high: 2, medium: 4, low: 3 },
+    devicesAffected: 985,
+  },
+  {
+    file: 'pitchctrl-v5.0.2.bin',
+    manufacturer: 'AeroLogix Systems',
+    model: 'PitchController-5000',
+    version: '5.0.2',
+    cves: { critical: 0, high: 0, medium: 0, low: 1 },
+    devicesAffected: 1_400,
+  },
 ]
 
 const initialJobs = [
@@ -685,6 +730,92 @@ export default function AdrNamespacePage() {
           </Table>
         </div>
       </div>
+
+      {/* ── Firmware Analysis ────────────────────────────────── */}
+      <AnimatePresence>
+        {namespaceSvcs.some(s => s.name === 'Firmware Analysis' && s.status !== 'Disabled') && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold tracking-tight">Firmware Analysis</h2>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{firmwareImages.length} images</span>
+              </div>
+            </div>
+            <div className="rounded-lg border shadow-sm">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Firmware Image</TableHead>
+                    <TableHead>Manufacturer</TableHead>
+                    <TableHead>Model</TableHead>
+                    <TableHead>Version</TableHead>
+                    <TableHead>Vulnerabilities</TableHead>
+                    <TableHead>Devices Affected</TableHead>
+                    <TableHead className="w-[100px]" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {firmwareImages.map((fw) => {
+                    const totalCves = fw.cves.critical + fw.cves.high + fw.cves.medium + fw.cves.low
+                    return (
+                      <TableRow key={fw.file}>
+                        <TableCell className="font-mono text-xs text-muted-foreground">{fw.file}</TableCell>
+                        <TableCell className="text-sm">{fw.manufacturer}</TableCell>
+                        <TableCell className="text-sm">{fw.model}</TableCell>
+                        <TableCell className="font-mono text-xs">{fw.version}</TableCell>
+                        <TableCell>
+                          {totalCves === 0 ? (
+                            <span className="text-xs text-emerald-600 font-medium">Clean</span>
+                          ) : (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {fw.cves.critical > 0 && (
+                                <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold bg-red-600 text-white">
+                                  {fw.cves.critical} Critical
+                                </span>
+                              )}
+                              {fw.cves.high > 0 && (
+                                <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold bg-orange-500 text-white">
+                                  {fw.cves.high} High
+                                </span>
+                              )}
+                              {fw.cves.medium > 0 && (
+                                <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium bg-amber-100 text-amber-700 border border-amber-200">
+                                  {fw.cves.medium} Medium
+                                </span>
+                              )}
+                              {fw.cves.low > 0 && (
+                                <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
+                                  {fw.cves.low} Low
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">{fw.devicesAffected.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <button
+                            className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                            onClick={() => {}}
+                          >
+                            <FileText className="h-3 w-3" />
+                            Report
+                            <ExternalLink className="h-2.5 w-2.5" />
+                          </button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── New Job Wizard ───────────────────────────────────── */}
       <AnimatePresence>
