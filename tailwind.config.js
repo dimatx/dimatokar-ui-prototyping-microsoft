@@ -57,9 +57,13 @@ export default {
           '0%, 100%': { backgroundColor: '#dc2626' },
           '50%': { backgroundColor: '#7f1d1d' },
         },
+        'ping-near': {
+          '75%, 100%': { transform: 'scale(1.4)', opacity: '0' },
+        },
       },
       animation: {
         'pulse-red': 'pulse-red 1.5s ease-in-out infinite',
+        'ping-near': 'ping-near 1.2s cubic-bezier(0,0,0.2,1) infinite',
       },
     },
   },
