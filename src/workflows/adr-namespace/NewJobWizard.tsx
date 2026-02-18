@@ -770,6 +770,7 @@ function StepTarget({
   justSaved: boolean
 }) {
   const totalHubDevices = hubs.reduce((s, h) => s + h.devices, 0)
+  const totalAssets = aioInstances.reduce((s, a) => s + a.assets, 0)
   const aioEnabled = jobType === 'management-action' || jobType === 'management-update'
 
   return (
@@ -796,8 +797,9 @@ function StepTarget({
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">My Namespace</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {hubs.length} IoT Hubs · {totalHubDevices.toLocaleString()} devices
-              {aioEnabled && <> · {aioInstances.length} IoT Operations instance{aioInstances.length !== 1 ? 's' : ''}</>}
+              {hubs.length} IoT Hubs · {aioInstances.length} IoT Operations instance{aioInstances.length !== 1 ? 's' : ''}
+               · {totalHubDevices.toLocaleString()} devices
+              {totalAssets > 0 && <> · {totalAssets.toLocaleString()} assets</>}
             </p>
           </div>
           {targetMode === 'namespace' && <Check className="h-4 w-4 text-foreground shrink-0 mt-0.5" />}
@@ -1185,8 +1187,9 @@ function StepReview({
             <p className="text-xs font-medium text-muted-foreground mb-2">Target</p>
             {targetMode === 'namespace' && (
               <p className="text-xs text-foreground">
-                My Namespace — {hubs.length} IoT Hubs · {hubs.reduce((s,h)=>s+h.devices,0).toLocaleString()} devices
-                {aioInstances.length > 0 && <> · {aioInstances.length} IoT Operations instance{aioInstances.length!==1?'s':''}</>}
+                My Namespace — {hubs.length} IoT Hubs · {aioInstances.length} IoT Operations instance{aioInstances.length!==1?'s':''}
+                {" · "}{hubs.reduce((s,h)=>s+h.devices,0).toLocaleString()} devices
+                {aioInstances.reduce((s,a)=>s+a.assets,0) > 0 && <> · {aioInstances.reduce((s,a)=>s+a.assets,0).toLocaleString()} assets</>}
               </p>
             )}
             {targetMode === 'group' && selectedGroup && (
