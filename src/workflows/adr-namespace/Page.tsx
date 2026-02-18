@@ -775,7 +775,7 @@ export default function AdrNamespacePage() {
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {fw.cves.critical > 0 && (
                                 <span className="relative inline-flex items-center">
-                                  <span className="absolute inset-0 rounded-md bg-red-500 animate-[ping-near_1.2s_cubic-bezier(0,0,0.2,1)_infinite] opacity-75" />
+                                  <span className="absolute inset-0 rounded-md bg-red-500 animate-ping opacity-75" />
                                   <span className="relative inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold bg-red-600 text-white">
                                     {fw.cves.critical} Critical
                                   </span>
