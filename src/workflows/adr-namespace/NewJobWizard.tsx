@@ -1227,7 +1227,7 @@ function StepTargeting({
             <ClickableLabel
               label="Target"
               required
-              onFill={() => onTargetConditionChange('all turbines at Abilene Wind Farm')}
+              onFill={() => onTargetConditionChange('turbines with firmware older than 3.2.0 or all sensors at Sweetwater farm where temperature = 72')}
             />
             {/* Saved Targets buttons */}
             <div className="flex items-center gap-1">
@@ -1319,12 +1319,12 @@ function StepTargeting({
           <textarea
             value={targetCondition}
             onChange={(e) => onTargetConditionChange(e.target.value)}
-            placeholder="e.g. all turbines at Abilene Wind Farm"
+            placeholder="e.g. turbines with firmware older than 3.2.0"
             rows={3}
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
           />
           <p className="text-xs text-muted-foreground">
-            Describe the devices to target — e.g. <span className="italic">turbines with firmware older than 3.2.0</span> or <span className="italic">all sensors at Sweetwater farm</span>.
+            Describe the devices to target — e.g. <span className="italic">turbines with firmware older than 3.2.0</span> or <span className="italic">all sensors at Sweetwater farm where temperature = 72</span>.
           </p>
         </div>
       </div>
