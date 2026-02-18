@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
   X,
@@ -20,6 +20,8 @@ import {
   ShieldX,
   FileCode2,
   Activity,
+  Loader2,
+  Zap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -773,6 +775,29 @@ function StepTarget({
   const totalAssets = aioInstances.reduce((s, a) => s + a.assets, 0)
   const aioEnabled = jobType === 'management-action' || jobType === 'management-update'
 
+  const [estimate, setEstimate] = useState<{ devices: number; assets: number } | null>(null)
+  const [estimating, setEstimating] = useState(false)
+
+  // Clear estimate whenever the condition changes
+  useEffect(() => { setEstimate(null) }, [targetCondition])
+
+  function runEstimate() {
+    setEstimating(true)
+    setEstimate(null)
+    setTimeout(() => {
+      // Stable pseudo-random from the condition string
+      let h = 0
+      for (let i = 0; i < targetCondition.length; i++) {
+        h = (Math.imul(31, h) + targetCondition.charCodeAt(i)) | 0
+      }
+      const r = (Math.abs(h) % 10000) / 10000
+      const devices = Math.max(1, Math.floor(totalHubDevices * (0.04 + r * 0.38)))
+      const assets = totalAssets > 0 ? Math.max(0, Math.floor(totalAssets * (0.02 + r * 0.35))) : 0
+      setEstimate({ devices, assets })
+      setEstimating(false)
+    }, 900)
+  }
+
   return (
     <div className="space-y-5">
       <div>
@@ -943,6 +968,27 @@ function StepTarget({
                   rows={3}
                   className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
                 />
+
+                {/* Estimate row */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={runEstimate}
+                    disabled={!targetCondition.trim() || estimating}
+                    className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {estimating
+                      ? <Loader2 className="h-3 w-3 animate-spin" />
+                      : <Zap className="h-3 w-3" />}
+                    Estimate scope
+                  </button>
+                  {estimate && (
+                    <p className="text-xs text-muted-foreground">
+                      This condition targets&nbsp;<span className="font-medium text-foreground">~{estimate.devices.toLocaleString()} devices</span>
+                      {estimate.assets > 0 && <> and&nbsp;<span className="font-medium text-foreground">{estimate.assets.toLocaleString()} assets</span></>}.
+                    </p>
+                  )}
+                </div>
+
                 <p className="text-[11px] text-muted-foreground">
                   Describe the devices to target — e.g. <span className="italic">turbines with firmware older than 3.2.0</span> or <span className="italic">all sensors at Sweetwater farm where temperature = 72</span>.
                 </p>
