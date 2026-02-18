@@ -899,27 +899,13 @@ function StepTarget({
           {/* Custom input — shown when mode = custom */}
           {targetMode === 'custom' && (
             <div className="border-t px-4 py-3 space-y-3">
-              {/* Priority */}
-              <div className="flex items-center gap-3">
-                <ClickableLabel label="Priority" required onFill={() => onPriorityChange('10')} />
-                <Input
-                  type="number"
-                  min="1"
-                  value={priority}
-                  onChange={(e) => onPriorityChange(e.target.value)}
-                  className="w-24 h-7 text-xs"
-                  placeholder="10"
-                />
-                <p className="text-[11px] text-muted-foreground">Higher = higher precedence</p>
-              </div>
-
               {/* Target condition with save button */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <ClickableLabel
                     label="Condition"
                     required
-                    onFill={() => onTargetConditionChange('turbines with firmware older than 3.2.0 or all sensors at Sweetwater farm where temperature = 72')}
+                    onFill={() => onTargetConditionChange('Turbines with firmware older than 3.2.0 or all sensors at Sweetwater farm where temperature = 72')}
                   />
                   {targetCondition.trim() && (
                     <div className="relative">
@@ -974,7 +960,7 @@ function StepTarget({
                   <button
                     onClick={runEstimate}
                     disabled={!targetCondition.trim() || estimating}
-                    className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background shadow-sm hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     {estimating
                       ? <Loader2 className="h-3 w-3 animate-spin" />
@@ -989,9 +975,20 @@ function StepTarget({
                   )}
                 </div>
 
-                <p className="text-[11px] text-muted-foreground">
-                  Describe the devices to target — e.g. <span className="italic">turbines with firmware older than 3.2.0</span> or <span className="italic">all sensors at Sweetwater farm where temperature = 72</span>.
-                </p>
+              </div>
+
+              {/* Priority */}
+              <div className="flex items-center gap-3">
+                <ClickableLabel label="Priority" required onFill={() => onPriorityChange('10')} />
+                <Input
+                  type="number"
+                  min="1"
+                  value={priority}
+                  onChange={(e) => onPriorityChange(e.target.value)}
+                  className="w-24 h-7 text-xs"
+                  placeholder="10"
+                />
+                <p className="text-[11px] text-muted-foreground">Higher = higher precedence</p>
               </div>
             </div>
           )}
