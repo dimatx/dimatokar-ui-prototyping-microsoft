@@ -1,0 +1,18 @@
+# Auto detect text files and perform LF normalization
+* text=auto eol=crlf
+
+# Force these to always be treated as text with CRLF
+*.ts text eol=crlf
+*.tsx text eol=crlf
+*.css text eol=crlf
+*.json text eol=crlf
+*.js text eol=crlf
+*.html text eol=crlf
+*.md text eol=crlf
+
+# Denote all files that are truly binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
