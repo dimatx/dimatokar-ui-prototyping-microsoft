@@ -57,6 +57,7 @@ interface SavedGroup {
   id: string
   name: string
   condition: string
+  deviceCount: number
 }
 
 interface NewJobWizardProps {
@@ -120,10 +121,10 @@ const JOB_TYPE_LABELS: Record<string, string> = {
 }
 
 const SAMPLE_SAVED_GROUPS: SavedGroup[] = [
-  { id: 'g1', name: 'All Abilene turbines', condition: 'all turbines at Abilene Wind Farm' },
-  { id: 'g2', name: 'Outdated firmware devices', condition: 'devices running firmware older than 3.2.0' },
-  { id: 'g3', name: 'Critical wind sensors', condition: 'critical sensors at any site' },
-  { id: 'g4', name: 'Sweetwater cluster', condition: 'all devices in Sweetwater cluster' },
+  { id: 'g1', name: 'All Abilene turbines', condition: 'all turbines at Abilene Wind Farm', deviceCount: 3_412 },
+  { id: 'g2', name: 'Outdated firmware devices', condition: 'devices running firmware older than 3.2.0', deviceCount: 18_754 },
+  { id: 'g3', name: 'Critical wind sensors', condition: 'critical sensors at any site', deviceCount: 1_209 },
+  { id: 'g4', name: 'Sweetwater cluster', condition: 'all devices in Sweetwater cluster', deviceCount: 7_831 },
 ]
 
 /* ─── Wizard ────────────────────────────────────────────────── */
@@ -166,7 +167,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
   function saveCurrentAsGroup() {
     if (!newGroupName.trim()) return
     setSavedGroups(prev => [
-      { id: crypto.randomUUID(), name: newGroupName.trim(), condition: targetCondition },
+      { id: crypto.randomUUID(), name: newGroupName.trim(), condition: targetCondition, deviceCount: Math.floor(totalDevices * (0.1 + 0.5 * Math.random())) || Math.floor(Math.random() * 5000) + 500 },
       ...prev,
     ])
     setNewGroupName('')
@@ -1206,13 +1207,13 @@ function StepTargeting({
               required
               onFill={() => onTargetConditionChange('turbines with firmware older than 3.2.0 or all sensors at Sweetwater farm where temperature = 72')}
             />
-            {/* Saved Targets buttons */}
+            {/* Saved Groups buttons */}
             <div className="flex items-center gap-1">
               <div className="relative">
                 <button
                   onClick={() => setGroupDropdownOpen(!groupDropdownOpen)}
                   className="relative inline-flex items-center gap-1 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                  title="Load from saved targets"
+                  title="Load from saved groups"
                 >
                   <FolderOpen className="h-3.5 w-3.5" />
                   <span className="absolute -right-2 -top-2 z-10 rounded-full border border-dashed border-yellow-300 bg-yellow-50 px-1 py-px text-[8px] font-medium tracking-wide uppercase text-yellow-600">P1</span>
@@ -1236,6 +1237,7 @@ function StepTargeting({
                               <p className="text-xs font-medium">{group.name}</p>
                               <p className="text-[10px] text-muted-foreground truncate italic">{group.condition}</p>
                             </div>
+                            <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">{group.deviceCount.toLocaleString()} devices</span>
                           </button>
                         ))}
                       </div>
@@ -1248,7 +1250,7 @@ function StepTargeting({
                   <button
                     onClick={onToggleSaveGroup}
                     className="relative inline-flex items-center gap-1 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                    title="Save as target"
+                    title="Save as group"
                   >
                     {justSaved ? (
                       <Check className="h-3.5 w-3.5 text-green-600" />
