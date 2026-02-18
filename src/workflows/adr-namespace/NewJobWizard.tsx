@@ -104,20 +104,20 @@ const JOB_TYPES_MAIN = [
     tags: ['Hub'],
   },
   {
-    id: 'software-update',
-    name: 'Software Update',
-    description: 'Deploy firmware or software packages to targeted devices',
-    icon: RefreshCw,
+    id: 'direct-method',
+    name: 'Invoke Direct Method',
+    description: 'Call a direct method on devices and receive responses',
+    icon: Terminal,
     tags: ['Hub'],
   },
 ]
 
 const JOB_TYPES_MORE = [
   {
-    id: 'direct-method',
-    name: 'Invoke Direct Method',
-    description: 'Call a direct method on devices and receive responses',
-    icon: Terminal,
+    id: 'software-update',
+    name: 'Software Update',
+    description: 'Deploy firmware or software packages to targeted devices',
+    icon: RefreshCw,
     tags: ['Hub'],
   },
   {
