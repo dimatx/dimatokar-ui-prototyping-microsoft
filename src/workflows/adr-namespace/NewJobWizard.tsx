@@ -1,4 +1,4 @@
-?import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
@@ -72,7 +72,7 @@ const JOB_TYPES_MAIN = [
   {
     id: 'management-action',
     name: 'Management Action',
-    description: 'Invoke a named operation or direct method on devices and assets.',
+    description: 'Invoke a named action on devices and assets.',
     icon: Activity,
     tags: ['Hub', 'AIO'],
   },
@@ -213,7 +213,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
     onCreate({
       id: nextId,
       name: jobName,
-      type: JOB_TYPE_LABELS[jobType ?? 'twin-update'] ?? 'Job',
+      type: JOB_TYPE_LABELS[jobType ?? 'management-update'] ?? 'Job',
       status: 'Running',
       targets: `${totalDevices.toLocaleString()} devices`,
       started: 'Just now',
@@ -957,8 +957,6 @@ function StepHubScope({
   )
 }
 
-/* ─── Step 3: Twin Settings ─────────────────────────────────── */
-
 /* ─── ARM Action Step ───────────────────────────────────────── */
 
 const ARM_PROPERTY_FIELDS = [
@@ -1408,7 +1406,7 @@ function ClickableLabel({
     >
       {label}
       {required && <span className="text-red-500">*</span>}
-      <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span>
+      <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">? click to fill</span>
     </label>
   )
 }
