@@ -52,6 +52,15 @@ export default {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      keyframes: {
+        'pulse-red': {
+          '0%, 100%': { backgroundColor: '#dc2626' },
+          '50%': { backgroundColor: '#7f1d1d' },
+        },
+      },
+      animation: {
+        'pulse-red': 'pulse-red 1.5s ease-in-out infinite',
+      },
     },
   },
   plugins: [tailwindcssAnimate],
