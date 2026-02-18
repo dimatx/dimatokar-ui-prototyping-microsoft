@@ -105,8 +105,8 @@ const JOB_TYPES_MORE = [
 
 const JOB_TYPES = [...JOB_TYPES_MAIN, ...JOB_TYPES_MORE]
 
-const DETAILS_STEPS = ['Job Type', 'Basics', 'Scope', 'Details', 'Target', 'Review']
-const DEFAULT_STEPS = ['Job Type', 'Basics', 'Scope', 'Target', 'Review']
+const DETAILS_STEPS = ['Job Type', 'Basics', 'Target', 'Details', 'Review']
+const DEFAULT_STEPS = ['Job Type', 'Basics', 'Target', 'Review']
 
 function getSteps(jobType: string | null) {
   if (jobType === 'management-action' || jobType === 'management-update') return DETAILS_STEPS
@@ -141,10 +141,9 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
   const [jobName, setJobName] = useState('')
   const [jobDescription, setJobDescription] = useState('')
 
-  // Step 2: Scope
-  const [scopeMode, setScopeMode] = useState<'namespace' | 'select' | 'aio'>('namespace')
-  const [selectedHubs, setSelectedHubs] = useState<Set<string>>(new Set())
-  const [selectedAio, setSelectedAio] = useState<Set<string>>(new Set())
+  // Target mode
+  const [targetMode, setTargetMode] = useState<'namespace' | 'group' | 'custom'>('namespace')
+  const [selectedGroup, setSelectedGroup] = useState<SavedGroup | null>(null)
 
   // ARM Detail step
   const [armActionMode, setArmActionMode] = useState<'update-properties' | 'arm-action'>('update-properties')
@@ -160,14 +159,14 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
   const [newGroupName, setNewGroupName] = useState('')
   const [justSavedGroup, setJustSavedGroup] = useState(false)
   const steps = getSteps(jobType)
-  const activeHubs = linkedHubs
-  const scopedHubs = scopeMode === 'namespace' ? activeHubs : activeHubs.filter((h) => selectedHubs.has(h.name))
+  const scopedHubs = linkedHubs
   const totalDevices = scopedHubs.reduce((sum, h) => sum + h.devices, 0)
+  const effectiveDeviceCount = targetMode === 'group' && selectedGroup ? selectedGroup.deviceCount : totalDevices
 
   function saveCurrentAsGroup() {
     if (!newGroupName.trim()) return
     setSavedGroups(prev => [
-      { id: crypto.randomUUID(), name: newGroupName.trim(), condition: targetCondition, deviceCount: Math.floor(totalDevices * (0.1 + 0.5 * Math.random())) || Math.floor(Math.random() * 5000) + 500 },
+      { id: crypto.randomUUID(), name: newGroupName.trim(), condition: targetCondition, deviceCount: Math.floor(effectiveDeviceCount * (0.3 + 0.5 * Math.random())) || Math.floor(Math.random() * 5000) + 500 },
       ...prev,
     ])
     setNewGroupName('')
@@ -191,19 +190,18 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
     switch (name) {
       case 'Job Type': return jobType !== null && !showCopyPicker
       case 'Basics': return jobName.trim().length > 0
-      case 'Scope': {
-        if (scopeMode === 'namespace') return true
-        if (scopeMode === 'select') return selectedHubs.size > 0
-        if (scopeMode === 'aio') return selectedAio.size > 0
-        return false
-      }
       case 'Details': {
         if (jobType === 'management-update') {
           return armProperties.length > 0 && armProperties.every(p => p.value.trim().length > 0)
         }
         return armActionName.trim().length > 0 && armActionPayload.trim().length > 0
       }
-      case 'Target': return targetCondition.trim().length > 0 && priority.trim().length > 0
+      case 'Target': {
+        if (targetMode === 'namespace') return true
+        if (targetMode === 'group') return selectedGroup !== null
+        if (targetMode === 'custom') return targetCondition.trim().length > 0 && priority.trim().length > 0
+        return false
+      }
       case 'Review': return true
       default: return false
     }
@@ -216,7 +214,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
       name: jobName,
       type: JOB_TYPE_LABELS[jobType ?? 'management-update'] ?? 'Job',
       status: 'Running',
-      targets: `${totalDevices.toLocaleString()} devices`,
+      targets: `${effectiveDeviceCount.toLocaleString()} devices`,
       started: 'Just now',
       hubProgress: scopedHubs.map((h) => ({
         hubName: h.name,
@@ -224,24 +222,6 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
         completed: 0,
         status: 'Running',
       })),
-    })
-  }
-
-  function toggleHub(hubName: string) {
-    setSelectedHubs((prev) => {
-      const next = new Set(prev)
-      if (next.has(hubName)) next.delete(hubName)
-      else next.add(hubName)
-      return next
-    })
-  }
-
-  function toggleAio(name: string) {
-    setSelectedAio((prev) => {
-      const next = new Set(prev)
-      if (next.has(name)) next.delete(name)
-      else next.add(name)
-      return next
     })
   }
 
@@ -355,20 +335,6 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                   onDescriptionChange={setJobDescription}
                 />
               )}
-              {currentStepName() === 'Scope' && (
-                <StepHubScope
-                  hubs={activeHubs}
-                  scopeMode={scopeMode}
-                  onScopeModeChange={setScopeMode}
-                  selectedHubs={selectedHubs}
-                  onToggleHub={toggleHub}
-                  jobType={jobType}
-                  aioInstances={aioInstances}
-                  selectedAio={selectedAio}
-                  onToggleAio={toggleAio}
-                  totalAssets={totalAssets}
-                />
-              )}
               {currentStepName() === 'Details' && (
                 <StepArmAction
                   jobType={jobType}
@@ -383,19 +349,25 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                 />
               )}
               {currentStepName() === 'Target' && (
-                <StepTargeting
-                  priority={priority}
-                  onPriorityChange={setPriority}
+                <StepTarget
+                  hubs={scopedHubs}
+                  aioInstances={aioInstances}
+                  jobType={jobType}
+                  targetMode={targetMode}
+                  onTargetModeChange={(m) => { setTargetMode(m); setSelectedGroup(null); setTargetCondition('') }}
+                  selectedGroup={selectedGroup}
+                  onSelectGroup={(g) => { setSelectedGroup(g); setTargetCondition(g.condition) }}
+                  savedGroups={savedGroups}
                   targetCondition={targetCondition}
                   onTargetConditionChange={setTargetCondition}
-                  savedGroups={savedGroups}
+                  priority={priority}
+                  onPriorityChange={setPriority}
                   showSaveGroupInput={showSaveGroupInput}
                   onToggleSaveGroup={() => setShowSaveGroupInput(!showSaveGroupInput)}
                   newGroupName={newGroupName}
                   onNewGroupNameChange={setNewGroupName}
                   onSaveGroup={saveCurrentAsGroup}
                   justSaved={justSavedGroup}
-                  onLoadGroup={loadGroup}
                 />
               )}
               {currentStepName() === 'Review' && (
@@ -403,10 +375,11 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                   jobName={jobName}
                   jobDescription={jobDescription}
                   jobType={JOB_TYPES.find((t) => t.id === jobType)?.name ?? 'Job'}
-                  scopeMode={scopeMode}
-                  scopedHubs={scopedHubs}
-                  selectedAio={selectedAio}
-                  totalDevices={totalDevices}
+                  hubs={scopedHubs}
+                  aioInstances={aioInstances}
+                  targetMode={targetMode}
+                  selectedGroup={selectedGroup}
+                  effectiveDeviceCount={effectiveDeviceCount}
                   priority={priority}
                   targetCondition={targetCondition}
                 />
@@ -755,205 +728,227 @@ function StepDetails({
   )
 }
 
-/* ─── Step 2: Scope ─────────────────────────────────────────── */
+/* ─── Step: Target ───────────────────────────────────────── */
 
-function StepHubScope({
+function StepTarget({
   hubs,
-  scopeMode,
-  onScopeModeChange,
-  selectedHubs,
-  onToggleHub,
-  jobType,
   aioInstances,
-  selectedAio,
-  onToggleAio,
-  totalAssets,
+  jobType,
+  targetMode,
+  onTargetModeChange,
+  selectedGroup,
+  onSelectGroup,
+  savedGroups,
+  targetCondition,
+  onTargetConditionChange,
+  priority,
+  onPriorityChange,
+  showSaveGroupInput,
+  onToggleSaveGroup,
+  newGroupName,
+  onNewGroupNameChange,
+  onSaveGroup,
+  justSaved,
 }: {
   hubs: Hub[]
-  scopeMode: 'namespace' | 'select' | 'aio'
-  onScopeModeChange: (m: 'namespace' | 'select' | 'aio') => void
-  selectedHubs: Set<string>
-  onToggleHub: (name: string) => void
-  jobType: string | null
   aioInstances: { name: string; site: string; status: string; connectedDevices: number; assets: number }[]
-  selectedAio: Set<string>
-  onToggleAio: (name: string) => void
-  totalAssets: number
+  jobType: string | null
+  targetMode: 'namespace' | 'group' | 'custom'
+  onTargetModeChange: (m: 'namespace' | 'group' | 'custom') => void
+  selectedGroup: SavedGroup | null
+  onSelectGroup: (g: SavedGroup) => void
+  savedGroups: SavedGroup[]
+  targetCondition: string
+  onTargetConditionChange: (v: string) => void
+  priority: string
+  onPriorityChange: (v: string) => void
+  showSaveGroupInput: boolean
+  onToggleSaveGroup: () => void
+  newGroupName: string
+  onNewGroupNameChange: (v: string) => void
+  onSaveGroup: () => void
+  justSaved: boolean
 }) {
-  const allHubDevices = hubs.reduce((s, h) => s + h.devices, 0)
-  const allAioDevices = aioInstances.reduce((s, a) => s + a.connectedDevices, 0)
-  const selectedHubDevices = hubs
-    .filter((h) => selectedHubs.has(h.name))
-    .reduce((s, h) => s + h.devices, 0)
-  const selectedAioDevices = aioInstances
-    .filter((a) => selectedAio.has(a.name))
-    .reduce((s, a) => s + a.connectedDevices, 0)
-
+  const totalHubDevices = hubs.reduce((s, h) => s + h.devices, 0)
   const aioEnabled = jobType === 'management-action' || jobType === 'management-update'
 
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-sm font-semibold">Scope</h3>
+        <h3 className="text-sm font-semibold">Target</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Choose the scope for this job — target the entire namespace, individual IoT&nbsp;Hubs, or IoT&nbsp;Operations instances.
+          Choose which devices receive this job.
         </p>
       </div>
 
-      {/* Scope mode selector — always 3 options */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Three option cards */}
+      <div className="space-y-2">
+        {/* 1 — My Namespace */}
         <button
-          onClick={() => onScopeModeChange('namespace')}
-          className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-all ${
-            scopeMode === 'namespace'
+          onClick={() => onTargetModeChange('namespace')}
+          className={`w-full flex items-start gap-3 rounded-lg border p-4 text-left transition-all ${
+            targetMode === 'namespace'
               ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
-              : 'hover:bg-muted/30'
+              : 'hover:bg-muted/20'
           }`}
         >
-          <Globe className={`h-5 w-5 mt-0.5 shrink-0 ${scopeMode === 'namespace' ? 'text-foreground' : 'text-muted-foreground'}`} />
-          <div className="min-w-0">
-            <p className="text-sm font-medium">Entire Namespace</p>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {hubs.length} IoT&nbsp;Hubs<br />
-              <span className={!aioEnabled ? 'line-through opacity-40' : ''}>
-                {aioInstances.length} AIO instance{aioInstances.length !== 1 ? 's' : ''}
-              </span>
+          <Globe className={`h-4 w-4 mt-0.5 shrink-0 ${targetMode === 'namespace' ? 'text-foreground' : 'text-muted-foreground'}`} />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">My Namespace</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {hubs.length} IoT Hubs · {totalHubDevices.toLocaleString()} devices
+              {aioEnabled && <> · {aioInstances.length} IoT Operations instance{aioInstances.length !== 1 ? 's' : ''}</>}
             </p>
           </div>
+          {targetMode === 'namespace' && <Check className="h-4 w-4 text-foreground shrink-0 mt-0.5" />}
         </button>
-        <button
-          onClick={() => onScopeModeChange('select')}
-          className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-all ${
-            scopeMode === 'select'
-              ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
-              : 'hover:bg-muted/30'
+
+        {/* 2 — Load Group */}
+        <div
+          className={`rounded-lg border transition-all ${
+            targetMode === 'group' ? 'border-foreground ring-1 ring-foreground' : 'hover:bg-muted/20'
           }`}
         >
-          <Server className={`h-5 w-5 mt-0.5 shrink-0 ${scopeMode === 'select' ? 'text-foreground' : 'text-muted-foreground'}`} />
-          <div className="min-w-0">
-            <p className="text-sm font-medium">IoT&nbsp;Hubs</p>
-            <p className="text-xs text-muted-foreground">
-              {selectedHubs.size > 0
-                ? `${selectedHubs.size} selected · ${selectedHubDevices.toLocaleString()} devices`
-                : `${hubs.length} available`}
-            </p>
-          </div>
-        </button>
-        <button
-          onClick={() => aioEnabled && onScopeModeChange('aio')}
-          disabled={!aioEnabled}
-          className={`flex items-start gap-3 rounded-lg border p-4 text-left transition-all ${
-            !aioEnabled
-              ? 'opacity-40 cursor-not-allowed'
-              : scopeMode === 'aio'
-              ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
-              : 'hover:bg-muted/30'
+          <button
+            onClick={() => onTargetModeChange('group')}
+            className="w-full flex items-start gap-3 p-4 text-left"
+          >
+            <Bookmark className={`h-4 w-4 mt-0.5 shrink-0 ${targetMode === 'group' ? 'text-foreground' : 'text-muted-foreground'}`} />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">Load Group</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {selectedGroup ? selectedGroup.name : 'Pick a saved group of devices'}
+              </p>
+            </div>
+            {selectedGroup && <Check className="h-4 w-4 text-foreground shrink-0 mt-0.5" />}
+          </button>
+
+          {/* Group list — shown when mode = group */}
+          {targetMode === 'group' && (
+            <div className="border-t mx-0">
+              <div className="divide-y max-h-52 overflow-y-auto">
+                {savedGroups.map((group) => (
+                  <button
+                    key={group.id}
+                    onClick={() => onSelectGroup(group)}
+                    className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-left hover:bg-muted/40 transition-colors ${
+                      selectedGroup?.id === group.id ? 'bg-muted/30' : ''
+                    }`}
+                  >
+                    <div className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                      selectedGroup?.id === group.id ? 'border-foreground bg-foreground' : 'border-muted-foreground/40'
+                    }`}>
+                      {selectedGroup?.id === group.id && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium">{group.name}</p>
+                      <p className="text-[10px] text-muted-foreground truncate italic">{group.condition}</p>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">{group.deviceCount.toLocaleString()} devices</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 3 — Custom */}
+        <div
+          className={`rounded-lg border transition-all ${
+            targetMode === 'custom' ? 'border-foreground ring-1 ring-foreground' : 'hover:bg-muted/20'
           }`}
         >
-          <Activity className={`h-5 w-5 mt-0.5 shrink-0 ${scopeMode === 'aio' ? 'text-foreground' : 'text-muted-foreground'}`} />
-          <div className="min-w-0">
-            <p className="text-sm font-medium">IoT&nbsp;Operations</p>
-            <p className="text-xs text-muted-foreground">
-              {selectedAio.size > 0
-                ? `${selectedAio.size} selected · ${selectedAioDevices.toLocaleString()} devices`
-                : `${aioInstances.length} instance${aioInstances.length !== 1 ? 's' : ''}`}
-            </p>
-          </div>
-        </button>
+          <button
+            onClick={() => onTargetModeChange('custom')}
+            className="w-full flex items-start gap-3 p-4 text-left"
+          >
+            <Terminal className={`h-4 w-4 mt-0.5 shrink-0 ${targetMode === 'custom' ? 'text-foreground' : 'text-muted-foreground'}`} />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">Custom</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Describe a target in plain language</p>
+            </div>
+          </button>
+
+          {/* Custom input — shown when mode = custom */}
+          {targetMode === 'custom' && (
+            <div className="border-t px-4 py-3 space-y-3">
+              {/* Priority */}
+              <div className="flex items-center gap-3">
+                <ClickableLabel label="Priority" required onFill={() => onPriorityChange('10')} />
+                <Input
+                  type="number"
+                  min="1"
+                  value={priority}
+                  onChange={(e) => onPriorityChange(e.target.value)}
+                  className="w-24 h-7 text-xs"
+                  placeholder="10"
+                />
+                <p className="text-[11px] text-muted-foreground">Higher = higher precedence</p>
+              </div>
+
+              {/* Target condition with save button */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <ClickableLabel
+                    label="Condition"
+                    required
+                    onFill={() => onTargetConditionChange('turbines with firmware older than 3.2.0 or all sensors at Sweetwater farm where temperature = 72')}
+                  />
+                  {targetCondition.trim() && (
+                    <div className="relative">
+                      <button
+                        onClick={onToggleSaveGroup}
+                        className="relative inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                        title="Save as group"
+                      >
+                        {justSaved ? <Check className="h-3 w-3 text-green-600" /> : <Save className="h-3 w-3" />}
+                        <span className="ml-1">{justSaved ? 'Saved' : 'Save as group'}</span>
+                      </button>
+                      {showSaveGroupInput && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={onToggleSaveGroup} />
+                          <div className="absolute right-0 top-full z-20 mt-1 w-64 rounded-lg border bg-white shadow-lg">
+                            <div className="px-3 py-2 border-b">
+                              <p className="text-[11px] font-medium text-muted-foreground">Save as Group</p>
+                            </div>
+                            <div className="flex items-center gap-2 p-3">
+                              <Input
+                                value={newGroupName}
+                                onChange={(e) => onNewGroupNameChange(e.target.value)}
+                                placeholder="e.g. All Abilene turbines"
+                                className="h-7 text-xs flex-1"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && newGroupName.trim()) onSaveGroup()
+                                  if (e.key === 'Escape') onToggleSaveGroup()
+                                }}
+                              />
+                              <Button size="sm" className="h-7 text-xs gap-1 px-2 shrink-0" disabled={!newGroupName.trim()} onClick={onSaveGroup}>
+                                <Check className="h-3 w-3" />
+                                Save
+                              </Button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <textarea
+                  value={targetCondition}
+                  onChange={(e) => onTargetConditionChange(e.target.value)}
+                  placeholder="e.g. turbines with firmware older than 3.2.0"
+                  rows={3}
+                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Describe the devices to target — e.g. <span className="italic">turbines with firmware older than 3.2.0</span> or <span className="italic">all sensors at Sweetwater farm where temperature = 72</span>.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* Resource list */}
-      {scopeMode === 'namespace' && (
-        <div className="space-y-1">
-          {hubs.map((hub) => (
-            <div
-              key={hub.name}
-              className="flex items-center gap-2 rounded-md border border-muted bg-muted/10 px-3 py-2 cursor-default"
-            >
-              <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-muted-foreground/40 bg-muted-foreground/40 text-white">
-                <Check className="h-2.5 w-2.5" />
-              </div>
-              <Server className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
-              <span className="text-xs text-muted-foreground">{hub.name}</span>
-              <span className="text-[10px] text-muted-foreground/60 ml-auto">{hub.devices.toLocaleString()} devices</span>
-            </div>
-          ))}
-          {aioInstances.map((inst) => (
-            <div
-              key={inst.name}
-              className={`flex items-center gap-2 rounded-md border px-3 py-2 cursor-default ${aioEnabled ? 'border-muted bg-muted/10' : 'border-muted/50 bg-muted/5 opacity-50'}`}
-            >
-              <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${aioEnabled ? 'border-muted-foreground/40 bg-muted-foreground/40 text-white' : 'border-muted-foreground/30 bg-transparent'}`}>
-                {aioEnabled && <Check className="h-2.5 w-2.5" />}
-              </div>
-              <Activity className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
-              <span className="text-xs text-muted-foreground">{inst.name}</span>
-              {!aioEnabled && <span className="text-[10px] text-muted-foreground/50 ml-1 italic">not supported for this job type</span>}
-              <span className="text-[10px] text-muted-foreground/60 ml-auto">{inst.connectedDevices.toLocaleString()} devices · {inst.assets.toLocaleString()} assets</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Hub list — shown for select mode */}
-      {scopeMode === 'select' && (
-        <div className="space-y-1.5">
-          {hubs.map((hub) => {
-            const checked = selectedHubs.has(hub.name)
-            return (
-              <button
-                key={hub.name}
-                onClick={() => onToggleHub(hub.name)}
-                className={`flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left transition-all ${
-                  checked ? 'border-foreground bg-muted/20' : 'hover:bg-muted/30'
-                }`}
-              >
-                <div
-                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
-                    checked
-                      ? 'border-foreground bg-foreground text-white'
-                      : 'border-muted-foreground/30'
-                  }`}
-                >
-                  {checked && <Check className="h-2.5 w-2.5" />}
-                </div>
-                <span className="text-xs font-medium">{hub.name}</span>
-                <span className="text-[10px] text-muted-foreground ml-auto">{hub.region} · {hub.devices.toLocaleString()} devices</span>
-              </button>
-            )
-          })}
-        </div>
-      )}
-
-      {/* AIO instance list — shown for aio mode */}
-      {scopeMode === 'aio' && (
-        <div className="space-y-1.5">
-          {aioInstances.map((inst) => {
-            const checked = selectedAio.has(inst.name)
-            return (
-              <button
-                key={inst.name}
-                onClick={() => onToggleAio(inst.name)}
-                className={`flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left transition-all ${
-                  checked ? 'border-foreground bg-muted/20' : 'hover:bg-muted/30'
-                }`}
-              >
-                <div
-                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
-                    checked
-                      ? 'border-foreground bg-foreground text-white'
-                      : 'border-muted-foreground/30'
-                  }`}
-                >
-                  {checked && <Check className="h-2.5 w-2.5" />}
-                </div>
-                <span className="text-xs font-medium">{inst.name}</span>
-                <span className="text-[10px] text-muted-foreground ml-auto">{inst.site} · {inst.connectedDevices.toLocaleString()} devices · {inst.assets.toLocaleString()} assets</span>
-              </button>
-            )
-          })}
-        </div>
-      )}
     </div>
   )
 }
@@ -1141,175 +1136,6 @@ function StepArmAction({
   )
 }
 
-/* ─── Step 4: Targeting ─────────────────────────────────────── */
-
-function StepTargeting({
-  priority,
-  onPriorityChange,
-  targetCondition,
-  onTargetConditionChange,
-  savedGroups,
-  showSaveGroupInput,
-  onToggleSaveGroup,
-  newGroupName,
-  onNewGroupNameChange,
-  onSaveGroup,
-  justSaved,
-  onLoadGroup,
-}: {
-  priority: string
-  onPriorityChange: (v: string) => void
-  targetCondition: string
-  onTargetConditionChange: (v: string) => void
-  savedGroups: SavedGroup[]
-  showSaveGroupInput: boolean
-  onToggleSaveGroup: () => void
-  newGroupName: string
-  onNewGroupNameChange: (v: string) => void
-  onSaveGroup: () => void
-  justSaved: boolean
-  onLoadGroup: (group: SavedGroup) => void
-}) {
-  const [groupDropdownOpen, setGroupDropdownOpen] = useState(false)
-  const hasCondition = targetCondition.trim().length > 0
-
-  return (
-    <div className="space-y-5">
-      <div>
-        <h3 className="text-sm font-semibold">Target</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Define a priority and describe which devices should receive this job.
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        {/* Priority */}
-        <div className="space-y-1.5">
-          <ClickableLabel label="Priority" required onFill={() => onPriorityChange('10')} />
-          <Input
-            type="number"
-            min="1"
-            value={priority}
-            onChange={(e) => onPriorityChange(e.target.value)}
-            className="w-32"
-            placeholder="10"
-          />
-          <p className="text-xs text-muted-foreground">
-            Higher values take precedence when multiple configurations target the same device.
-          </p>
-        </div>
-
-        {/* Target pseudo-language input */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <ClickableLabel
-              label="Target"
-              required
-              onFill={() => onTargetConditionChange('turbines with firmware older than 3.2.0 or all sensors at Sweetwater farm where temperature = 72')}
-            />
-            {/* Saved Groups buttons */}
-            <div className="flex items-center gap-1">
-              <div className="relative">
-                <button
-                  onClick={() => setGroupDropdownOpen(!groupDropdownOpen)}
-                  className="relative inline-flex items-center gap-1 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                  title="Load from saved groups"
-                >
-                  <FolderOpen className="h-3.5 w-3.5" />
-                  <span className="absolute -right-2 -top-2 z-10 rounded-full border border-dashed border-yellow-300 bg-yellow-50 px-1 py-px text-[8px] font-medium tracking-wide uppercase text-yellow-600">P1</span>
-                </button>
-                {groupDropdownOpen && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setGroupDropdownOpen(false)} />
-                    <div className="absolute right-0 top-full z-20 mt-1 w-72 rounded-lg border bg-white shadow-lg">
-                      <div className="px-3 py-2 border-b">
-                        <p className="text-[11px] font-medium text-muted-foreground">Saved Targets</p>
-                      </div>
-                      <div className="max-h-48 overflow-y-auto py-1">
-                        {savedGroups.map((group) => (
-                          <button
-                            key={group.id}
-                            onClick={() => { onLoadGroup(group); setGroupDropdownOpen(false) }}
-                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-muted/40 transition-colors"
-                          >
-                            <Bookmark className="h-3 w-3 text-muted-foreground shrink-0" />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-medium">{group.name}</p>
-                              <p className="text-[10px] text-muted-foreground truncate italic">{group.condition}</p>
-                            </div>
-                            <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">{group.deviceCount.toLocaleString()} devices</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-              {hasCondition && (
-                <div className="relative">
-                  <button
-                    onClick={onToggleSaveGroup}
-                    className="relative inline-flex items-center gap-1 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                    title="Save as group"
-                  >
-                    {justSaved ? (
-                      <Check className="h-3.5 w-3.5 text-green-600" />
-                    ) : (
-                      <Save className="h-3.5 w-3.5" />
-                    )}
-                    <span className="absolute -right-2 -top-2 z-10 rounded-full border border-dashed border-yellow-300 bg-yellow-50 px-1 py-px text-[8px] font-medium tracking-wide uppercase text-yellow-600">P1</span>
-                  </button>
-                  {showSaveGroupInput && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={onToggleSaveGroup} />
-                      <div className="absolute right-0 top-full z-20 mt-1 w-72 rounded-lg border bg-white shadow-lg">
-                        <div className="px-3 py-2 border-b">
-                          <p className="text-[11px] font-medium text-muted-foreground">Save as Target</p>
-                        </div>
-                        <div className="flex items-center gap-2 p-3">
-                          <Input
-                            value={newGroupName}
-                            onChange={(e) => onNewGroupNameChange(e.target.value)}
-                            placeholder="e.g. All Abilene turbines"
-                            className="h-7 text-xs flex-1"
-                            autoFocus
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && newGroupName.trim()) onSaveGroup()
-                              if (e.key === 'Escape') onToggleSaveGroup()
-                            }}
-                          />
-                          <Button
-                            size="sm"
-                            className="h-7 text-xs gap-1 px-2 shrink-0"
-                            disabled={!newGroupName.trim()}
-                            onClick={onSaveGroup}
-                          >
-                            <Check className="h-3 w-3" />
-                            Save
-                          </Button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-          <textarea
-            value={targetCondition}
-            onChange={(e) => onTargetConditionChange(e.target.value)}
-            placeholder="e.g. turbines with firmware older than 3.2.0"
-            rows={3}
-            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
-          />
-          <p className="text-xs text-muted-foreground">
-            Describe the devices to target — e.g. <span className="italic">turbines with firmware older than 3.2.0</span> or <span className="italic">all sensors at Sweetwater farm where temperature = 72</span>.
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 /* ─── Step 5: Review ────────────────────────────────────────── */
 
@@ -1317,20 +1143,22 @@ function StepReview({
   jobName,
   jobDescription,
   jobType,
-  scopeMode,
-  scopedHubs,
-  selectedAio,
-  totalDevices,
+  hubs,
+  aioInstances,
+  targetMode,
+  selectedGroup,
+  effectiveDeviceCount,
   priority,
   targetCondition,
 }: {
   jobName: string
   jobDescription: string
   jobType: string
-  scopeMode: 'namespace' | 'select' | 'aio'
-  scopedHubs: Hub[]
-  selectedAio: Set<string>
-  totalDevices: number
+  hubs: Hub[]
+  aioInstances: { name: string; connectedDevices: number; assets: number }[]
+  targetMode: 'namespace' | 'group' | 'custom'
+  selectedGroup: SavedGroup | null
+  effectiveDeviceCount: number
   priority: string
   targetCondition: string
 }) {
@@ -1349,28 +1177,29 @@ function StepReview({
           <ReviewRow label="Job Type" value={jobType} />
           <ReviewRow label="Name" value={jobName} />
           {jobDescription && <ReviewRow label="Description" value={jobDescription} />}
-          <ReviewRow
-            label="Scope"
-            value={
-              scopeMode === 'namespace'
-                ? `Entire namespace (${scopedHubs.length} hubs)`
-                : scopeMode === 'aio'
-                ? `IoT Operations (${selectedAio.size} instance${selectedAio.size !== 1 ? 's' : ''})`
-                : scopedHubs.map((h) => h.name).join(', ')
-            }
-          />
-          <ReviewRow label="Total Devices" value={totalDevices.toLocaleString()} />
-          <ReviewRow label="Priority" value={priority} />
+          <ReviewRow label="Devices" value={effectiveDeviceCount.toLocaleString()} />
+          {priority && <ReviewRow label="Priority" value={priority} />}
 
           {/* Target */}
-          {targetCondition.trim() && (
-            <div className="px-4 py-3">
-              <p className="text-xs font-medium text-muted-foreground mb-2">Target</p>
-              <p className="rounded border bg-muted/20 p-3 text-xs text-foreground">
-                {targetCondition}
+          <div className="px-4 py-3">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Target</p>
+            {targetMode === 'namespace' && (
+              <p className="text-xs text-foreground">
+                My Namespace — {hubs.length} IoT Hubs · {hubs.reduce((s,h)=>s+h.devices,0).toLocaleString()} devices
+                {aioInstances.length > 0 && <> · {aioInstances.length} IoT Operations instance{aioInstances.length!==1?'s':''}</>}
               </p>
-            </div>
-          )}
+            )}
+            {targetMode === 'group' && selectedGroup && (
+              <div>
+                <p className="text-xs font-medium">{selectedGroup.name}</p>
+                <p className="text-[11px] text-muted-foreground italic mt-0.5">{selectedGroup.condition}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{selectedGroup.deviceCount.toLocaleString()} devices</p>
+              </div>
+            )}
+            {targetMode === 'custom' && (
+              <p className="rounded border bg-muted/20 p-3 text-xs text-foreground">{targetCondition}</p>
+            )}
+          </div>
         </div>
       </div>
     </div>
