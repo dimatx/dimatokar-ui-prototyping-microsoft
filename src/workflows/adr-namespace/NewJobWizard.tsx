@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion'
+﻿import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
@@ -6,6 +6,7 @@ import {
   Check,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Plus,
   Trash2,
   Settings2,
@@ -107,8 +108,25 @@ const JOB_TYPES_MORE = [
 
 const JOB_TYPES = [...JOB_TYPES_MAIN, ...JOB_TYPES_MORE]
 
-const DETAILS_STEPS = ['Job Type', 'Basics', 'Target', 'Details', 'Review']
-const DEFAULT_STEPS = ['Job Type', 'Basics', 'Target', 'Review']
+interface MockNamespace {
+  id: string
+  name: string
+  region: string
+  hubCount: number
+  aioCount: number
+  devices: number
+  assets: number
+}
+
+const MOCK_NAMESPACES: MockNamespace[] = [
+  { id: 'texas-wind', name: 'Texas-Wind-Namespace', region: 'East US', hubCount: 4, aioCount: 1, devices: 24180, assets: 3200 },
+  { id: 'offshore-energy', name: 'Offshore-Energy-Namespace', region: 'East US 2', hubCount: 2, aioCount: 0, devices: 8540, assets: 0 },
+  { id: 'pacific-solar', name: 'Pacific-Solar-Grid', region: 'West US 2', hubCount: 3, aioCount: 0, devices: 15020, assets: 0 },
+  { id: 'northeast-grid', name: 'Northeast-Grid-Operations', region: 'East US', hubCount: 1, aioCount: 0, devices: 4210, assets: 0 },
+]
+
+const DETAILS_STEPS = ['Job Type', 'Basics', 'Target', 'Details', 'Schedule', 'Review']
+const DEFAULT_STEPS = ['Job Type', 'Basics', 'Target', 'Schedule', 'Review']
 
 function getSteps(jobType: string | null) {
   if (jobType === 'management-action' || jobType === 'management-update') return DETAILS_STEPS
@@ -146,6 +164,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
   // Target mode
   const [targetMode, setTargetMode] = useState<'namespace' | 'group' | 'custom'>('namespace')
   const [selectedGroup, setSelectedGroup] = useState<SavedGroup | null>(null)
+  const [selectedNamespace, setSelectedNamespace] = useState<MockNamespace>(MOCK_NAMESPACES[0])
 
   // ARM Detail step
   const [armActionMode, setArmActionMode] = useState<'update-properties' | 'arm-action'>('update-properties')
@@ -160,6 +179,10 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
   const [showSaveGroupInput, setShowSaveGroupInput] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
   const [justSavedGroup, setJustSavedGroup] = useState(false)
+
+  // Step: Schedule
+  const [scheduleMode, setScheduleMode] = useState<'now' | 'later'>('now')
+  const [scheduleDate, setScheduleDate] = useState('')
   const steps = getSteps(jobType)
   const scopedHubs = linkedHubs
   const totalDevices = scopedHubs.reduce((sum, h) => sum + h.devices, 0)
@@ -204,6 +227,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
         if (targetMode === 'custom') return targetCondition.trim().length > 0 && priority.trim().length > 0
         return false
       }
+      case 'Schedule': return scheduleMode === 'now' || scheduleDate.length > 0
       case 'Review': return true
       default: return false
     }
@@ -370,6 +394,16 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                   onNewGroupNameChange={setNewGroupName}
                   onSaveGroup={saveCurrentAsGroup}
                   justSaved={justSavedGroup}
+                  selectedNamespace={selectedNamespace}
+                  onNamespaceChange={setSelectedNamespace}
+                />
+              )}
+              {currentStepName() === 'Schedule' && (
+                <StepSchedule
+                  mode={scheduleMode}
+                  onModeChange={setScheduleMode}
+                  date={scheduleDate}
+                  onDateChange={setScheduleDate}
                 />
               )}
               {currentStepName() === 'Review' && (
@@ -384,6 +418,9 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                   effectiveDeviceCount={effectiveDeviceCount}
                   priority={priority}
                   targetCondition={targetCondition}
+                  selectedNamespace={selectedNamespace}
+                  scheduleMode={scheduleMode}
+                  scheduleDate={scheduleDate}
                 />
               )}
             </motion.div>
@@ -451,8 +488,12 @@ function StepJobType({
 
   const visibleTypes = showMore ? JOB_TYPES : JOB_TYPES_MAIN
 
-  // If the selected job is in the "more" section, always show it
+  // If the selected job is in the "more" section, always show all types
   const hasMoreSelected = JOB_TYPES_MORE.some((t) => t.id === selected)
+
+  useEffect(() => {
+    if (hasMoreSelected) setShowMore(true)
+  }, [hasMoreSelected])
 
   const renderJobButton = (type: typeof JOB_TYPES[number]) => {
     const isSelected = selected === type.id
@@ -508,19 +549,17 @@ function StepJobType({
         </p>
       </div>
       <div className="space-y-2">
-        {(hasMoreSelected ? JOB_TYPES : visibleTypes).map(renderJobButton)}
+        {visibleTypes.map(renderJobButton)}
       </div>
 
       {/* Show more / less toggle */}
-      {!hasMoreSelected && (
-        <button
-          onClick={() => setShowMore(!showMore)}
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ChevronRight className={`h-3 w-3 transition-transform ${showMore ? 'rotate-90' : ''}`} />
-          {showMore ? 'Show fewer job types' : `Show ${JOB_TYPES_MORE.length} more job type${JOB_TYPES_MORE.length !== 1 ? 's' : ''}`}
-        </button>
-      )}
+      <button
+        onClick={() => setShowMore(!showMore)}
+        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showMore ? 'rotate-180' : ''}`} />
+        {showMore ? 'Show fewer job types' : `Show ${JOB_TYPES_MORE.length} more job type${JOB_TYPES_MORE.length !== 1 ? 's' : ''}`}
+      </button>
 
       {/* Separator + Copy from Existing */}
       <div className="relative py-1">
@@ -743,6 +782,8 @@ function StepTarget({
   onNewGroupNameChange,
   onSaveGroup,
   justSaved,
+  selectedNamespace,
+  onNamespaceChange,
 }: {
   hubs: Hub[]
   aioInstances: { name: string; site: string; status: string; connectedDevices: number; assets: number }[]
@@ -762,6 +803,8 @@ function StepTarget({
   onNewGroupNameChange: (v: string) => void
   onSaveGroup: () => void
   justSaved: boolean
+  selectedNamespace: MockNamespace
+  onNamespaceChange: (ns: MockNamespace) => void
 }) {
   const totalHubDevices = hubs.reduce((s, h) => s + h.devices, 0)
   const totalAssets = aioInstances.reduce((s, a) => s + a.assets, 0)
@@ -801,26 +844,50 @@ function StepTarget({
 
       {/* Three option cards */}
       <div className="space-y-2">
-        {/* 1 — My Namespace */}
-        <button
-          onClick={() => onTargetModeChange('namespace')}
-          className={`w-full flex items-start gap-3 rounded-lg border p-4 text-left transition-all ${
+{/* 1 — Namespace */}
+        <div
+          className={`rounded-lg border transition-all ${
             targetMode === 'namespace'
-              ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
+              ? 'border-foreground ring-1 ring-foreground'
               : 'hover:bg-muted/20'
           }`}
         >
-          <Globe className={`h-4 w-4 mt-0.5 shrink-0 ${targetMode === 'namespace' ? 'text-foreground' : 'text-muted-foreground'}`} />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium">My Namespace</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {hubs.length} IoT Hubs · {aioInstances.length} IoT Operations instance{aioInstances.length !== 1 ? 's' : ''}
-               · {totalHubDevices.toLocaleString()} devices
-              {totalAssets > 0 && <> · {totalAssets.toLocaleString()} assets</>}
-            </p>
-          </div>
-          {targetMode === 'namespace' && <Check className="h-4 w-4 text-foreground shrink-0 mt-0.5" />}
-        </button>
+          <button
+            onClick={() => onTargetModeChange('namespace')}
+            className="w-full flex items-start gap-3 p-4 text-left"
+          >
+            <Globe className={`h-4 w-4 mt-0.5 shrink-0 ${targetMode === 'namespace' ? 'text-foreground' : 'text-muted-foreground'}`} />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">{selectedNamespace.name}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {selectedNamespace.hubCount} IoT Hub{selectedNamespace.hubCount !== 1 ? 's' : ''}
+                {selectedNamespace.aioCount > 0 && <> · {selectedNamespace.aioCount} IoT Operations instance{selectedNamespace.aioCount !== 1 ? 's' : ''}</>}
+                {' · '}{selectedNamespace.devices.toLocaleString()} devices
+                {selectedNamespace.assets > 0 && <> · {selectedNamespace.assets.toLocaleString()} assets</>}
+              </p>
+            </div>
+            {targetMode === 'namespace' && <Check className="h-4 w-4 text-foreground shrink-0 mt-0.5" />}
+          </button>
+
+          {/* Namespace picker — shown when mode = namespace */}
+          {targetMode === 'namespace' && (
+            <div className="border-t px-4 py-3">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Namespace</p>
+              <select
+                value={selectedNamespace.id}
+                onChange={(e) => {
+                  const ns = MOCK_NAMESPACES.find((n) => n.id === e.target.value)
+                  if (ns) onNamespaceChange(ns)
+                }}
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {MOCK_NAMESPACES.map((ns) => (
+                  <option key={ns.id} value={ns.id}>{ns.name} — {ns.region}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
 
         {/* 2 — Load Group */}
         <div
@@ -1174,6 +1241,95 @@ function StepArmAction({
 }
 
 
+/* ─── Step: Schedule ───────────────────────────────────────── */
+
+function StepSchedule({
+  mode,
+  onModeChange,
+  date,
+  onDateChange,
+}: {
+  mode: 'now' | 'later'
+  onModeChange: (m: 'now' | 'later') => void
+  date: string
+  onDateChange: (v: string) => void
+}) {
+  // Default date to tomorrow at 09:00
+  const tomorrow = new Date(Date.now() + 86400000)
+  const defaultDate = `${tomorrow.toISOString().slice(0, 10)}T09:00`
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h3 className="text-sm font-semibold">Schedule</h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Choose when this job starts running.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        {/* Run immediately */}
+        <button
+          onClick={() => onModeChange('now')}
+          className={`w-full flex items-start gap-3 rounded-lg border p-4 text-left transition-all ${
+            mode === 'now' ? 'border-foreground ring-1 ring-foreground bg-muted/30' : 'hover:bg-muted/20'
+          }`}
+        >
+          <div className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+            mode === 'now' ? 'border-foreground' : 'border-muted-foreground/40'
+          }`}>
+            {mode === 'now' && <div className="h-2 w-2 rounded-full bg-foreground" />}
+          </div>
+          <div>
+            <p className="text-sm font-medium">Run immediately</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Job starts as soon as it is created</p>
+          </div>
+        </button>
+
+        {/* Schedule for later */}
+        <div
+          className={`rounded-lg border transition-all ${
+            mode === 'later' ? 'border-foreground ring-1 ring-foreground' : 'hover:bg-muted/20'
+          }`}
+        >
+          <button
+            onClick={() => {
+              onModeChange('later')
+              if (!date) onDateChange(defaultDate)
+            }}
+            className="w-full flex items-start gap-3 p-4 text-left"
+          >
+            <div className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+              mode === 'later' ? 'border-foreground' : 'border-muted-foreground/40'
+            }`}>
+              {mode === 'later' && <div className="h-2 w-2 rounded-full bg-foreground" />}
+            </div>
+            <div>
+              <p className="text-sm font-medium">Schedule for later</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {mode === 'later' && date
+                  ? new Date(date).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+                  : 'Pick a date and time'}
+              </p>
+            </div>
+          </button>
+
+          {mode === 'later' && (
+            <div className="border-t px-4 py-3">
+              <input
+                type="datetime-local"
+                value={date || defaultDate}
+                onChange={(e) => onDateChange(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ─── Step 5: Review ────────────────────────────────────────── */
 
 function StepReview({
@@ -1187,6 +1343,9 @@ function StepReview({
   effectiveDeviceCount,
   priority,
   targetCondition,
+  selectedNamespace,
+  scheduleMode,
+  scheduleDate,
 }: {
   jobName: string
   jobDescription: string
@@ -1198,6 +1357,9 @@ function StepReview({
   effectiveDeviceCount: number
   priority: string
   targetCondition: string
+  selectedNamespace: MockNamespace
+  scheduleMode: 'now' | 'later'
+  scheduleDate: string
 }) {
   return (
     <div className="space-y-5">
@@ -1222,9 +1384,10 @@ function StepReview({
             <p className="text-xs font-medium text-muted-foreground mb-2">Target</p>
             {targetMode === 'namespace' && (
               <p className="text-xs text-foreground">
-                My Namespace — {hubs.length} IoT Hubs · {aioInstances.length} IoT Operations instance{aioInstances.length!==1?'s':''}
-                {" · "}{hubs.reduce((s,h)=>s+h.devices,0).toLocaleString()} devices
-                {aioInstances.reduce((s,a)=>s+a.assets,0) > 0 && <> · {aioInstances.reduce((s,a)=>s+a.assets,0).toLocaleString()} assets</>}
+                {selectedNamespace.name} — {selectedNamespace.hubCount} IoT Hub{selectedNamespace.hubCount !== 1 ? 's' : ''}
+                {selectedNamespace.aioCount > 0 && <> · {selectedNamespace.aioCount} IoT Operations instance{selectedNamespace.aioCount !== 1 ? 's' : ''}</>}
+                {' · '}{selectedNamespace.devices.toLocaleString()} devices
+                {selectedNamespace.assets > 0 && <> · {selectedNamespace.assets.toLocaleString()} assets</>}
               </p>
             )}
             {targetMode === 'group' && selectedGroup && (
@@ -1237,6 +1400,15 @@ function StepReview({
             {targetMode === 'custom' && (
               <p className="rounded border bg-muted/20 p-3 text-xs text-foreground">{targetCondition}</p>
             )}
+          </div>
+
+          {/* Schedule */}
+          <div className="px-4 py-3">
+            <p className="text-xs font-medium text-muted-foreground mb-1">Schedule</p>
+            {scheduleMode === 'now'
+              ? <p className="text-xs text-foreground">Run immediately</p>
+              : <p className="text-xs text-foreground">{new Date(scheduleDate).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</p>
+            }
           </div>
         </div>
       </div>
