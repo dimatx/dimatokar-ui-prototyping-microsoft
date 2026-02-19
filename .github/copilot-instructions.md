@@ -101,7 +101,20 @@ The `/context/` folder in the workspace (separate repo) contains product documen
 
 - Always commit and push after completing a set of changes
 - Write descriptive commit messages listing what changed
-- This is a single-branch (`master`) repo — no PRs needed
+- This is a single-branch (`main`) repo — no PRs needed
+
+## Deployment
+
+- This repo **does deploy** — to **Azure Static Web Apps** via GitHub Actions
+- The workflow file is `.github/workflows/azure-static-web-apps-agreeable-flower-03b208803.yml`
+- Every push to `main` triggers an automatic build and deploy
+- Changes are live within ~2 minutes of pushing
+
+## File Editing Rules
+
+- **Never use PowerShell (or any terminal command) to write or modify source files** — it corrupts UTF-8 characters (e.g. `·` becomes `Â·`)
+- Only use the file editing tools (`replace_string_in_file`, `create_file`, etc.) for all source code changes
+- Terminal is allowed for read-only operations: `git`, `tsc --noEmit`, etc.
 
 ## General Principles
 
@@ -110,4 +123,3 @@ The `/context/` folder in the workspace (separate repo) contains product documen
 3. **Mock data should feel real** — use plausible names, numbers, and statuses. Avoid "Lorem ipsum" or "Test 1, Test 2".
 4. **Interactivity sells the story** — add state transitions, modals, animations where they help tell the product narrative.
 5. **Keep workflows independent** — each workflow should be self-contained. Don't create cross-workflow dependencies.
-6. **Don't deploy** — this runs locally only (`npm run dev`). No Vercel, no GitHub Pages, no CI/CD config.
