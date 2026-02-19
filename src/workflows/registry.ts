@@ -1,5 +1,5 @@
 import { lazy } from 'react'
-import { LayoutDashboard, Wind } from 'lucide-react'
+import { LayoutDashboard, Wind, List, BarChart2 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export interface Workflow {
@@ -19,6 +19,22 @@ export const workflows: Workflow[] = [
     path: '/adr-namespace',
     icon: Wind,
     component: lazy(() => import('./adr-namespace/Page')),
+  },
+  {
+    id: 'job-list',
+    name: 'Job List',
+    description: 'All namespace jobs with filtering, sorting, and status summary',
+    path: '/job-list',
+    icon: List,
+    component: lazy(() => import('./job-list/Page')),
+  },
+  {
+    id: 'job-detail',
+    name: 'Job Detail',
+    description: 'Job execution status, device pie chart, per-hub progress, and activity timeline',
+    path: '/job-detail',
+    icon: BarChart2,
+    component: lazy(() => import('./job-detail/Page')),
   },
   // {
   //   id: 'resource-overview',

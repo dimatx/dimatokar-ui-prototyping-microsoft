@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   Server,
   Cpu,
@@ -172,6 +173,7 @@ const jobStatusIcons: Record<string, typeof CheckCircle2> = {
 /* ─── Page ────────────────────────────────────────────────────── */
 
 export default function AdrNamespacePage() {
+  const navigate = useNavigate()
   const [hubsOpen, setHubsOpen] = useState(false)
   const [aioOpen, setAioOpen] = useState(false)
   const [linkedHubs, setLinkedHubs] = useState<Hub[]>(initialHubs)
@@ -622,13 +624,22 @@ export default function AdrNamespacePage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold tracking-tight">Jobs</h2>
-          <Button size="sm" className="gap-1.5 text-xs relative" onClick={() => setShowNewJobWizard(true)}>
-            <span className="absolute -right-2 -top-2 z-10 rounded-full border border-orange-300 bg-orange-50 px-1.5 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase shadow-sm">
-              try me
-            </span>
-            <Plus className="h-3.5 w-3.5" />
-            New Job
-          </Button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/job-list')}
+              className="text-xs text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-1"
+            >
+              View all
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+            <Button size="sm" className="gap-1.5 text-xs relative" onClick={() => setShowNewJobWizard(true)}>
+              <span className="absolute -right-2 -top-2 z-10 rounded-full border border-orange-300 bg-orange-50 px-1.5 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase shadow-sm">
+                try me
+              </span>
+              <Plus className="h-3.5 w-3.5" />
+              New Job
+            </Button>
+          </div>
         </div>
         <div className="rounded-lg border shadow-sm">
           <Table>
@@ -675,7 +686,10 @@ export default function AdrNamespacePage() {
                             className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'}`}
                           />
                         ) : (
-                          <button className="rounded-md p-1 text-muted-foreground hover:bg-muted transition-colors">
+                          <button
+                            className="rounded-md p-1 text-muted-foreground hover:bg-muted transition-colors"
+                            onClick={(e) => { e.stopPropagation(); navigate(`/job-detail?id=${job.id}`) }}
+                          >
                             <ChevronRight className="h-4 w-4" />
                           </button>
                         )}
