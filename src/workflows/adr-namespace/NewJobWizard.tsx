@@ -456,25 +456,17 @@ function StepJobType({
 
   const renderJobButton = (type: typeof JOB_TYPES[number]) => {
     const isSelected = selected === type.id
-    const priorityLabel = ['management-action', 'management-update'].includes(type.id) ? 'P0' : ['software-update', 'cert-revocation'].includes(type.id) ? 'P1' : null
     const isDemo = type.id === 'management-update' || type.id === 'management-action' || type.id === 'cert-revocation'
     return (
       <button
         key={type.id}
         onClick={() => onSelect(type.id)}
-        className={`relative flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all ${
+        className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all ${
           isSelected
             ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
             : 'hover:bg-muted/30'
         }`}
       >
-        {priorityLabel && (
-          <span className={`absolute -right-2 -top-2 z-10 rounded-full border border-dashed px-1.5 py-0.5 text-[9px] font-medium tracking-wide uppercase ${
-            priorityLabel === 'P0' ? 'border-red-300 bg-red-50 text-red-600' : 'border-yellow-300 bg-yellow-50 text-yellow-600'
-          }`}>
-            {priorityLabel}
-          </span>
-        )}
         <div
           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
             isSelected ? 'bg-foreground text-white' : 'bg-muted text-foreground'
