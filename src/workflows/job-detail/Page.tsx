@@ -1,9 +1,10 @@
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  ArrowLeft, CheckCircle2, XCircle, Loader2, Clock, AlertTriangle,
+  CheckCircle2, XCircle, Loader2, Clock, AlertTriangle,
   User, CalendarClock, Target, Layers, Info, ChevronRight, Package,
 } from 'lucide-react'
+import { StatusBadge } from '@/components/StatusBadge'
 import { ALL_JOBS } from '@/workflows/adr-namespace/jobData'
 import type { JobRecord, HubProgress, TimelineEvent } from '@/workflows/adr-namespace/jobData'
 
@@ -68,29 +69,6 @@ function DonutChart({ segments, size = 180, centerLabel = 'success rate' }: { se
 }
 
 // ─── Status config ────────────────────────────────────────────────────────────
-
-const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; badge: string }> = {
-  Running: {
-    label: 'Running',
-    icon: <Loader2 className="w-4 h-4 animate-spin text-blue-500" />,
-    badge: 'bg-blue-50 text-blue-700 border-blue-200',
-  },
-  Completed: {
-    label: 'Completed',
-    icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
-    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  },
-  Failed: {
-    label: 'Failed',
-    icon: <XCircle className="w-4 h-4 text-red-500" />,
-    badge: 'bg-red-50 text-red-700 border-red-200',
-  },
-  Scheduled: {
-    label: 'Scheduled',
-    icon: <Clock className="w-4 h-4 text-slate-400" />,
-    badge: 'bg-slate-50 text-slate-600 border-slate-200',
-  },
-}
 
 const HUB_STATUS_COLORS: Record<string, string> = {
   Running: 'text-blue-600',
@@ -224,7 +202,6 @@ export default function JobDetailPage() {
   }
 
   const total = job.devices.succeeded + job.devices.pending + job.devices.failed
-  const statusCfg = STATUS_CONFIG[job.status] ?? STATUS_CONFIG.Completed
 
   const donutSegments = [
     { value: job.devices.succeeded, color: '#10b981', label: 'Succeeded' },
@@ -263,7 +240,7 @@ export default function JobDetailPage() {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
       className="max-w-6xl mx-auto space-y-6"
     >
       {/* Breadcrumb */}
@@ -284,10 +261,7 @@ export default function JobDetailPage() {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-2xl font-semibold text-slate-900">{job.name}</h1>
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusCfg.badge}`}>
-              {statusCfg.icon}
-              {statusCfg.label}
-            </span>
+            <StatusBadge status={job.status} />
           </div>
           {job.description && <p className="text-sm text-slate-500 max-w-xl">{job.description}</p>}
         </div>

@@ -12,7 +12,6 @@ import {
   Activity,
   MapPin,
   CheckCircle2,
-  Clock,
   Loader2,
   Plus,
   ChevronRight,
@@ -155,20 +154,6 @@ const initialJobs = [
   { id: 'JOB-1039', name: 'Edge config push – telemetry interval', type: 'Configuration', status: 'Completed', targets: '3,215 assets', started: '1 week ago' },
   { id: 'JOB-1038', name: 'Firmware update – v3.1.0', type: 'Update', status: 'Completed', targets: '8,200 devices', started: '2 weeks ago' },
 ]
-
-const jobStatusStyles: Record<string, string> = {
-  Running: 'text-blue-600 bg-blue-50 border-blue-200',
-  Completed: 'text-emerald-700 bg-emerald-50 border-emerald-200',
-  Failed: 'text-red-700 bg-red-50 border-red-200',
-  Scheduled: 'text-amber-700 bg-amber-50 border-amber-200',
-}
-
-const jobStatusIcons: Record<string, typeof CheckCircle2> = {
-  Running: Loader2,
-  Completed: CheckCircle2,
-  Failed: Activity,
-  Scheduled: Clock,
-}
 
 /* ─── Page ────────────────────────────────────────────────────── */
 
@@ -656,7 +641,6 @@ export default function AdrNamespacePage() {
             </TableHeader>
             <TableBody>
               {jobs.map((job) => {
-                const StatusIcon = jobStatusIcons[job.status] || CheckCircle2
                 const isExpandable = !!job.hubProgress
                 const isExpanded = expandedJobId === job.id
                 return (
@@ -674,10 +658,7 @@ export default function AdrNamespacePage() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{job.targets}</TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${jobStatusStyles[job.status] || ''}`}>
-                          <StatusIcon className={`h-3 w-3 ${job.status === 'Running' ? 'animate-spin' : ''}`} />
-                          {job.status}
-                        </span>
+                        <StatusBadge status={job.status} />
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{job.started}</TableCell>
                       <TableCell>

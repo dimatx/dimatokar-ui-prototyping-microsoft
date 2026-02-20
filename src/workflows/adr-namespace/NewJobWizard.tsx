@@ -8,18 +8,14 @@ import {
   ChevronLeft,
   ChevronDown,
   Plus,
-  Trash2,
   Settings2,
   Terminal,
   RefreshCw,
   Globe,
-  Server,
   Copy,
   Bookmark,
-  FolderOpen,
   Save,
   ShieldX,
-  FileCode2,
   Activity,
   Loader2,
   Zap,
@@ -221,10 +217,6 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
     setShowSaveGroupInput(false)
     setJustSavedGroup(true)
     setTimeout(() => setJustSavedGroup(false), 2000)
-  }
-
-  function loadGroup(group: SavedGroup) {
-    setTargetCondition(group.condition)
   }
 
   // Map step index to step name for validation
@@ -457,8 +449,6 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                   jobName={jobName}
                   jobDescription={jobDescription}
                   jobType={JOB_TYPES.find((t) => t.id === jobType)?.name ?? 'Job'}
-                  hubs={scopedHubs}
-                  aioInstances={aioInstances}
                   targetMode={targetMode}
                   selectedGroup={selectedGroup}
                   effectiveDeviceCount={effectiveDeviceCount}
@@ -1397,8 +1387,6 @@ function StepReview({
   jobName,
   jobDescription,
   jobType,
-  hubs,
-  aioInstances,
   targetMode,
   selectedGroup,
   effectiveDeviceCount,
@@ -1412,8 +1400,6 @@ function StepReview({
   jobName: string
   jobDescription: string
   jobType: string
-  hubs: Hub[]
-  aioInstances: { name: string; connectedDevices: number; assets: number }[]
   targetMode: 'namespace' | 'group' | 'custom'
   selectedGroup: SavedGroup | null
   effectiveDeviceCount: number

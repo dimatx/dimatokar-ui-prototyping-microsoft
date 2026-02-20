@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { StatusBadge } from '@/components/StatusBadge'
 import { ALL_JOBS, JobRecord } from '@/workflows/adr-namespace/jobData'
 import { NewJobWizard } from '@/workflows/adr-namespace/NewJobWizard'
 import type { JobPrefill } from '@/workflows/adr-namespace/NewJobWizard'
@@ -28,33 +29,12 @@ const MOCK_HUBS: Hub[] = [
 ]
 const MOCK_AIO = [{ name: 'aio-tx-abilene-01', site: 'Abilene Wind Farm', status: 'Healthy', connectedDevices: 3200, assets: 3200 }]
 const MOCK_EXISTING_JOBS = ALL_JOBS.map(j => ({ id: j.id, name: j.name, type: j.type, status: j.status, targets: `${j.targetDevices.toLocaleString()} devices`, started: j.started }))
-// ─── Status helpers ──────────────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; dot: string; badge: string }> = {
-  Running: {
-    label: 'Running',
-    icon: <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />,
-    dot: 'bg-blue-500',
-    badge: 'bg-blue-50 text-blue-700 border-blue-200',
-  },
-  Completed: {
-    label: 'Completed',
-    icon: <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />,
-    dot: 'bg-emerald-500',
-    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  },
-  Failed: {
-    label: 'Failed',
-    icon: <XCircle className="w-3.5 h-3.5 text-red-500" />,
-    dot: 'bg-red-500',
-    badge: 'bg-red-50 text-red-700 border-red-200',
-  },
-  Scheduled: {
-    label: 'Scheduled',
-    icon: <Clock className="w-3.5 h-3.5 text-slate-400" />,
-    dot: 'bg-slate-400',
-    badge: 'bg-slate-50 text-slate-600 border-slate-200',
-  },
+const FILTER_STYLES: Record<string, { dot: string; badge: string }> = {
+  Running: { dot: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 border-blue-200' },
+  Completed: { dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  Failed: { dot: 'bg-red-500', badge: 'bg-red-50 text-red-700 border-red-200' },
+  Scheduled: { dot: 'bg-slate-400', badge: 'bg-slate-50 text-slate-600 border-slate-200' },
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -62,16 +42,6 @@ const TYPE_COLORS: Record<string, string> = {
   'Certificate Revocation': 'bg-amber-50 text-amber-700 border-amber-200',
   'Management Action': 'bg-sky-50 text-sky-700 border-sky-200',
   'Management Update': 'bg-teal-50 text-teal-700 border-teal-200',
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.Completed
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.badge}`}>
-      {cfg.icon}
-      {cfg.label}
-    </span>
-  )
 }
 
 function TypeBadge({ type }: { type: string }) {
@@ -234,7 +204,7 @@ export default function JobListPage() {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
       className="max-w-6xl mx-auto space-y-6"
     >
       {/* Header */}
@@ -322,7 +292,7 @@ export default function JobListPage() {
             <div className="flex items-center gap-1.5">
               {ALL_STATUSES.map(s => {
                 const active = statusFilter.includes(s)
-                const cfg = STATUS_CONFIG[s]
+                const cfg = FILTER_STYLES[s]
                 return (
                   <button
                     key={s}
