@@ -304,11 +304,11 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
 
         {/* ── Step indicator ─────────────────────────────────── */}
         <div className="border-b px-6 py-3">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             {steps.map((label, i) => (
-              <div key={label} className="flex items-center gap-1">
+              <div key={label} className="flex items-center gap-0.5">
                 <div
-                  className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors ${
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium transition-colors ${
                     i < step
                       ? 'bg-emerald-100 text-emerald-700'
                       : i === step
@@ -316,17 +316,15 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                       : 'bg-muted text-muted-foreground'
                   }`}
                 >
-                  {i < step ? <Check className="h-3 w-3" /> : i + 1}
+                  {i < step ? <Check className="h-2.5 w-2.5" /> : i + 1}
                 </div>
-                <span
-                  className={`text-xs ${
-                    i === step ? 'font-medium text-foreground' : 'text-muted-foreground'
-                  } ${i > step ? 'hidden sm:inline' : ''}`}
-                >
-                  {label}
-                </span>
+                {i === step && (
+                  <span className="text-xs font-medium text-foreground whitespace-nowrap ml-1">
+                    {label}
+                  </span>
+                )}
                 {i < steps.length - 1 && (
-                  <div className={`mx-1 h-px w-4 ${i < step ? 'bg-emerald-300' : 'bg-border'}`} />
+                  <div className={`mx-1 h-px w-3 shrink-0 ${i < step ? 'bg-emerald-300' : 'bg-border'}`} />
                 )}
               </div>
             ))}
