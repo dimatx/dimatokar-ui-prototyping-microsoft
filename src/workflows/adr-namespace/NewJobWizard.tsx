@@ -19,6 +19,7 @@ import {
   Activity,
   Loader2,
   Zap,
+  Layers,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,8 +33,9 @@ import type { Hub } from './Page'
 // revert the changes noted in the file header comment of AduSoftwareUpdateSteps.tsx
 import {
   ADU_SW_STEPS, AduWizardState, initialAduState, validateAduStep,
-  StepSelectUpdate, StepTargetGroups, StepRollbackPolicy, AduReviewSection,
+  StepSelectUpdate, StepRollbackPolicy, AduReviewSection,
 } from './AduSoftwareUpdateSteps'
+import { AduClassicGroup, ADU_CLASSIC_GROUPS } from './aduData'
 
 interface AdrFilter {
   field: string
@@ -70,7 +72,7 @@ export interface JobPrefill {
   jobType?: string
   jobName?: string
   jobDescription?: string
-  targetMode?: 'namespace' | 'group' | 'custom'
+  targetMode?: 'namespace' | 'group' | 'custom' | 'adu-groups'
   scheduleMode?: 'now' | 'later'
   scheduleDate?: string
   priority?: string
@@ -181,8 +183,9 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
   const [jobDescription, setJobDescription] = useState(prefill?.jobDescription ?? '')
 
   // Target mode
-  const [targetMode, setTargetMode] = useState<'namespace' | 'group' | 'custom'>(prefill?.targetMode ?? 'namespace')
+  const [targetMode, setTargetMode] = useState<'namespace' | 'group' | 'custom' | 'adu-groups'>(prefill?.targetMode ?? 'namespace')
   const [selectedGroup, setSelectedGroup] = useState<SavedGroup | null>(null)
+  const [selectedAduGroup, setSelectedAduGroup] = useState<AduClassicGroup | null>(null)
   const [selectedNamespace, setSelectedNamespace] = useState<MockNamespace>(MOCK_NAMESPACES[0])
 
   // ARM Detail step
@@ -205,7 +208,11 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
   const steps = getSteps(jobType)
   const scopedHubs = linkedHubs
   const totalDevices = scopedHubs.reduce((sum, h) => sum + h.devices, 0)
-  const effectiveDeviceCount = targetMode === 'group' && selectedGroup ? selectedGroup.deviceCount : totalDevices
+  const effectiveDeviceCount = targetMode === 'group' && selectedGroup
+    ? selectedGroup.deviceCount
+    : targetMode === 'adu-groups' && selectedAduGroup
+      ? selectedAduGroup.deviceCount
+      : totalDevices
 
   function saveCurrentAsGroup() {
     if (!newGroupName.trim()) return
@@ -240,10 +247,10 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
         if (targetMode === 'namespace') return true
         if (targetMode === 'group') return selectedGroup !== null
         if (targetMode === 'custom') return targetCondition.trim().length > 0 && priority.trim().length > 0
+        if (targetMode === 'adu-groups') return selectedAduGroup !== null
         return false
       }
       case 'Select Update': return validateAduStep('Select Update', aduState)
-      case 'Target Groups': return validateAduStep('Target Groups', aduState)
       case 'Rollback': return validateAduStep('Rollback', aduState)
       case 'Schedule': return scheduleMode === 'now' || scheduleDate.length > 0
       case 'Review': return true
@@ -398,7 +405,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                   aioInstances={aioInstances}
                   jobType={jobType}
                   targetMode={targetMode}
-                  onTargetModeChange={(m) => { setTargetMode(m); setSelectedGroup(null); setTargetCondition('') }}
+                  onTargetModeChange={(m) => { setTargetMode(m); setSelectedGroup(null); setSelectedAduGroup(null); setTargetCondition('') }}
                   selectedGroup={selectedGroup}
                   onSelectGroup={(g) => { setSelectedGroup(g); setTargetCondition(g.condition) }}
                   savedGroups={savedGroups}
@@ -414,6 +421,8 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                   justSaved={justSavedGroup}
                   selectedNamespace={selectedNamespace}
                   onNamespaceChange={setSelectedNamespace}
+                  selectedAduGroup={selectedAduGroup}
+                  onAduGroupChange={setSelectedAduGroup}
                 />
               )}
               {currentStepName() === 'Select Update' && (
@@ -422,12 +431,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                   onChange={(patch) => setAduState(s => ({ ...s, ...patch }))}
                 />
               )}
-              {currentStepName() === 'Target Groups' && (
-                <StepTargetGroups
-                  state={aduState}
-                  onChange={(patch) => setAduState(s => ({ ...s, ...patch }))}
-                />
-              )}
+
               {currentStepName() === 'Rollback' && (
                 <StepRollbackPolicy
                   state={aduState}
@@ -455,6 +459,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                   selectedNamespace={selectedNamespace}
                   scheduleMode={scheduleMode}
                   scheduleDate={scheduleDate}
+                  selectedAduGroup={selectedAduGroup}
                   aduState={jobType === 'software-update' ? aduState : undefined}
                 />
               )}
@@ -830,12 +835,14 @@ function StepTarget({
   justSaved,
   selectedNamespace,
   onNamespaceChange,
+  selectedAduGroup,
+  onAduGroupChange,
 }: {
   hubs: Hub[]
   aioInstances: { name: string; site: string; status: string; connectedDevices: number; assets: number }[]
   jobType: string | null
-  targetMode: 'namespace' | 'group' | 'custom'
-  onTargetModeChange: (m: 'namespace' | 'group' | 'custom') => void
+  targetMode: 'namespace' | 'group' | 'custom' | 'adu-groups'
+  onTargetModeChange: (m: 'namespace' | 'group' | 'custom' | 'adu-groups') => void
   selectedGroup: SavedGroup | null
   onSelectGroup: (g: SavedGroup) => void
   savedGroups: SavedGroup[]
@@ -851,6 +858,8 @@ function StepTarget({
   justSaved: boolean
   selectedNamespace: MockNamespace
   onNamespaceChange: (ns: MockNamespace) => void
+  selectedAduGroup: AduClassicGroup | null
+  onAduGroupChange: (g: AduClassicGroup) => void
 }) {
   const totalHubDevices = hubs.reduce((s, h) => s + h.devices, 0)
   const totalAssets = aioInstances.reduce((s, a) => s + a.assets, 0)
@@ -1101,6 +1110,60 @@ function StepTarget({
             </div>
           )}
         </div>
+
+{/* 4 — Classic ADU Groups (only for software-update jobs) */}
+        {jobType === 'software-update' && (
+          <div
+            className={`rounded-lg border transition-all ${
+              targetMode === 'adu-groups' ? 'border-foreground ring-1 ring-foreground' : 'hover:bg-muted/20'
+            }`}
+          >
+            <button
+              onClick={() => onTargetModeChange('adu-groups')}
+              className="w-full flex items-start gap-3 p-4 text-left"
+            >
+              <Layers className={`h-4 w-4 mt-0.5 shrink-0 ${targetMode === 'adu-groups' ? 'text-foreground' : 'text-muted-foreground'}`} />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">Classic ADU Groups</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Target devices by ADUGroup device twin tag</p>
+              </div>
+              {targetMode === 'adu-groups' && <Check className="h-4 w-4 text-foreground shrink-0 mt-0.5" />}
+            </button>
+
+            {targetMode === 'adu-groups' && (
+              <div className="border-t px-3 py-2 space-y-1">
+                {ADU_CLASSIC_GROUPS.map(group => (
+                  <button
+                    key={group.groupName}
+                    onClick={() => onAduGroupChange(group)}
+                    className={`w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors ${
+                      selectedAduGroup?.groupName === group.groupName
+                        ? 'bg-foreground/5 ring-1 ring-foreground/20'
+                        : 'hover:bg-muted/30'
+                    }`}
+                  >
+                    <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                      selectedAduGroup?.groupName === group.groupName ? 'border-foreground bg-foreground' : 'border-muted-foreground/40'
+                    }`}>
+                      {selectedAduGroup?.groupName === group.groupName && (
+                        <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-medium">{group.displayName}</span>
+                        <span className="text-[10px] font-mono text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">ADUGroup</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {group.description} &middot; {group.deviceCount.toLocaleString()} devices
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -1393,12 +1456,13 @@ function StepReview({
   selectedNamespace,
   scheduleMode,
   scheduleDate,
+  selectedAduGroup,
   aduState,
 }: {
   jobName: string
   jobDescription: string
   jobType: string
-  targetMode: 'namespace' | 'group' | 'custom'
+  targetMode: 'namespace' | 'group' | 'custom' | 'adu-groups' | 'adu-groups'
   selectedGroup: SavedGroup | null
   effectiveDeviceCount: number
   priority: string
@@ -1406,6 +1470,7 @@ function StepReview({
   selectedNamespace: MockNamespace
   scheduleMode: 'now' | 'later'
   scheduleDate: string
+  selectedAduGroup: AduClassicGroup | null
   aduState?: AduWizardState
 }) {
   return (
@@ -1446,6 +1511,15 @@ function StepReview({
             )}
             {targetMode === 'custom' && (
               <p className="rounded border bg-muted/20 p-3 text-xs text-foreground">{targetCondition}</p>
+            )}
+            {targetMode === 'adu-groups' && selectedAduGroup && (
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-medium">{selectedAduGroup.displayName}</p>
+                  <span className="text-[10px] font-mono text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">ADUGroup</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{selectedAduGroup.deviceCount.toLocaleString()} devices</p>
+              </div>
             )}
           </div>
 
