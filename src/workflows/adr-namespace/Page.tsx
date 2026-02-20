@@ -70,7 +70,7 @@ const INSTANCE_NAME_OPTIONS: Record<string, string[]> = {
 const initialServices: NamespaceService[] = [
   { name: 'Provisioning', icon: Upload, status: 'Healthy', instanceName: 'dps-zava-tx-01' },
   { name: 'Certificate Management', icon: KeyRound, status: 'Healthy', configurable: true, instanceName: 'certmgr-zava-tx-01' },
-  { name: 'Device Update', icon: RefreshCw, status: 'Disabled', configurable: true },
+  { name: 'Device Update', icon: RefreshCw, status: 'Healthy', configurable: true },
 ]
 
 const addableServices: NamespaceService[] = [
