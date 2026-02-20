@@ -31,6 +31,13 @@ import { Card, CardContent } from '@/components/ui/card'
 /* ─── Types ─────────────────────────────────────────────────── */
 
 import type { Hub } from './Page'
+// ─── ADU Software Update Integration ─────────────────────────────────────────
+// To remove this feature, delete AduSoftwareUpdateSteps.tsx + aduData.ts and
+// revert the changes noted in the file header comment of AduSoftwareUpdateSteps.tsx
+import {
+  ADU_SW_STEPS, AduWizardState, initialAduState, validateAduStep,
+  StepSelectUpdate, StepTargetGroups, StepRollbackPolicy, AduReviewSection,
+} from './AduSoftwareUpdateSteps'
 
 interface AdrFilter {
   field: string
@@ -82,6 +89,8 @@ interface NewJobWizardProps {
   prefill?: JobPrefill
   onClose: () => void
   onCreate: (job: CreatedJob) => void
+  /** Gate: Software Update job type is only available when Device Update service is Healthy */
+  deviceUpdateEnabled?: boolean
 }
 
 const JOB_TYPES_MAIN = [
@@ -141,6 +150,7 @@ const DETAILS_STEPS = ['Job Type', 'Basics', 'Target', 'Details', 'Schedule', 'R
 const DEFAULT_STEPS = ['Job Type', 'Basics', 'Target', 'Schedule', 'Review']
 
 function getSteps(jobType: string | null) {
+  if (jobType === 'software-update') return ADU_SW_STEPS
   if (jobType === 'management-action' || jobType === 'management-update') return DETAILS_STEPS
   return DEFAULT_STEPS
 }
@@ -161,8 +171,9 @@ const SAMPLE_SAVED_GROUPS: SavedGroup[] = [
 
 /* ─── Wizard ────────────────────────────────────────────────── */
 
-export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJobs, prefill, onClose, onCreate }: NewJobWizardProps) {
+export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJobs, prefill, onClose, onCreate, deviceUpdateEnabled = false }: NewJobWizardProps) {
   const [step, setStep] = useState(0)
+  const [aduState, setAduState] = useState<AduWizardState>(initialAduState)
 
   // Step 0: Job type
   const [jobType, setJobType] = useState<string | null>(prefill?.jobType ?? null)
@@ -239,6 +250,9 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
         if (targetMode === 'custom') return targetCondition.trim().length > 0 && priority.trim().length > 0
         return false
       }
+      case 'Select Update': return validateAduStep('Select Update', aduState)
+      case 'Target Groups': return validateAduStep('Target Groups', aduState)
+      case 'Rollback': return validateAduStep('Rollback', aduState)
       case 'Schedule': return scheduleMode === 'now' || scheduleDate.length > 0
       case 'Review': return true
       default: return false
@@ -351,6 +365,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                 ) : (
                   <StepJobType
                     selected={jobType}
+                    deviceUpdateEnabled={deviceUpdateEnabled}
                     onSelect={(id) => {
                       if (id === 'copy-existing') {
                         setJobType(id)
@@ -411,6 +426,24 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                   onNamespaceChange={setSelectedNamespace}
                 />
               )}
+              {currentStepName() === 'Select Update' && (
+                <StepSelectUpdate
+                  state={aduState}
+                  onChange={(patch) => setAduState(s => ({ ...s, ...patch }))}
+                />
+              )}
+              {currentStepName() === 'Target Groups' && (
+                <StepTargetGroups
+                  state={aduState}
+                  onChange={(patch) => setAduState(s => ({ ...s, ...patch }))}
+                />
+              )}
+              {currentStepName() === 'Rollback' && (
+                <StepRollbackPolicy
+                  state={aduState}
+                  onChange={(patch) => setAduState(s => ({ ...s, ...patch }))}
+                />
+              )}
               {currentStepName() === 'Schedule' && (
                 <StepSchedule
                   mode={scheduleMode}
@@ -434,6 +467,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                   selectedNamespace={selectedNamespace}
                   scheduleMode={scheduleMode}
                   scheduleDate={scheduleDate}
+                  aduState={jobType === 'software-update' ? aduState : undefined}
                 />
               )}
             </motion.div>
@@ -492,9 +526,11 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
 
 function StepJobType({
   selected,
+  deviceUpdateEnabled,
   onSelect,
 }: {
   selected: string | null
+  deviceUpdateEnabled?: boolean
   onSelect: (id: string) => void
 }) {
   const [showMore, setShowMore] = useState(false)
@@ -510,13 +546,17 @@ function StepJobType({
 
   const renderJobButton = (type: typeof JOB_TYPES[number]) => {
     const isSelected = selected === type.id
-    const isDemo = type.id === 'management-update' || type.id === 'management-action' || type.id === 'cert-revocation'
+    const isDemo = type.id === 'management-update' || type.id === 'management-action' || type.id === 'cert-revocation' || type.id === 'software-update'
+    const isSoftwareUpdate = type.id === 'software-update'
+    const isGated = isSoftwareUpdate && !deviceUpdateEnabled
     return (
       <button
         key={type.id}
-        onClick={() => onSelect(type.id)}
+        onClick={() => !isGated && onSelect(type.id)}
         className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all ${
-          isSelected
+          isGated
+            ? 'opacity-50 cursor-not-allowed'
+            : isSelected
             ? 'border-foreground bg-muted/30 ring-1 ring-foreground'
             : 'hover:bg-muted/30'
         }`}
@@ -538,9 +578,14 @@ function StepJobType({
           <p className="mt-0.5 text-xs text-muted-foreground">{type.description}</p>
         </div>
         <div className="ml-auto flex items-center gap-2 shrink-0">
-          {isDemo && (
+          {isDemo && !isGated && (
             <span className="rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase">
               try me
+            </span>
+          )}
+          {isGated && (
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-medium text-slate-500 tracking-wide uppercase">
+              Enable Device Update
             </span>
           )}
           {isSelected && (
@@ -1362,6 +1407,7 @@ function StepReview({
   selectedNamespace,
   scheduleMode,
   scheduleDate,
+  aduState,
 }: {
   jobName: string
   jobDescription: string
@@ -1376,6 +1422,7 @@ function StepReview({
   selectedNamespace: MockNamespace
   scheduleMode: 'now' | 'later'
   scheduleDate: string
+  aduState?: AduWizardState
 }) {
   return (
     <div className="space-y-5">
@@ -1426,6 +1473,9 @@ function StepReview({
               : <p className="text-xs text-foreground">{new Date(scheduleDate).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</p>
             }
           </div>
+
+          {/* ADU Software Update summary */}
+          {aduState && <AduReviewSection state={aduState} />}
         </div>
       </div>
     </div>

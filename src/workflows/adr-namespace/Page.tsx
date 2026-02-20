@@ -842,6 +842,7 @@ export default function AdrNamespacePage() {
             aioInstances={aioInstances}
             totalAssets={namespace.totalAssets}
             existingJobs={initialJobs}
+            deviceUpdateEnabled={namespaceSvcs.find(s => s.name === 'Device Update')?.status === 'Healthy'}
             onClose={() => setShowNewJobWizard(false)}
             onCreate={(job: CreatedJob) => {
               setJobs((prev) => [job, ...prev])

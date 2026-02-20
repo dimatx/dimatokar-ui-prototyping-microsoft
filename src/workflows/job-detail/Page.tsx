@@ -2,7 +2,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, CheckCircle2, XCircle, Loader2, Clock, AlertTriangle,
-  User, CalendarClock, Target, Layers, Info, ChevronRight,
+  User, CalendarClock, Target, Layers, Info, ChevronRight, Package,
 } from 'lucide-react'
 import { ALL_JOBS } from '@/workflows/adr-namespace/jobData'
 import type { JobRecord, HubProgress, TimelineEvent } from '@/workflows/adr-namespace/jobData'
@@ -11,7 +11,7 @@ import type { JobRecord, HubProgress, TimelineEvent } from '@/workflows/adr-name
 
 interface DonutSegment { value: number; color: string; label: string }
 
-function DonutChart({ segments, size = 180 }: { segments: DonutSegment[]; size?: number }) {
+function DonutChart({ segments, size = 180, centerLabel = 'success rate' }: { segments: DonutSegment[]; size?: number; centerLabel?: string }) {
   const cx = size / 2
   const cy = size / 2
   const r = (size - 32) / 2
@@ -61,7 +61,7 @@ function DonutChart({ segments, size = 180 }: { segments: DonutSegment[]; size?:
         {pct}%
       </text>
       <text x={cx} y={cy + 12} textAnchor="middle" className="fill-slate-400" style={{ fontSize: 11, fontFamily: 'Inter, sans-serif' }}>
-        success rate
+        {centerLabel}
       </text>
     </svg>
   )
@@ -232,6 +232,33 @@ export default function JobDetailPage() {
     { value: job.devices.pending, color: '#93c5fd', label: 'Pending' },
   ]
 
+  // ADU compliance view for Software Update jobs
+  const isAduJob = job.type === 'Software Update' && !!job.updateRef
+  const aduTotals = isAduJob
+    ? job.hubProgress.reduce(
+        (acc, h) => {
+          for (const g of (h.aduGroups ?? [])) {
+            acc.onLatest += g.onLatest
+            acc.inProgress += g.updateInProgress
+            acc.needsUpdate += g.newUpdatesAvailable
+          }
+          return acc
+        },
+        { onLatest: 0, inProgress: 0, needsUpdate: 0 },
+      )
+    : null
+  const aduSegments = aduTotals
+    ? [
+        { value: aduTotals.onLatest, color: '#10b981', label: 'On latest' },
+        { value: aduTotals.inProgress, color: '#60a5fa', label: 'Update in progress' },
+        { value: aduTotals.needsUpdate, color: '#f59e0b', label: 'Needs update' },
+      ]
+    : null
+  const activeSegments = aduSegments ?? donutSegments
+  const activeDenominator = aduTotals
+    ? aduTotals.onLatest + aduTotals.inProgress + aduTotals.needsUpdate
+    : total
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -302,11 +329,17 @@ export default function JobDetailPage() {
         <div className="col-span-3 space-y-6">
           {/* Donut + legend */}
           <div className="bg-white border border-slate-100 rounded-lg shadow-sm p-6">
-            <h2 className="text-sm font-semibold text-slate-700 mb-5">Device Execution Breakdown</h2>
+            <h2 className="text-sm font-semibold text-slate-700 mb-5">
+              {aduSegments ? 'Update Compliance' : 'Device Execution Breakdown'}
+            </h2>
             <div className="flex items-center gap-8">
-              <DonutChart segments={donutSegments} size={180} />
+              <DonutChart
+                segments={activeSegments}
+                size={180}
+                centerLabel={aduSegments ? 'on latest' : 'success rate'}
+              />
               <div className="space-y-3 flex-1">
-                {donutSegments.filter(s => s.value > 0 || job.status !== 'Scheduled').map(seg => (
+                {activeSegments.filter(s => s.value > 0 || job.status !== 'Scheduled').map(seg => (
                   <div key={seg.label} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
@@ -314,9 +347,9 @@ export default function JobDetailPage() {
                     </div>
                     <div className="text-right">
                       <span className="text-sm font-semibold text-slate-900">{seg.value.toLocaleString()}</span>
-                      {total > 0 && (
+                      {activeDenominator > 0 && (
                         <span className="text-xs text-slate-400 ml-1.5">
-                          ({Math.round((seg.value / total) * 100)}%)
+                          ({Math.round((seg.value / activeDenominator) * 100)}%)
                         </span>
                       )}
                     </div>
@@ -361,6 +394,19 @@ export default function JobDetailPage() {
               label="Job type"
               value={job.type}
             />
+            {job.updateRef && (
+              <DetailRow
+                icon={<Package className="w-4 h-4" />}
+                label="Update"
+                value={
+                  <span className="font-mono">
+                    {job.updateRef.provider} / {job.updateRef.name}
+                    <span className="text-slate-400 font-normal"> &middot; </span>
+                    <span className="font-semibold">v{job.updateRef.version}</span>
+                  </span>
+                }
+              />
+            )}
             <DetailRow
               icon={<Layers className="w-4 h-4" />}
               label="Priority"

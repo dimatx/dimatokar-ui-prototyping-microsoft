@@ -2,6 +2,14 @@
    Used by the ADR Namespace page, Job List, and Job Detail.
    ─────────────────────────────────────────────────────────── */
 
+export interface AduGroupProgress {
+  groupName: string
+  targeted: number
+  onLatest: number
+  updateInProgress: number
+  newUpdatesAvailable: number
+}
+
 export interface HubProgress {
   hubName: string
   total: number
@@ -9,6 +17,10 @@ export interface HubProgress {
   failed: number
   pending: number
   status: 'Running' | 'Completed' | 'Failed' | 'Pending' | 'Skipped'
+  /** ADU-only: whether this hub had the update before the job, or it was imported inline */
+  importStatus?: 'ready' | 'imported-during-job'
+  /** ADU-only: per-group compliance breakdown for this hub */
+  aduGroups?: AduGroupProgress[]
 }
 
 export interface TimelineEvent {
@@ -39,6 +51,11 @@ export interface JobRecord {
   devices: { succeeded: number; pending: number; failed: number }
   hubProgress: HubProgress[]
   timeline: TimelineEvent[]
+  /** ADU Software Update fields — only present on type === 'Software Update' */
+  updateRef?: { provider: string; name: string; version: string }
+  compatibility?: Array<Record<string, string>>
+  rollbackPolicy?: { enabled: boolean; failureThresholdPercent: number; rollbackVersion: string }
+  descriptiveLabel?: string
 }
 
 export const ALL_JOBS: JobRecord[] = [
@@ -58,11 +75,40 @@ export const ALL_JOBS: JobRecord[] = [
     startedIso: '2026-02-19T13:10:00Z',
     createdBy: 'dima@zava.energy',
     devices: { succeeded: 5240, pending: 7365, failed: 242 },
+    updateRef: { provider: 'contoso', name: 'firmware-rpi', version: '3.2.1' },
+    compatibility: [{ manufacturer: 'contoso', model: 'rpi' }],
+    rollbackPolicy: { enabled: true, failureThresholdPercent: 25, rollbackVersion: '3.1.0' },
     hubProgress: [
-      { hubName: 'hub-tx-wind-01', total: 4250, succeeded: 3980, failed: 42, pending: 228, status: 'Running' },
-      { hubName: 'hub-tx-wind-02', total: 3980, succeeded: 1260, failed: 200, pending: 2520, status: 'Running' },
-      { hubName: 'hub-tx-wind-03', total: 2617, succeeded: 0, failed: 0, pending: 2617, status: 'Pending' },
-      { hubName: 'hub-tx-wind-04', total: 2000, succeeded: 0, failed: 0, pending: 2000, status: 'Pending' },
+      {
+        hubName: 'hub-tx-wind-01', total: 4250, succeeded: 3980, failed: 42, pending: 228, status: 'Running',
+        importStatus: 'ready',
+        aduGroups: [
+          { groupName: 'turbine-controllers', targeted: 3800, onLatest: 3600, updateInProgress: 150, newUpdatesAvailable: 50 },
+          { groupName: 'edge-gateways', targeted: 450, onLatest: 380, updateInProgress: 50, newUpdatesAvailable: 20 },
+        ],
+      },
+      {
+        hubName: 'hub-tx-wind-02', total: 3980, succeeded: 1260, failed: 200, pending: 2520, status: 'Running',
+        importStatus: 'ready',
+        aduGroups: [
+          { groupName: 'turbine-controllers', targeted: 3550, onLatest: 1100, updateInProgress: 200, newUpdatesAvailable: 2250 },
+          { groupName: 'monitoring-sensors', targeted: 430, onLatest: 160, updateInProgress: 0, newUpdatesAvailable: 270 },
+        ],
+      },
+      {
+        hubName: 'hub-tx-wind-03', total: 2617, succeeded: 0, failed: 0, pending: 2617, status: 'Pending',
+        importStatus: 'ready',
+        aduGroups: [
+          { groupName: 'turbine-controllers', targeted: 2617, onLatest: 0, updateInProgress: 0, newUpdatesAvailable: 2617 },
+        ],
+      },
+      {
+        hubName: 'hub-tx-wind-04', total: 2000, succeeded: 0, failed: 0, pending: 2000, status: 'Pending',
+        importStatus: 'imported-during-job',
+        aduGroups: [
+          { groupName: 'turbine-controllers', targeted: 2000, onLatest: 0, updateInProgress: 0, newUpdatesAvailable: 2000 },
+        ],
+      },
     ],
     timeline: [
       { time: '13:10:00', event: 'Job created and queued', type: 'start' },
