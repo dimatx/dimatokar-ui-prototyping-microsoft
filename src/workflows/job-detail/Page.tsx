@@ -31,7 +31,7 @@ function DonutChart({ segments, size = 180 }: { segments: DonutSegment[]; size?:
   const paths = segments.map((seg, i) => {
     const fraction = seg.value / total
     const dashLen = fraction * circumference - (fraction > 0 ? gap : 0)
-    const dashOffset = circumference - (cumulative / total) * circumference
+    const dashOffset = (cumulative / total) * circumference
     cumulative += seg.value
     if (seg.value === 0) return null
     return (
@@ -42,7 +42,7 @@ function DonutChart({ segments, size = 180 }: { segments: DonutSegment[]; size?:
         stroke={seg.color}
         strokeWidth={22}
         strokeDasharray={`${Math.max(dashLen, 0)} ${circumference}`}
-        strokeDashoffset={dashOffset}
+        strokeDashoffset={-dashOffset}
         strokeLinecap="butt"
         style={{ transform: `rotate(-90deg)`, transformOrigin: `${cx}px ${cy}px` }}
       />

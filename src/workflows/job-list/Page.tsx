@@ -1,15 +1,33 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Search, ChevronUp, ChevronDown, CheckCircle2, Loader2,
-  XCircle, Clock, AlertTriangle, Play, Filter, RotateCcw,
+  XCircle, Clock, Play, RotateCcw, Copy,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { ALL_JOBS, JobRecord } from '@/workflows/adr-namespace/jobData'
+import { NewJobWizard } from '@/workflows/adr-namespace/NewJobWizard'
+import type { JobPrefill } from '@/workflows/adr-namespace/NewJobWizard'
+import type { Hub } from '@/workflows/adr-namespace/Page'
+// ─── Map job display type → wizard job-type id ───────────────────────────────
+const TYPE_TO_WIZARD_ID: Record<string, string> = {
+  'Software Update': 'software-update',
+  'Certificate Revocation': 'cert-revocation',
+  'Management Action': 'management-action',
+  'Management Update': 'management-update',
+}
 
+// ─── Mock hub + aio data (same fleet as namespace page) ──────────────────────
+const MOCK_HUBS: Hub[] = [
+  { name: 'hub-tx-wind-01', region: 'South Central US', devices: 4_250, status: 'Healthy' },
+  { name: 'hub-tx-wind-02', region: 'South Central US', devices: 3_980, status: 'Healthy' },
+  { name: 'hub-tx-wind-03', region: 'East US 2', devices: 2_617, status: 'Healthy' },
+  { name: 'hub-tx-wind-04', region: 'East US 2', devices: 2_000, status: 'Degraded' },
+]
+const MOCK_AIO = [{ name: 'aio-tx-abilene-01', site: 'Abilene Wind Farm', status: 'Healthy', connectedDevices: 3200, assets: 3200 }]
+const MOCK_EXISTING_JOBS = ALL_JOBS.map(j => ({ id: j.id, name: j.name, type: j.type, status: j.status, targets: `${j.targetDevices.toLocaleString()} devices`, started: j.started }))
 // ─── Status helpers ──────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; dot: string; badge: string }> = {
@@ -59,7 +77,7 @@ function StatusBadge({ status }: { status: string }) {
 function TypeBadge({ type }: { type: string }) {
   const cls = TYPE_COLORS[type] ?? 'bg-slate-50 text-slate-600 border-slate-200'
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border whitespace-nowrap ${cls}`}>
       {type}
     </span>
   )
@@ -137,6 +155,28 @@ const ALL_TYPES = Array.from(new Set(ALL_JOBS.map(j => j.type)))
 export default function JobListPage() {
   const navigate = useNavigate()
 
+  const [showWizard, setShowWizard] = useState(false)
+  const [wizardPrefill, setWizardPrefill] = useState<JobPrefill | undefined>(undefined)
+
+  function openNewJob() {
+    setWizardPrefill(undefined)
+    setShowWizard(true)
+  }
+
+  function openCopyJob(job: JobRecord, e: React.MouseEvent) {
+    e.stopPropagation()
+    setWizardPrefill({
+      jobType: TYPE_TO_WIZARD_ID[job.type],
+      jobName: `Copy of ${job.name}`,
+      jobDescription: job.description,
+      targetMode: job.targetMode,
+      scheduleMode: job.scheduleMode,
+      priority: job.priority,
+      copiedFrom: job.id,
+    })
+    setShowWizard(true)
+  }
+
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string[]>([])
   const [typeFilter, setTypeFilter] = useState<string[]>([])
@@ -210,7 +250,7 @@ export default function JobListPage() {
           <span className="text-slate-300">/</span>
           <span className="text-sm font-semibold text-slate-900">Jobs</span>
         </div>
-        <Button size="sm" className="gap-1.5">
+        <Button size="sm" className="gap-1.5" onClick={openNewJob}>
           <Play className="w-3.5 h-3.5" />
           New Job
         </Button>
@@ -311,7 +351,7 @@ export default function JobListPage() {
                   <button
                     key={t}
                     onClick={() => toggleType(t)}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium border whitespace-nowrap transition-all ${
                       active ? (TYPE_COLORS[t] ?? 'bg-slate-100 text-slate-700 border-slate-300') : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
                     }`}
                   >
@@ -347,6 +387,7 @@ export default function JobListPage() {
               <th className="px-5 py-3 text-left">
                 <SortHeader label="Started" colKey="started" sort={sort} onSort={handleSort} />
               </th>
+              <th className="px-4 py-3 w-[50px]" />
             </tr>
           </thead>
           <tbody>
@@ -385,6 +426,15 @@ export default function JobListPage() {
                     {job.started}
                     {job.duration && <span className="block text-[11px] text-slate-400">{job.duration}</span>}
                   </td>
+                  <td className="px-4 py-3.5">
+                    <button
+                      onClick={e => openCopyJob(job, e)}
+                      title="Copy job"
+                      className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
@@ -402,6 +452,21 @@ export default function JobListPage() {
           </div>
         )}
       </div>
+
+      {/* Wizard */}
+      <AnimatePresence>
+        {showWizard && (
+          <NewJobWizard
+            linkedHubs={MOCK_HUBS}
+            aioInstances={MOCK_AIO}
+            totalAssets={3200}
+            existingJobs={MOCK_EXISTING_JOBS}
+            prefill={wizardPrefill}
+            onClose={() => setShowWizard(false)}
+            onCreate={() => setShowWizard(false)}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }

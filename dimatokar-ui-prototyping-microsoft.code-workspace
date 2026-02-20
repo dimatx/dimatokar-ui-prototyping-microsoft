@@ -10,5 +10,9 @@
 			"path": "../dimatokar-at-microsoft/context"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"chat.tools.terminal.autoApprove": {
+			"npx tsc": true
+		}
+	}
 }

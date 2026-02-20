@@ -63,11 +63,23 @@ interface SavedGroup {
   deviceCount: number
 }
 
+export interface JobPrefill {
+  jobType?: string
+  jobName?: string
+  jobDescription?: string
+  targetMode?: 'namespace' | 'group' | 'custom'
+  scheduleMode?: 'now' | 'later'
+  scheduleDate?: string
+  priority?: string
+  copiedFrom?: string
+}
+
 interface NewJobWizardProps {
   linkedHubs: Hub[]
   aioInstances: { name: string; site: string; status: string; connectedDevices: number; assets: number }[]
   totalAssets: number
   existingJobs: ExistingJob[]
+  prefill?: JobPrefill
   onClose: () => void
   onCreate: (job: CreatedJob) => void
 }
@@ -149,20 +161,20 @@ const SAMPLE_SAVED_GROUPS: SavedGroup[] = [
 
 /* ─── Wizard ────────────────────────────────────────────────── */
 
-export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJobs, onClose, onCreate }: NewJobWizardProps) {
+export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJobs, prefill, onClose, onCreate }: NewJobWizardProps) {
   const [step, setStep] = useState(0)
 
   // Step 0: Job type
-  const [jobType, setJobType] = useState<string | null>(null)
+  const [jobType, setJobType] = useState<string | null>(prefill?.jobType ?? null)
   const [showCopyPicker, setShowCopyPicker] = useState(false)
   const [selectedCopyJob, setSelectedCopyJob] = useState<ExistingJob | null>(null)
 
   // Step 1: Basics
-  const [jobName, setJobName] = useState('')
-  const [jobDescription, setJobDescription] = useState('')
+  const [jobName, setJobName] = useState(prefill?.jobName ?? '')
+  const [jobDescription, setJobDescription] = useState(prefill?.jobDescription ?? '')
 
   // Target mode
-  const [targetMode, setTargetMode] = useState<'namespace' | 'group' | 'custom'>('namespace')
+  const [targetMode, setTargetMode] = useState<'namespace' | 'group' | 'custom'>(prefill?.targetMode ?? 'namespace')
   const [selectedGroup, setSelectedGroup] = useState<SavedGroup | null>(null)
   const [selectedNamespace, setSelectedNamespace] = useState<MockNamespace>(MOCK_NAMESPACES[0])
 
@@ -173,7 +185,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
   const [armActionPayload, setArmActionPayload] = useState('')
 
   // Step: Targeting
-  const [priority, setPriority] = useState('10')
+  const [priority, setPriority] = useState(prefill?.priority ?? '10')
   const [targetCondition, setTargetCondition] = useState('')
   const [savedGroups, setSavedGroups] = useState<SavedGroup[]>([...SAMPLE_SAVED_GROUPS])
   const [showSaveGroupInput, setShowSaveGroupInput] = useState(false)
@@ -181,8 +193,8 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
   const [justSavedGroup, setJustSavedGroup] = useState(false)
 
   // Step: Schedule
-  const [scheduleMode, setScheduleMode] = useState<'now' | 'later'>('now')
-  const [scheduleDate, setScheduleDate] = useState('')
+  const [scheduleMode, setScheduleMode] = useState<'now' | 'later'>(prefill?.scheduleMode ?? 'now')
+  const [scheduleDate, setScheduleDate] = useState(prefill?.scheduleDate ?? '')
   const steps = getSteps(jobType)
   const scopedHubs = linkedHubs
   const totalDevices = scopedHubs.reduce((sum, h) => sum + h.devices, 0)
@@ -272,7 +284,8 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
           <div>
             <h2 className="text-base font-semibold">New Job</h2>
             <p className="text-sm text-muted-foreground">
-              Create a job in the Texas-Wind-Namespace
+              {prefill?.copiedFrom
+                ? <>Copied from <span className="font-mono text-xs">{prefill.copiedFrom}</span> &mdash; edit and submit</>               : 'Create a job in the Texas-Wind-Namespace'}
             </p>
           </div>
           <button
