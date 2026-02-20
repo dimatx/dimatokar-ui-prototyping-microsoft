@@ -186,7 +186,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
 export default function JobDetailPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const jobId = params.get('id') ?? ''
+  const jobId = params.get('id') ?? ALL_JOBS[0]?.id ?? ''
   const job = ALL_JOBS.find(j => j.id === jobId)
 
   if (!job) {
