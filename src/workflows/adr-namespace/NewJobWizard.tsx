@@ -914,7 +914,10 @@ function StepTarget({
           >
             <Bookmark className={`h-4 w-4 mt-0.5 shrink-0 ${targetMode === 'group' ? 'text-foreground' : 'text-muted-foreground'}`} />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">Load Group</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium">Load Group</p>
+                <span className="rounded border border-orange-300 bg-orange-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-orange-600">P2</span>
+              </div>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {selectedGroup ? selectedGroup.name : 'Pick a saved group of devices'}
               </p>
