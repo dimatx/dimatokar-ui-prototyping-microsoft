@@ -547,6 +547,20 @@ export default function AdrNamespacePage() {
         />
       ) : activeMenuItem === 'jobs' ? (
         <JobsView key="jobs" jobs={jobs} setJobs={setJobs} expandedJobId={expandedJobId} setExpandedJobId={setExpandedJobId} showNewJobWizard={showNewJobWizard} setShowNewJobWizard={setShowNewJobWizard} linkedHubs={linkedHubs} aioInstances={aioInstances} namespaceSvcs={namespaceSvcs} />
+      ) : activeMenuItem === 'credentials' ? (
+        <PlaceholderView key="credentials" title="Credentials" description="Manage device certificates and credentials stored in this namespace. Assign credentials to devices, rotate keys, and set expiry policies." icon={KeyRound} />
+      ) : activeMenuItem === 'policies' ? (
+        <PlaceholderView key="policies" title="Policies" description="Define access control and compliance policies for devices and assets in this namespace. Control what operations are allowed and under which conditions." icon={FileText} />
+      ) : activeMenuItem === 'provisioning' ? (
+        <PlaceholderView key="provisioning" title="Provisioning" description="Configure device provisioning rules and enrollment groups. Connect to IoT Hub Device Provisioning Service instances linked to this namespace." icon={Upload} />
+      ) : activeMenuItem === 'cert-mgmt' ? (
+        <PlaceholderView key="cert-mgmt" title="Certificate Management" description="Manage the certificate authority (CA) hierarchy for this namespace. Issue, renew, and revoke device certificates at scale." icon={Shield} />
+      ) : activeMenuItem === 'groups' ? (
+        <PlaceholderView key="groups" title="Groups" description="Organize devices and assets into groups for targeted operations such as firmware updates, configuration pushes, and policy assignments." icon={Users} />
+      ) : activeMenuItem === 'device-update' ? (
+        <PlaceholderView key="device-update" title="Device Update" description="Manage over-the-air (OTA) firmware and software update deployments across device groups. Powered by Azure Device Update for IoT Hub." icon={RefreshCw} />
+      ) : activeMenuItem === '3p' ? (
+        <PlaceholderView key="3p" title="3P Capability" description="Integrate third-party extensions and partner solutions into this namespace. Extend ADR with custom capabilities registered via the Azure Marketplace." icon={Puzzle} />
       ) : (
       <motion.div key="main" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="space-y-8">
       {/* ── Header / Hero ────────────────────────────────────── */}
@@ -649,6 +663,7 @@ export default function AdrNamespacePage() {
               className="gap-1.5 text-xs relative"
               onClick={(e) => {
                 e.stopPropagation()
+                navigateTo('iot-hub')
                 setShowHubPicker(true)
               }}
               disabled={unlinkedHubs.length === 0}
@@ -1400,7 +1415,28 @@ function SubViewHeader({ title, subtitle, count }: { title: React.ReactNode; sub
   )
 }
 
-/* ─── Assets View ────────────────────────────────────────────── */
+/* ─── Placeholder View ───────────────────────────────────────── */
+
+function PlaceholderView({ title, description, icon: Icon }: { title: string; description: string; icon: React.ElementType }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="flex flex-col items-center justify-center py-24 text-center"
+    >
+      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-100 text-slate-400 mb-5">
+        <Icon className="h-7 w-7" />
+      </div>
+      <h2 className="text-xl font-semibold text-foreground mb-2">{title}</h2>
+      <p className="max-w-md text-sm text-muted-foreground leading-relaxed mb-6">{description}</p>
+      <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
+        Coming soon
+      </span>
+    </motion.div>
+  )
+}
 
 /* ─── Sort Icon ─────────────────────────────────────────────── */
 
