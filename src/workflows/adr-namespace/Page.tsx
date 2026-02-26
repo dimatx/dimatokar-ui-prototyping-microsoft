@@ -401,8 +401,8 @@ const mockDevices = [
 
 export default function AdrNamespacePage() {
   const navigate = useNavigate()
-  const [hubsOpen, setHubsOpen] = useState(false)
-  const [aioOpen, setAioOpen] = useState(false)
+  const [hubsOpen, setHubsOpen] = useState(true)
+  const [aioOpen, setAioOpen] = useState(true)
   const [linkedHubs, setLinkedHubs] = useState<Hub[]>(initialHubs)
   const [showHubPicker, setShowHubPicker] = useState(false)
   const [hubSearch, setHubSearch] = useState('')
@@ -1116,13 +1116,13 @@ export default function AdrNamespacePage() {
 
 const LEFT_MENU_SECTIONS = [
   {
-    title: 'Navigation',
+    title: 'Dashboard',
     items: [
       { id: '', label: 'Dashboard', icon: LayoutDashboard },
     ],
   },
   {
-    title: 'ADR Resources',
+    title: 'Resources',
     items: [
       { id: 'assets', label: 'Assets', icon: Cpu },
       { id: 'devices', label: 'Devices', icon: Radio },
