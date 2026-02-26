@@ -190,6 +190,116 @@ const cveByName = [
   { cve: 'CVE-2024-9102', severity: 'Medium', devices: 985, description: 'Path traversal in file upload handler' },
 ]
 
+/* ─── Per-Firmware Detail Mock Data ─────────────────────────── */
+
+const firmwareDetailData: Record<string, {
+  cvesBySeverity: { critical: number; high: number; medium: number; low: number }
+  cves: { id: string; severity: string; description: string }[]
+  softwareComponents: { name: string; version: string; cves: number }[]
+  binaryHardening: { total: number; nx: number; pie: number; relro: number; canary: number; stripped: number }
+  keys: { total: number; private: number; public: number; pairedKeys: number; shortKeySize: number }
+  certificates: { total: number; weakSig: number; selfSigned: number; shortKey: number; expired: number; expiringSoon: number; valid: number }
+  passwordHashes: { total: number; algorithms: { name: string; count: number }[] }
+}> = {
+  '3.2.1': {
+    cvesBySeverity: { critical: 0, high: 1, medium: 3, low: 5 },
+    cves: [
+      { id: 'CVE-2024-7723', severity: 'High', description: 'Heap use-after-free in firmware parser' },
+      { id: 'CVE-2024-4401', severity: 'High', description: 'Weak RNG used for device key generation' },
+      { id: 'CVE-2024-6612', severity: 'Medium', description: 'Cleartext credentials in debug logs' },
+      { id: 'CVE-2023-8812', severity: 'Medium', description: 'Integer overflow in OTA size validation' },
+      { id: 'CVE-2023-7201', severity: 'Medium', description: 'Insufficient entropy in session token' },
+    ],
+    softwareComponents: [
+      { name: 'openssl', version: '3.0.7', cves: 3 },
+      { name: 'busybox', version: '1.36.1', cves: 2 },
+      { name: 'dropbear', version: '2022.83', cves: 2 },
+      { name: 'dnsmasq', version: '2.89', cves: 1 },
+      { name: 'curl', version: '8.0.1', cves: 1 },
+    ],
+    binaryHardening: { total: 18, nx: 16, pie: 12, relro: 10, canary: 9, stripped: 14 },
+    keys: { total: 4, private: 1, public: 3, pairedKeys: 0, shortKeySize: 1 },
+    certificates: { total: 3, weakSig: 0, selfSigned: 1, shortKey: 0, expired: 0, expiringSoon: 1, valid: 2 },
+    passwordHashes: { total: 6, algorithms: [{ name: 'SHA-256', count: 4 }, { name: 'SHA-512', count: 1 }, { name: 'MD5', count: 1 }] },
+  },
+  '3.1.0': {
+    cvesBySeverity: { critical: 2, high: 4, medium: 6, low: 8 },
+    cves: [
+      { id: 'CVE-2025-2841', severity: 'Critical', description: 'Remote code execution via crafted OTA payload' },
+      { id: 'CVE-2024-4812', severity: 'Critical', description: 'Improper cert validation in TLS handshake' },
+      { id: 'CVE-2024-7723', severity: 'High', description: 'Heap use-after-free in firmware parser' },
+      { id: 'CVE-2024-5612', severity: 'High', description: 'Privilege escalation via /proc traversal' },
+      { id: 'CVE-2024-4401', severity: 'High', description: 'Weak RNG used for device key generation' },
+      { id: 'CVE-2024-3812', severity: 'High', description: 'Stack buffer overflow in config parser' },
+    ],
+    softwareComponents: [
+      { name: 'apache', version: '2.4.54', cves: 12 },
+      { name: 'busybox', version: '1.34.1', cves: 7 },
+      { name: 'openssl', version: '1.1.1t', cves: 6 },
+      { name: 'pppd', version: '2.4.9', cves: 4 },
+      { name: 'dropbear', version: '2020.81', cves: 3 },
+      { name: 'radvd', version: '2.19', cves: 2 },
+    ],
+    binaryHardening: { total: 18, nx: 14, pie: 9, relro: 7, canary: 5, stripped: 16 },
+    keys: { total: 6, private: 2, public: 4, pairedKeys: 1, shortKeySize: 2 },
+    certificates: { total: 5, weakSig: 2, selfSigned: 2, shortKey: 1, expired: 1, expiringSoon: 2, valid: 2 },
+    passwordHashes: { total: 14, algorithms: [{ name: 'MD5', count: 8 }, { name: 'DES', count: 4 }, { name: 'SHA-512', count: 2 }] },
+  },
+  '2.4.0': {
+    cvesBySeverity: { critical: 0, high: 0, medium: 1, low: 2 },
+    cves: [
+      { id: 'CVE-2024-2201', severity: 'Medium', description: 'Side-channel timing vulnerability' },
+      { id: 'CVE-2023-4102', severity: 'Low', description: 'Information disclosure via error messages' },
+      { id: 'CVE-2023-3801', severity: 'Low', description: 'Missing rate limit on diagnostic API' },
+    ],
+    softwareComponents: [
+      { name: 'busybox', version: '1.36.1', cves: 2 },
+      { name: 'dropbear', version: '2022.83', cves: 1 },
+      { name: 'musl libc', version: '1.2.3', cves: 0 },
+    ],
+    binaryHardening: { total: 8, nx: 8, pie: 6, relro: 5, canary: 4, stripped: 6 },
+    keys: { total: 3, private: 1, public: 2, pairedKeys: 1, shortKeySize: 0 },
+    certificates: { total: 2, weakSig: 0, selfSigned: 0, shortKey: 0, expired: 0, expiringSoon: 0, valid: 2 },
+    passwordHashes: { total: 3, algorithms: [{ name: 'SHA-256', count: 2 }, { name: 'SHA-512', count: 1 }] },
+  },
+  '1.9.3': {
+    cvesBySeverity: { critical: 1, high: 2, medium: 4, low: 3 },
+    cves: [
+      { id: 'CVE-2024-9901', severity: 'Critical', description: 'Buffer overflow in MQTT client' },
+      { id: 'CVE-2025-1099', severity: 'High', description: 'Command injection in diagnostic endpoint' },
+      { id: 'CVE-2024-3301', severity: 'High', description: 'Unauthenticated REST API access' },
+      { id: 'CVE-2024-9102', severity: 'Medium', description: 'Path traversal in file upload handler' },
+      { id: 'CVE-2024-8111', severity: 'Medium', description: 'Weak cipher suite in TLS negotiation' },
+      { id: 'CVE-2024-6011', severity: 'Medium', description: 'Insecure default config in nginx' },
+    ],
+    softwareComponents: [
+      { name: 'nginx', version: '1.22.0', cves: 4 },
+      { name: 'busybox', version: '1.33.2', cves: 3 },
+      { name: 'openssl', version: '1.0.2u', cves: 3 },
+      { name: 'dropbear', version: '2019.78', cves: 2 },
+      { name: 'uClibc', version: '0.9.33', cves: 1 },
+    ],
+    binaryHardening: { total: 22, nx: 18, pie: 10, relro: 8, canary: 6, stripped: 20 },
+    keys: { total: 12, private: 3, public: 9, pairedKeys: 2, shortKeySize: 3 },
+    certificates: { total: 5, weakSig: 1, selfSigned: 2, shortKey: 1, expired: 2, expiringSoon: 1, valid: 2 },
+    passwordHashes: { total: 9, algorithms: [{ name: 'MD5', count: 3 }, { name: 'DES', count: 2 }, { name: 'SHA-256', count: 2 }, { name: 'SHA-1', count: 2 }] },
+  },
+  '5.0.2': {
+    cvesBySeverity: { critical: 0, high: 0, medium: 0, low: 1 },
+    cves: [
+      { id: 'CVE-2023-2101', severity: 'Low', description: 'Debug interface accessible without authentication' },
+    ],
+    softwareComponents: [
+      { name: 'busybox', version: '1.36.1', cves: 1 },
+      { name: 'musl libc', version: '1.2.4', cves: 0 },
+    ],
+    binaryHardening: { total: 6, nx: 6, pie: 5, relro: 4, canary: 3, stripped: 3 },
+    keys: { total: 2, private: 1, public: 1, pairedKeys: 1, shortKeySize: 0 },
+    certificates: { total: 1, weakSig: 0, selfSigned: 0, shortKey: 0, expired: 0, expiringSoon: 0, valid: 1 },
+    passwordHashes: { total: 2, algorithms: [{ name: 'SHA-256', count: 2 }] },
+  },
+}
+
 const initialJobs = [
   { id: 'JOB-1042', name: 'Firmware update – v3.2.1', type: 'Update', status: 'Running', targets: '2,400 devices', started: '35 min ago' },
   { id: 'JOB-1041', name: 'Certificate renewal – Q1 2026', type: 'Certificate', status: 'Completed', targets: '12,847 devices', started: '2 days ago' },
@@ -264,21 +374,21 @@ const deviceFirmwareVersions = [
 ]
 
 const mockDevices = [
-  { id: 'DEV-0001', name: 'tx-wind-a001-ctrl', type: 'Turbine Controller', hub: 'hub-tx-wind-01', site: 'Abilene Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.2.1', lastSeen: '1 min ago' },
-  { id: 'DEV-0002', name: 'tx-wind-a014-anem', type: 'Anemometer', hub: 'hub-tx-wind-01', site: 'Abilene Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v2.4.0', lastSeen: '3 min ago' },
-  { id: 'DEV-0003', name: 'tx-wind-a021-pitch', type: 'Pitch Controller', hub: 'hub-tx-wind-02', site: 'Abilene Wind Farm', status: 'Degraded', connectivity: 'Connected', firmware: 'v5.0.2', lastSeen: '8 min ago' },
-  { id: 'DEV-0004', name: 'tx-wind-m007-ctrl', type: 'Turbine Controller', hub: 'hub-tx-wind-01', site: 'Midland Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.1.0', lastSeen: '2 min ago' },
-  { id: 'DEV-0005', name: 'tx-wind-m011-ctrl', type: 'Turbine Controller', hub: 'hub-tx-wind-02', site: 'Midland Wind Farm', status: 'Unhealthy', connectivity: 'Disconnected', firmware: 'v3.1.0', lastSeen: '4 hrs ago' },
-  { id: 'DEV-0006', name: 'tx-wind-o003-ctrl', type: 'Turbine Controller', hub: 'hub-tx-wind-03', site: 'Odessa Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.2.1', lastSeen: '1 min ago' },
-  { id: 'DEV-0007', name: 'tx-wind-o017-pitch', type: 'Pitch Controller', hub: 'hub-tx-wind-03', site: 'Odessa Wind Farm', status: 'Degraded', connectivity: 'Connected', firmware: 'v5.0.2', lastSeen: '31 min ago' },
-  { id: 'DEV-0008', name: 'tx-wind-s002-ctrl', type: 'Turbine Controller', hub: 'hub-tx-wind-04', site: 'San Angelo Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.2.1', lastSeen: '5 min ago' },
-  { id: 'DEV-0009', name: 'tx-wind-a033-edge', type: 'Edge Gateway', hub: 'hub-tx-wind-01', site: 'Abilene Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v1.9.3', lastSeen: '2 min ago' },
-  { id: 'DEV-0010', name: 'tx-wind-m023-anem', type: 'Anemometer', hub: 'hub-tx-wind-02', site: 'Midland Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v2.4.0', lastSeen: '6 min ago' },
-  { id: 'DEV-0011', name: 'tx-wind-o009-anem', type: 'Anemometer', hub: 'hub-tx-wind-03', site: 'Odessa Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v2.4.0', lastSeen: '4 min ago' },
-  { id: 'DEV-0012', name: 'tx-wind-s015-ctrl', type: 'Turbine Controller', hub: 'hub-tx-wind-04', site: 'San Angelo Wind Farm', status: 'Degraded', connectivity: 'Connected', firmware: 'v3.1.0', lastSeen: '19 min ago' },
-  { id: 'DEV-0013', name: 'tx-wind-a044-ctrl', type: 'Turbine Controller', hub: 'hub-tx-wind-01', site: 'Abilene Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.1.0', lastSeen: '7 min ago' },
-  { id: 'DEV-0014', name: 'tx-wind-m031-pitch', type: 'Pitch Controller', hub: 'hub-tx-wind-02', site: 'Midland Wind Farm', status: 'Unknown', connectivity: 'Never Connected', firmware: '—', lastSeen: 'Never' },
-  { id: 'DEV-0015', name: 'tx-wind-s008-edge', type: 'Edge Gateway', hub: 'hub-tx-wind-04', site: 'San Angelo Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v1.9.3', lastSeen: '3 min ago' },
+  { id: 'DEV-0001', name: 'tx-wind-a001-ctrl', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', model: 'TurbineController-X700', hub: 'hub-tx-wind-01', site: 'Abilene Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.2.1', lastSeen: '1 min ago' },
+  { id: 'DEV-0002', name: 'tx-wind-a014-anem', type: 'Anemometer', manufacturer: 'Zephyr Sensors Inc.', model: 'AnemometerPro-2400', hub: 'hub-tx-wind-01', site: 'Abilene Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v2.4.0', lastSeen: '3 min ago' },
+  { id: 'DEV-0003', name: 'tx-wind-a021-pitch', type: 'Pitch Controller', manufacturer: 'AeroLogix Systems', model: 'PitchController-5000', hub: 'hub-tx-wind-02', site: 'Abilene Wind Farm', status: 'Degraded', connectivity: 'Connected', firmware: 'v5.0.2', lastSeen: '8 min ago' },
+  { id: 'DEV-0004', name: 'tx-wind-m007-ctrl', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', model: 'TurbineController-X700', hub: 'hub-tx-wind-01', site: 'Midland Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.1.0', lastSeen: '2 min ago' },
+  { id: 'DEV-0005', name: 'tx-wind-m011-ctrl', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', model: 'TurbineController-X700', hub: 'hub-tx-wind-02', site: 'Midland Wind Farm', status: 'Unhealthy', connectivity: 'Disconnected', firmware: 'v3.1.0', lastSeen: '4 hrs ago' },
+  { id: 'DEV-0006', name: 'tx-wind-o003-ctrl', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', model: 'TurbineController-X700', hub: 'hub-tx-wind-03', site: 'Odessa Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.2.1', lastSeen: '1 min ago' },
+  { id: 'DEV-0007', name: 'tx-wind-o017-pitch', type: 'Pitch Controller', manufacturer: 'AeroLogix Systems', model: 'PitchController-5000', hub: 'hub-tx-wind-03', site: 'Odessa Wind Farm', status: 'Degraded', connectivity: 'Connected', firmware: 'v5.0.2', lastSeen: '31 min ago' },
+  { id: 'DEV-0008', name: 'tx-wind-s002-ctrl', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', model: 'TurbineController-X700', hub: 'hub-tx-wind-04', site: 'San Angelo Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.2.1', lastSeen: '5 min ago' },
+  { id: 'DEV-0009', name: 'tx-wind-a033-edge', type: 'Edge Gateway', manufacturer: 'Meridian Edge Technologies', model: 'EdgeGateway-1900', hub: 'hub-tx-wind-01', site: 'Abilene Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v1.9.3', lastSeen: '2 min ago' },
+  { id: 'DEV-0010', name: 'tx-wind-m023-anem', type: 'Anemometer', manufacturer: 'Zephyr Sensors Inc.', model: 'AnemometerPro-2400', hub: 'hub-tx-wind-02', site: 'Midland Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v2.4.0', lastSeen: '6 min ago' },
+  { id: 'DEV-0011', name: 'tx-wind-o009-anem', type: 'Anemometer', manufacturer: 'Zephyr Sensors Inc.', model: 'AnemometerPro-2400', hub: 'hub-tx-wind-03', site: 'Odessa Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v2.4.0', lastSeen: '4 min ago' },
+  { id: 'DEV-0012', name: 'tx-wind-s015-ctrl', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', model: 'TurbineController-X700', hub: 'hub-tx-wind-04', site: 'San Angelo Wind Farm', status: 'Degraded', connectivity: 'Connected', firmware: 'v3.1.0', lastSeen: '19 min ago' },
+  { id: 'DEV-0013', name: 'tx-wind-a044-ctrl', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', model: 'TurbineController-X700', hub: 'hub-tx-wind-01', site: 'Abilene Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.1.0', lastSeen: '7 min ago' },
+  { id: 'DEV-0014', name: 'tx-wind-m031-pitch', type: 'Pitch Controller', manufacturer: 'AeroLogix Systems', model: 'PitchController-5000', hub: 'hub-tx-wind-02', site: 'Midland Wind Farm', status: 'Unknown', connectivity: 'Never Connected', firmware: '—', lastSeen: 'Never' },
+  { id: 'DEV-0015', name: 'tx-wind-s008-edge', type: 'Edge Gateway', manufacturer: 'Meridian Edge Technologies', model: 'EdgeGateway-1900', hub: 'hub-tx-wind-04', site: 'San Angelo Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v1.9.3', lastSeen: '3 min ago' },
 ]
 
 /* ─── Page ────────────────────────────────────────────────────── */
@@ -307,6 +417,14 @@ export default function AdrNamespacePage() {
   const [enableInstanceName, setEnableInstanceName] = useState<string>('')
   const [leftMenuOpen, setLeftMenuOpen] = useState(true)
   const [activeMenuItem, setActiveMenuItem] = useState<string>('')
+  const [firmwareTarget, setFirmwareTarget] = useState<string | null>(null)
+  const [devicePrefilter, setDevicePrefilter] = useState<string>('')
+
+  const navigateTo = (id: string, opts?: { firmware?: string; deviceFilter?: string }) => {
+    setActiveMenuItem(id)
+    setFirmwareTarget(opts?.firmware ?? null)
+    setDevicePrefilter(opts?.deviceFilter ?? '')
+  }
 
   // Simulate per-hub progress ticking for running jobs
   useEffect(() => {
@@ -402,20 +520,31 @@ export default function AdrNamespacePage() {
         open={leftMenuOpen}
         onToggle={() => setLeftMenuOpen((v) => !v)}
         activeItem={activeMenuItem}
-        onItemClick={setActiveMenuItem}
+        onItemClick={(id) => navigateTo(id)}
       />
       <div className="flex-1 min-w-0 pl-6">
       <AnimatePresence mode="wait">
       {activeMenuItem === 'assets' ? (
         <AssetsView key="assets" />
       ) : activeMenuItem === 'devices' ? (
-        <DevicesView key="devices" />
+        <DevicesView
+          key={`devices-${devicePrefilter}`}
+          initialSearch={devicePrefilter}
+          onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
+        />
       ) : activeMenuItem === 'iot-hub' ? (
         <IotHubView key="iot-hub" hubs={linkedHubs} onAddHub={() => setShowHubPicker(true)} unlinkedCount={unlinkedHubs.length} />
       ) : activeMenuItem === 'iot-ops' ? (
         <IotOpsView key="iot-ops" />
+      ) : activeMenuItem === 'firmware' && firmwareTarget ? (
+        <FirmwareDetailView key={`fw-${firmwareTarget}`} version={firmwareTarget} onBack={() => setFirmwareTarget(null)} />
       ) : activeMenuItem === 'firmware' ? (
-        <FirmwareAnalysisView key="firmware" />
+        <FirmwareAnalysisView
+          key="firmware"
+          onFirmwareSelect={(v) => setFirmwareTarget(v)}
+          onManufacturerClick={(m) => navigateTo('devices', { deviceFilter: m })}
+          onModelClick={(m) => navigateTo('devices', { deviceFilter: m })}
+        />
       ) : activeMenuItem === 'jobs' ? (
         <JobsView key="jobs" jobs={jobs} setJobs={setJobs} expandedJobId={expandedJobId} setExpandedJobId={setExpandedJobId} showNewJobWizard={showNewJobWizard} setShowNewJobWizard={setShowNewJobWizard} linkedHubs={linkedHubs} aioInstances={aioInstances} namespaceSvcs={namespaceSvcs} />
       ) : (
@@ -1220,14 +1349,21 @@ function DonutChart({ segments, centerLabel, legendBelow }: { segments: { label:
   )
 }
 
-function HBarChart({ data }: { data: { label: string; value: number; color: string }[] }) {
+function HBarChart({ data, onBarClick }: { data: { label: string; value: number; color: string }[]; onBarClick?: (label: string) => void }) {
   const max = Math.max(...data.map(d => d.value))
   return (
     <div className="space-y-3">
       {data.map((d, i) => (
         <div key={i}>
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-muted-foreground truncate mr-2">{d.label}</span>
+            {onBarClick ? (
+              <button
+                onClick={() => onBarClick(d.label)}
+                className="text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 truncate mr-2 text-left transition-colors"
+              >{d.label}</button>
+            ) : (
+              <span className="text-muted-foreground truncate mr-2">{d.label}</span>
+            )}
             <span className="font-mono tabular-nums shrink-0">{d.value.toLocaleString()}</span>
           </div>
           <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
@@ -1431,8 +1567,8 @@ const DEVICE_ACTIONS = [
   { id: 'update-firmware', label: 'Update Firmware', icon: Upload, cls: 'text-blue-700' },
 ]
 
-function DevicesView() {
-  const [search, setSearch] = useState('')
+function DevicesView({ initialSearch = '', onFirmwareSelect }: { initialSearch?: string; onFirmwareSelect?: (version: string) => void }) {
+  const [search, setSearch] = useState(initialSearch)
   const [statusFilter, setStatusFilter] = useState('all')
   const [connectivityFilter, setConnectivityFilter] = useState('all')
   const [sort, setSort] = useState({ field: 'id', dir: 'asc' })
@@ -1447,7 +1583,8 @@ function DevicesView() {
       rows = rows.filter(d =>
         d.id.toLowerCase().includes(q) || d.name.toLowerCase().includes(q) ||
         d.type.toLowerCase().includes(q) || d.hub.toLowerCase().includes(q) ||
-        d.site.toLowerCase().includes(q)
+        d.site.toLowerCase().includes(q) || d.manufacturer.toLowerCase().includes(q) ||
+        d.model.toLowerCase().includes(q) || d.firmware.toLowerCase().includes(q)
       )
     }
     if (statusFilter !== 'all') rows = rows.filter(d => d.status === statusFilter)
@@ -1671,7 +1808,16 @@ function DevicesView() {
                     <TableCell className="text-sm text-muted-foreground">{d.type}</TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">{d.hub}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{d.site}</TableCell>
-                    <TableCell className="font-mono text-xs">{d.firmware}</TableCell>
+                    <TableCell>
+                      {d.firmware && d.firmware !== '\u2014' && onFirmwareSelect ? (
+                        <button
+                          onClick={e => { e.stopPropagation(); onFirmwareSelect(d.firmware.startsWith('v') ? d.firmware.slice(1) : d.firmware) }}
+                          className="font-mono text-xs text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 transition-colors"
+                        >{d.firmware}</button>
+                      ) : (
+                        <span className="font-mono text-xs">{d.firmware}</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <span className={`text-xs font-medium ${
                         d.connectivity === 'Connected' ? 'text-emerald-600'
@@ -1939,6 +2085,329 @@ function JobsView({ jobs, setJobs, expandedJobId, setExpandedJobId, showNewJobWi
   )
 }
 
+/* ─── Vertical Bar Chart (for Binary Hardening) ─────────────── */
+
+function VBarChart({ data, total }: { data: { label: string; value: number }[]; total: number }) {
+  const max = total
+  return (
+    <div className="flex items-end gap-3" style={{ height: 130 }}>
+      {data.map((d, i) => (
+        <div key={i} className="flex flex-col items-center gap-1 flex-1 h-full justify-end">
+          <span className="text-xs font-mono tabular-nums">{d.value}</span>
+          <div className="w-full flex items-end" style={{ height: 80 }}>
+            <div
+              className="w-full rounded-t-sm bg-blue-500/80 transition-all"
+              style={{ height: `${max > 0 ? (d.value / max) * 80 : 0}px` }}
+            />
+          </div>
+          <span className="text-[9px] text-muted-foreground leading-tight text-center">{d.label}</span>
+        </div>
+      ))}
+      <div className="self-end pb-5 text-[10px] text-muted-foreground whitespace-nowrap">/ {total}</div>
+    </div>
+  )
+}
+
+/* ─── Firmware Detail View ───────────────────────────────────── */
+
+const FW_TABS = ['Overview', 'Weaknesses', 'Software Components', 'Binary Hardening', 'Certificates', 'Password Hashes', 'Keys'] as const
+type FwTab = typeof FW_TABS[number]
+
+const severityDetailBg: Record<string, string> = {
+  Critical: 'bg-red-600 text-white', High: 'bg-orange-500 text-white',
+  Medium: 'bg-amber-100 text-amber-700 border border-amber-200',
+  Low: 'bg-slate-100 text-slate-500 border border-slate-200',
+}
+
+function FirmwareDetailView({ version, onBack }: { version: string; onBack: () => void }) {
+  const [activeTab, setActiveTab] = useState<FwTab>('Overview')
+  const fw = firmwareImages.find(f => f.version === version)
+  const detail = firmwareDetailData[version]
+  if (!fw || !detail) return null
+
+  const totalCves = detail.cvesBySeverity.critical + detail.cvesBySeverity.high + detail.cvesBySeverity.medium + detail.cvesBySeverity.low
+  const cveSeveritySegments = [
+    { label: 'Critical', value: detail.cvesBySeverity.critical, color: '#dc2626' },
+    { label: 'High', value: detail.cvesBySeverity.high, color: '#f97316' },
+    { label: 'Medium', value: detail.cvesBySeverity.medium, color: '#f59e0b' },
+    { label: 'Low', value: detail.cvesBySeverity.low, color: '#94a3b8' },
+  ].filter(s => s.value > 0)
+
+  const keySegments = [
+    { label: 'Private Keys', value: detail.keys.private, color: '#0ea5e9' },
+    { label: 'Public Keys', value: detail.keys.public, color: '#1e3a5f' },
+  ]
+
+  const certTotal = detail.certificates.expired + detail.certificates.expiringSoon + detail.certificates.valid
+  const certExpiredPct = certTotal > 0 ? (detail.certificates.expired / certTotal) * 100 : 0
+  const certExpiringSoonPct = certTotal > 0 ? (detail.certificates.expiringSoon / certTotal) * 100 : 0
+  const certValidPct = certTotal > 0 ? (detail.certificates.valid / certTotal) * 100 : 0
+
+  const binaryData = [
+    { label: 'NX', value: detail.binaryHardening.nx },
+    { label: 'PIE', value: detail.binaryHardening.pie },
+    { label: 'RELRO', value: detail.binaryHardening.relro },
+    { label: 'Canary', value: detail.binaryHardening.canary },
+    { label: 'Stripped', value: detail.binaryHardening.stripped },
+  ]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="space-y-6"
+    >
+      {/* Breadcrumb + header */}
+      <div>
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-3"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+          Firmware Analysis
+        </button>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight">{fw.file}</h1>
+          <span className="inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-medium text-slate-600">v{fw.version}</span>
+          {fw.cves.critical > 0 && (
+            <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
+              {fw.cves.critical} Critical
+            </span>
+          )}
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">{fw.manufacturer} · {fw.model} · {fw.devicesAffected.toLocaleString()} devices affected</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 border-b">
+        {FW_TABS.map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === tab
+                ? 'border-foreground text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >{tab}</button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      {activeTab === 'Overview' && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Weaknesses */}
+          <Card className="shadow-sm">
+            <CardContent className="p-5">
+              <p className="text-sm font-semibold mb-1">Weaknesses</p>
+              <p className="text-3xl font-bold mb-1">{totalCves}</p>
+              <p className="text-xs text-muted-foreground mb-4">Total CVEs</p>
+              {cveSeveritySegments.length > 0 ? (
+                <DonutChart segments={cveSeveritySegments} centerLabel="CVEs" legendBelow />
+              ) : (
+                <p className="text-sm text-emerald-600 font-medium py-4 text-center">Clean — no known CVEs</p>
+              )}
+              <button className="mt-4 text-xs text-blue-600 hover:underline" onClick={() => setActiveTab('Weaknesses')}>
+                Weaknesses &gt;
+              </button>
+            </CardContent>
+          </Card>
+
+          {/* Binary Hardening */}
+          <Card className="shadow-sm">
+            <CardContent className="p-5">
+              <p className="text-sm font-semibold mb-1">Binary Hardening</p>
+              <p className="text-3xl font-bold mb-1">{detail.binaryHardening.total}</p>
+              <p className="text-xs text-muted-foreground mb-4">Total binaries</p>
+              <VBarChart data={binaryData} total={detail.binaryHardening.total} />
+              <button className="mt-4 text-xs text-blue-600 hover:underline" onClick={() => setActiveTab('Binary Hardening')}>
+                Binary hardening &gt;
+              </button>
+            </CardContent>
+          </Card>
+
+          {/* Keys */}
+          <Card className="shadow-sm">
+            <CardContent className="p-5">
+              <p className="text-sm font-semibold mb-1">Keys</p>
+              <div className="flex gap-5 mb-4">
+                <div><p className="text-3xl font-bold">{detail.keys.total}</p><p className="text-xs text-muted-foreground">Total keys</p></div>
+                {detail.keys.pairedKeys > 0 && <div><p className="text-3xl font-bold text-amber-600">{detail.keys.pairedKeys}</p><p className="text-xs text-muted-foreground">Paired keys</p></div>}
+                {detail.keys.shortKeySize > 0 && <div><p className="text-3xl font-bold text-red-600">{detail.keys.shortKeySize}</p><p className="text-xs text-muted-foreground">Short key size</p></div>}
+              </div>
+              {keySegments.every(s => s.value > 0) && (
+                <DonutChart segments={keySegments} centerLabel="Keys" />
+              )}
+              <button className="mt-4 text-xs text-blue-600 hover:underline" onClick={() => setActiveTab('Keys')}>
+                Keys &gt;
+              </button>
+            </CardContent>
+          </Card>
+
+          {/* Software Components */}
+          <Card className="shadow-sm">
+            <CardContent className="p-5">
+              <p className="text-sm font-semibold mb-1">Software components</p>
+              <p className="text-3xl font-bold mb-1">{detail.softwareComponents.length}</p>
+              <p className="text-xs text-muted-foreground mb-4">Total components</p>
+              <div className="space-y-0">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1.5 px-0.5">
+                  <span>Top components by CVE</span><span>CVEs</span>
+                </div>
+                {detail.softwareComponents.slice(0, 4).map(c => (
+                  <div key={c.name} className="flex items-center justify-between py-1.5 border-b last:border-0 text-sm">
+                    <span className="text-foreground">{c.name}</span>
+                    <span className="font-mono tabular-nums text-xs">{c.cves}</span>
+                  </div>
+                ))}
+              </div>
+              <button className="mt-3 text-xs text-blue-600 hover:underline" onClick={() => setActiveTab('Software Components')}>
+                Software components &gt;
+              </button>
+            </CardContent>
+          </Card>
+
+          {/* Certificates */}
+          <Card className="shadow-sm">
+            <CardContent className="p-5">
+              <p className="text-sm font-semibold mb-1">Certificates</p>
+              <div className="flex gap-4 mb-4">
+                <div><p className="text-3xl font-bold">{detail.certificates.total}</p><p className="text-xs text-muted-foreground">Total</p></div>
+                {detail.certificates.weakSig > 0 && <div><p className="text-3xl font-bold text-red-600">{detail.certificates.weakSig}</p><p className="text-xs text-muted-foreground">Weak signature</p></div>}
+                {detail.certificates.selfSigned > 0 && <div><p className="text-3xl font-bold text-amber-600">{detail.certificates.selfSigned}</p><p className="text-xs text-muted-foreground">Self signed</p></div>}
+                {detail.certificates.shortKey > 0 && <div><p className="text-3xl font-bold text-orange-600">{detail.certificates.shortKey}</p><p className="text-xs text-muted-foreground">Short key size</p></div>}
+              </div>
+              <p className="text-xs text-muted-foreground mb-2">Certificate expiration status</p>
+              <div className="flex h-3 w-full rounded-full overflow-hidden">
+                {certExpiredPct > 0 && <div style={{ width: `${certExpiredPct}%`, backgroundColor: '#1e293b' }} />}
+                {certExpiringSoonPct > 0 && <div style={{ width: `${certExpiringSoonPct}%`, backgroundColor: '#f97316' }} />}
+                {certValidPct > 0 && <div style={{ width: `${certValidPct}%`, backgroundColor: '#0ea5e9' }} />}
+              </div>
+              <div className="flex gap-4 mt-2">
+                {certExpiredPct > 0 && <div className="flex items-center gap-1 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-sm bg-slate-900 shrink-0" />Expired</div>}
+                {certExpiringSoonPct > 0 && <div className="flex items-center gap-1 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-sm bg-orange-400 shrink-0" />Expiring Soon</div>}
+                {certValidPct > 0 && <div className="flex items-center gap-1 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-sm bg-sky-500 shrink-0" />Valid</div>}
+              </div>
+              <button className="mt-4 text-xs text-blue-600 hover:underline" onClick={() => setActiveTab('Certificates')}>
+                Certificates &gt;
+              </button>
+            </CardContent>
+          </Card>
+
+          {/* Password Hashes */}
+          <Card className="shadow-sm">
+            <CardContent className="p-5">
+              <p className="text-sm font-semibold mb-1">Password hashes</p>
+              <p className="text-3xl font-bold mb-1">{detail.passwordHashes.total}</p>
+              <p className="text-xs text-muted-foreground mb-4">Total password hashes</p>
+              <div className="space-y-0">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1.5 px-0.5">
+                  <span>Top algorithms</span><span>Count</span>
+                </div>
+                {detail.passwordHashes.algorithms.map(a => (
+                  <div key={a.name} className="flex items-center justify-between py-1.5 border-b last:border-0 text-sm">
+                    <span className="text-foreground">{a.name}</span>
+                    <span className="font-mono tabular-nums text-xs">{a.count}</span>
+                  </div>
+                ))}
+              </div>
+              <button className="mt-3 text-xs text-blue-600 hover:underline" onClick={() => setActiveTab('Password Hashes')}>
+                Password hashes &gt;
+              </button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === 'Weaknesses' && (
+        <div className="rounded-lg border shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-[140px]">CVE ID</TableHead>
+                <TableHead className="w-[100px]">Severity</TableHead>
+                <TableHead>Description</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {detail.cves.map(c => (
+                <TableRow key={c.id}>
+                  <TableCell className="font-mono text-xs font-medium">{c.id}</TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ${severityDetailBg[c.severity]}`}>{c.severity}</span>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{c.description}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {activeTab === 'Software Components' && (
+        <div className="rounded-lg border shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Component</TableHead>
+                <TableHead>Version</TableHead>
+                <TableHead className="text-right">CVEs</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {detail.softwareComponents.map(c => (
+                <TableRow key={c.name}>
+                  <TableCell className="font-medium text-sm">{c.name}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">{c.version}</TableCell>
+                  <TableCell className="text-right font-mono text-sm">{c.cves > 0 ? c.cves : <span className="text-emerald-600 text-xs">Clean</span>}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {activeTab === 'Binary Hardening' && (
+        <div className="rounded-lg border shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Protection</TableHead>
+                <TableHead className="text-right">Enabled</TableHead>
+                <TableHead className="text-right">Total Binaries</TableHead>
+                <TableHead className="text-right">Coverage</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {binaryData.map(b => (
+                <TableRow key={b.label}>
+                  <TableCell className="font-medium text-sm">{b.label}</TableCell>
+                  <TableCell className="text-right font-mono text-sm">{b.value}</TableCell>
+                  <TableCell className="text-right font-mono text-sm text-muted-foreground">{detail.binaryHardening.total}</TableCell>
+                  <TableCell className="text-right">
+                    <span className={`text-sm font-medium ${b.value / detail.binaryHardening.total >= 0.8 ? 'text-emerald-600' : b.value / detail.binaryHardening.total >= 0.5 ? 'text-amber-600' : 'text-red-600'}`}>
+                      {Math.round((b.value / detail.binaryHardening.total) * 100)}%
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {(activeTab === 'Certificates' || activeTab === 'Password Hashes' || activeTab === 'Keys') && (
+        <div className="rounded-lg border bg-slate-50 p-10 text-center">
+          <p className="text-sm font-medium text-slate-700">{activeTab}</p>
+          <p className="text-sm text-muted-foreground mt-1">Detailed {activeTab.toLowerCase()} analysis view coming soon.</p>
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
 /* ─── Firmware Analysis View ─────────────────────────────────── */
 
 const severityColor: Record<string, string> = {
@@ -1950,7 +2419,11 @@ const severityBg: Record<string, string> = {
   Low: 'bg-slate-100 text-slate-500 border border-slate-200',
 }
 
-function FirmwareAnalysisView() {
+function FirmwareAnalysisView({ onFirmwareSelect, onManufacturerClick, onModelClick }: {
+  onFirmwareSelect?: (version: string) => void
+  onManufacturerClick?: (name: string) => void
+  onModelClick?: (name: string) => void
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
@@ -1963,10 +2436,10 @@ function FirmwareAnalysisView() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <ChartCard title="Affected Devices by Manufacturer">
-          <HBarChart data={fwByManufacturer} />
+          <HBarChart data={fwByManufacturer} onBarClick={onManufacturerClick} />
         </ChartCard>
         <ChartCard title="Affected Devices by Model">
-          <HBarChart data={fwByModel} />
+          <HBarChart data={fwByModel} onBarClick={onModelClick} />
         </ChartCard>
         <ChartCard title="CVEs by Severity">
           <DonutChart segments={cveBySeverity} centerLabel="CVEs" legendBelow />
@@ -2022,7 +2495,16 @@ function FirmwareAnalysisView() {
                     <TableCell className="font-mono text-xs text-muted-foreground">{fw.file}</TableCell>
                     <TableCell className="text-sm">{fw.manufacturer}</TableCell>
                     <TableCell className="text-sm">{fw.model}</TableCell>
-                    <TableCell className="font-mono text-xs">{fw.version}</TableCell>
+                    <TableCell>
+                      {onFirmwareSelect ? (
+                        <button
+                          onClick={() => onFirmwareSelect(fw.version)}
+                          className="font-mono text-xs text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 transition-colors"
+                        >{fw.version}</button>
+                      ) : (
+                        <span className="font-mono text-xs">{fw.version}</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {totalCves === 0 ? (
                         <span className="text-xs text-emerald-600 font-medium">Clean</span>
@@ -2044,10 +2526,12 @@ function FirmwareAnalysisView() {
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm">{fw.devicesAffected.toLocaleString()}</TableCell>
                     <TableCell>
-                      <button className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors">
+                      <button
+                        onClick={() => onFirmwareSelect?.(fw.version)}
+                        className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium text-blue-600 border-blue-200 hover:bg-blue-50 transition-colors"
+                      >
                         <FileText className="h-3 w-3" />
                         Report
-                        <ExternalLink className="h-2.5 w-2.5" />
                       </button>
                     </TableCell>
                   </TableRow>
