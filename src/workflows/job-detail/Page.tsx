@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -6,6 +7,7 @@ import {
 } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge'
 import { ALL_JOBS } from '@/workflows/adr-namespace/jobData'
+import { findDynamicJob } from '@/workflows/adr-namespace/jobStore'
 import type { JobRecord, HubProgress, TimelineEvent } from '@/workflows/adr-namespace/jobData'
 
 // ─── Donut chart ─────────────────────────────────────────────────────────────
@@ -188,7 +190,18 @@ export default function JobDetailPage() {
   const [params] = useSearchParams()
   const jobId = params.get('id') ?? ALL_JOBS[0]?.id ?? ''
   const backPath = params.get('from') ?? '/job-list'
-  const job = ALL_JOBS.find(j => j.id === jobId)
+  const isStatic = ALL_JOBS.some(j => j.id === jobId)
+  const [job, setJob] = useState(() => ALL_JOBS.find(j => j.id === jobId) ?? findDynamicJob(jobId))
+
+  // Poll store every 2s for dynamically-created jobs so detail stays live
+  useEffect(() => {
+    if (isStatic) return
+    const interval = setInterval(() => {
+      const latest = findDynamicJob(jobId)
+      if (latest) setJob({ ...latest })
+    }, 2_000)
+    return () => clearInterval(interval)
+  }, [jobId, isStatic])
 
   if (!job) {
     return (

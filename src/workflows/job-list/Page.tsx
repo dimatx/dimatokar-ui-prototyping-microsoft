@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { StatusBadge } from '@/components/StatusBadge'
 import { ALL_JOBS, JobRecord } from '@/workflows/adr-namespace/jobData'
+import { upsertJob } from '@/workflows/adr-namespace/jobStore'
 import { NewJobWizard } from '@/workflows/adr-namespace/NewJobWizard'
 import type { JobPrefill, CreatedJob } from '@/workflows/adr-namespace/NewJobWizard'
 import type { Hub } from '@/workflows/adr-namespace/Page'
@@ -167,6 +168,7 @@ function JobListContent({ navigate, showBackNav, deviceUpdateEnabled = false }: 
       timeline: [{ time: 'Just now', event: 'Job created', detail: `Created by dima@zava.energy`, type: 'start' }],
     }
     setCreatedJobs(prev => [newRecord, ...prev])
+    upsertJob(newRecord)
     setShowWizard(false)
   }
 
@@ -191,12 +193,14 @@ function JobListContent({ navigate, showBackNav, deviceUpdateEnabled = false }: 
         const totalSucceeded = updatedHubs.reduce((s, h) => s + h.succeeded, 0)
         const totalFailed = updatedHubs.reduce((s, h) => s + h.failed, 0)
         const allDone = updatedHubs.every(h => h.status === 'Completed' || h.status === 'Failed')
-        return {
+        const updatedJob: JobRecord = {
           ...job,
           hubProgress: updatedHubs,
           devices: { succeeded: totalSucceeded, failed: totalFailed, pending: job.targetDevices - totalSucceeded - totalFailed },
-          status: allDone ? 'Completed' : 'Running',
+          status: (allDone ? 'Completed' : 'Running') as JobRecord['status'],
         }
+        upsertJob(updatedJob)
+        return updatedJob
       }))
     }, 2_000)
     return () => clearInterval(interval)
