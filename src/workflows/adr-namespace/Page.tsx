@@ -118,6 +118,7 @@ const firmwareImages = [
     version: '3.2.1',
     cves: { critical: 0, high: 1, medium: 3, low: 5 },
     devicesAffected: 2_847,
+    assetsAffected: 312,
   },
   {
     file: 'turbine-ctrl-x700-v3.1.0.bin',
@@ -126,6 +127,7 @@ const firmwareImages = [
     version: '3.1.0',
     cves: { critical: 2, high: 4, medium: 6, low: 8 },
     devicesAffected: 6_203,
+    assetsAffected: 741,
   },
   {
     file: 'anem-sensor-fw-v2.4.0.bin',
@@ -134,6 +136,7 @@ const firmwareImages = [
     version: '2.4.0',
     cves: { critical: 0, high: 0, medium: 1, low: 2 },
     devicesAffected: 1_412,
+    assetsAffected: 128,
   },
   {
     file: 'edge-gateway-v1.9.3.bin',
@@ -142,6 +145,7 @@ const firmwareImages = [
     version: '1.9.3',
     cves: { critical: 1, high: 2, medium: 4, low: 3 },
     devicesAffected: 985,
+    assetsAffected: 94,
   },
   {
     file: 'pitchctrl-v5.0.2.bin',
@@ -150,6 +154,7 @@ const firmwareImages = [
     version: '5.0.2',
     cves: { critical: 0, high: 0, medium: 0, low: 1 },
     devicesAffected: 1_400,
+    assetsAffected: 156,
   },
 ]
 
@@ -420,12 +425,14 @@ export default function AdrNamespacePage() {
   const [firmwareTarget, setFirmwareTarget] = useState<string | null>(null)
   const [devicePrefilter, setDevicePrefilter] = useState<string>('')
   const [deviceFirmwarePrefilter, setDeviceFirmwarePrefilter] = useState<string>('')
+  const [assetPrefilter, setAssetPrefilter] = useState<string>('')
 
-  const navigateTo = (id: string, opts?: { firmware?: string; deviceFilter?: string; firmwareVersionFilter?: string }) => {
+  const navigateTo = (id: string, opts?: { firmware?: string; deviceFilter?: string; firmwareVersionFilter?: string; assetFilter?: string }) => {
     setActiveMenuItem(id)
     setFirmwareTarget(opts?.firmware ?? null)
     setDevicePrefilter(opts?.deviceFilter ?? '')
     setDeviceFirmwarePrefilter(opts?.firmwareVersionFilter ?? '')
+    setAssetPrefilter(opts?.assetFilter ?? '')
   }
 
   // Simulate per-hub progress ticking for running jobs
@@ -540,7 +547,13 @@ export default function AdrNamespacePage() {
       ) : activeMenuItem === 'iot-ops' ? (
         <IotOpsView key="iot-ops" />
       ) : activeMenuItem === 'firmware' && firmwareTarget ? (
-        <FirmwareDetailView key={`fw-${firmwareTarget}`} version={firmwareTarget} onBack={() => setFirmwareTarget(null)} />
+        <FirmwareDetailView
+          key={`fw-${firmwareTarget}`}
+          version={firmwareTarget}
+          onBack={() => setFirmwareTarget(null)}
+          onDevicesClick={(v, mfr) => navigateTo('devices', { firmwareVersionFilter: `v${v}`, deviceFilter: mfr })}
+          onAssetsClick={(mfr) => navigateTo('assets', { assetFilter: mfr })}
+        />
       ) : activeMenuItem === 'firmware' ? (
         <FirmwareAnalysisView
           key="firmware"
@@ -1463,8 +1476,8 @@ const ASSET_SORT_FIELDS = [
   { field: 'lastSeen', label: 'Last Seen' },
 ]
 
-function AssetsView() {
-  const [search, setSearch] = useState('')
+function AssetsView({ initialSearch = '' }: { initialSearch?: string }) {
+  const [search, setSearch] = useState(initialSearch)
   const [statusFilter, setStatusFilter] = useState('all')
   const [sort, setSort] = useState({ field: 'id', dir: 'asc' })
 
@@ -2347,7 +2360,12 @@ const severityDetailBg: Record<string, string> = {
   Low: 'bg-slate-100 text-slate-500 border border-slate-200',
 }
 
-function FirmwareDetailView({ version, onBack }: { version: string; onBack: () => void }) {
+function FirmwareDetailView({ version, onBack, onDevicesClick, onAssetsClick }: {
+  version: string
+  onBack: () => void
+  onDevicesClick?: (version: string, manufacturer: string) => void
+  onAssetsClick?: (manufacturer: string) => void
+}) {
   const [activeTab, setActiveTab] = useState<FwTab>('Overview')
   const fw = firmwareImages.find(f => f.version === version)
   const detail = firmwareDetailData[version]
@@ -2405,7 +2423,21 @@ function FirmwareDetailView({ version, onBack }: { version: string; onBack: () =
             </span>
           )}
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">{fw.manufacturer} · {fw.model} · {fw.devicesAffected.toLocaleString()} devices affected</p>
+        <p className="mt-1 text-sm text-muted-foreground flex items-center gap-1.5 flex-wrap">
+          <span>{fw.manufacturer}</span>
+          <span className="text-slate-300">·</span>
+          <span>{fw.model}</span>
+          <span className="text-slate-300">·</span>
+          <button
+            onClick={() => onDevicesClick?.(fw.version, fw.manufacturer)}
+            className="text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 transition-colors"
+          >{fw.devicesAffected.toLocaleString()} devices</button>
+          <span className="text-slate-300">·</span>
+          <button
+            onClick={() => onAssetsClick?.(fw.manufacturer)}
+            className="text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 transition-colors"
+          >{fw.assetsAffected.toLocaleString()} assets</button>
+        </p>
       </div>
 
       {/* Tabs */}
