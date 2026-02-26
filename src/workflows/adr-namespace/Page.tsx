@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -27,6 +27,9 @@ import {
   ExternalLink,
   Users,
   LayoutDashboard,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -413,6 +416,8 @@ export default function AdrNamespacePage() {
         <IotOpsView key="iot-ops" />
       ) : activeMenuItem === 'firmware' ? (
         <FirmwareAnalysisView key="firmware" />
+      ) : activeMenuItem === 'jobs' ? (
+        <JobsView key="jobs" jobs={jobs} setJobs={setJobs} expandedJobId={expandedJobId} setExpandedJobId={setExpandedJobId} showNewJobWizard={showNewJobWizard} setShowNewJobWizard={setShowNewJobWizard} linkedHubs={linkedHubs} aioInstances={aioInstances} namespaceSvcs={namespaceSvcs} />
       ) : (
       <motion.div key="main" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="space-y-8">
       {/* ── Header / Hero ────────────────────────────────────── */}
@@ -750,147 +755,7 @@ export default function AdrNamespacePage() {
         </AnimatePresence>
       </div>
 
-      {/* ── Jobs ─────────────────────────────────────────────── */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold tracking-tight">Jobs</h2>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('/job-list')}
-              className="text-xs text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-1"
-            >
-              View all
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-            <Button size="sm" className="gap-1.5 text-xs relative" onClick={() => setShowNewJobWizard(true)}>
-              <span className="absolute -right-2 -top-2 z-10 rounded-full border border-orange-300 bg-orange-50 px-1.5 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase shadow-sm">
-                try me
-              </span>
-              <Plus className="h-3.5 w-3.5" />
-              New Job
-            </Button>
-          </div>
-        </div>
-        <div className="rounded-lg border shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">Job ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Targets</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Started</TableHead>
-                <TableHead className="w-[40px]" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {jobs.map((job) => {
-                const isExpandable = !!job.hubProgress
-                const isExpanded = expandedJobId === job.id
-                return (
-                  <React.Fragment key={job.id}>
-                    <TableRow
-                      className={isExpandable ? 'cursor-pointer hover:bg-muted/30' : ''}
-                      onClick={() => isExpandable && setExpandedJobId(isExpanded ? null : job.id)}
-                    >
-                      <TableCell className="font-mono text-xs text-muted-foreground">{job.id}</TableCell>
-                      <TableCell className="font-medium">{job.name}</TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center rounded-md border bg-muted/40 px-2 py-0.5 text-xs font-medium">
-                          {job.type}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{job.targets}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={job.status} />
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{job.started}</TableCell>
-                      <TableCell>
-                        {isExpandable ? (
-                          <ChevronDown
-                            className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'}`}
-                          />
-                        ) : (
-                          <button
-                            className="rounded-md p-1 text-muted-foreground hover:bg-muted transition-colors"
-                            onClick={(e) => { e.stopPropagation(); navigate(`/job-detail?id=${job.id}`) }}
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                    {isExpandable && isExpanded && (
-                      <TableRow key={`${job.id}-detail`}>
-                        <TableCell colSpan={7} className="p-0">
-                          <div className="bg-muted/20 px-6 py-4 space-y-3">
-                            <p className="text-xs font-medium text-muted-foreground">Per-Hub Progress</p>
-                            <div className="space-y-2">
-                              {job.hubProgress!.map((hp) => {
-                                const pct = hp.total > 0 ? Math.round((hp.completed / hp.total) * 100) : 0
-                                const isDone = hp.status === 'Completed'
-                                return (
-                                  <div key={hp.hubName} className="flex items-center gap-4">
-                                    <div className="w-40 shrink-0">
-                                      <p className="text-xs font-medium">{hp.hubName}</p>
-                                    </div>
-                                    <div className="flex-1">
-                                      <div className="h-2 rounded-full bg-muted overflow-hidden">
-                                        <div
-                                          className={`h-full rounded-full transition-all duration-700 ${isDone ? 'bg-emerald-500' : 'bg-blue-500'}`}
-                                          style={{ width: `${pct}%` }}
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="w-36 shrink-0 text-right">
-                                      {isDone ? (
-                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
-                                          <CheckCircle2 className="h-3 w-3" />
-                                          Done
-                                        </span>
-                                      ) : (
-                                        <span className="text-xs text-muted-foreground font-mono">
-                                          {hp.completed.toLocaleString()} / {hp.total.toLocaleString()} devices
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </React.Fragment>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      {/* Firmware Analysis moved to dedicated menu sub-view */}
-
-      {/* ── New Job Wizard ───────────────────────────────────── */}
-      <AnimatePresence>
-        {showNewJobWizard && (
-          <NewJobWizard
-            linkedHubs={linkedHubs}
-            aioInstances={aioInstances}
-            totalAssets={namespace.totalAssets}
-            existingJobs={initialJobs}
-            deviceUpdateEnabled={namespaceSvcs.find(s => s.name === 'Device Update')?.status === 'Healthy'}
-            onClose={() => setShowNewJobWizard(false)}
-            onCreate={(job: CreatedJob) => {
-              setJobs((prev) => [job, ...prev])
-              setExpandedJobId(job.id)
-              setShowNewJobWizard(false)
-            }}
-          />
-        )}
-      </AnimatePresence>
+      {/* Jobs + Firmware Analysis moved to dedicated menu sub-views */}
 
       {/* ── Service Config Dialog ────────────────────────────── */}
       {svcConfigTarget && createPortal(
@@ -1293,7 +1158,7 @@ function SummaryStatusDots({ statuses }: { statuses: string[] }) {
 
 /* ─── Chart Helpers ─────────────────────────────────────────── */
 
-function DonutChart({ segments, centerLabel }: { segments: { label: string; value: number; color: string }[]; centerLabel?: string }) {
+function DonutChart({ segments, centerLabel, legendBelow }: { segments: { label: string; value: number; color: string }[]; centerLabel?: string; legendBelow?: boolean }) {
   const total = segments.reduce((s, seg) => s + seg.value, 0)
   const size = 130
   const cx = size / 2, cy = size / 2
@@ -1313,6 +1178,26 @@ function DonutChart({ segments, centerLabel }: { segments: { label: string; valu
   })
   const mainSeg = segments.reduce((a, b) => (a.value > b.value ? a : b))
   const mainPct = Math.round((mainSeg.value / total) * 100)
+  if (legendBelow) {
+    return (
+      <div className="flex flex-col items-center gap-3">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          {paths.map((p, i) => <path key={i} d={p.d} fill={p.color} />)}
+          <text x={cx} y={cy - 5} textAnchor="middle" style={{ fontSize: 18, fontWeight: 600, fill: '#0f172a' }}>{mainPct}%</text>
+          <text x={cx} y={cy + 12} textAnchor="middle" style={{ fontSize: 10, fill: '#64748b' }}>{centerLabel ?? mainSeg.label}</text>
+        </svg>
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 w-full">
+          {segments.map((seg) => (
+            <div key={seg.label} className="flex items-center gap-1.5 text-xs">
+              <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
+              <span className="text-muted-foreground">{seg.label}</span>
+              <span className="font-mono tabular-nums text-foreground">{seg.value.toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="flex items-center gap-5">
       <div className="shrink-0">
@@ -1381,7 +1266,55 @@ function SubViewHeader({ title, subtitle, count }: { title: React.ReactNode; sub
 
 /* ─── Assets View ────────────────────────────────────────────── */
 
+/* ─── Sort Icon ─────────────────────────────────────────────── */
+
+function SortIcon({ field, sort }: { field: string; sort: { field: string; dir: string } }) {
+  if (sort.field !== field) return <ArrowUpDown className="h-3 w-3 opacity-30 group-hover:opacity-70 transition-opacity" />
+  return sort.dir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+}
+
+/* ─── Assets View ────────────────────────────────────────────── */
+
+const ASSET_STATUSES = ['Available', 'Degraded', 'Unhealthy', 'Unknown']
+const ASSET_SORT_FIELDS = [
+  { field: 'id', label: 'Asset ID', cls: 'w-[90px]' },
+  { field: 'name', label: 'Name' },
+  { field: 'type', label: 'Type' },
+  { field: 'manufacturer', label: 'Manufacturer' },
+  { field: 'site', label: 'Site' },
+  { field: 'firmware', label: 'Firmware' },
+  { field: 'status', label: 'Status' },
+  { field: 'lastSeen', label: 'Last Seen' },
+]
+
 function AssetsView() {
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [sort, setSort] = useState({ field: 'id', dir: 'asc' })
+
+  const filtered = useMemo(() => {
+    let rows = mockAssets
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      rows = rows.filter(a =>
+        a.id.toLowerCase().includes(q) || a.name.toLowerCase().includes(q) ||
+        a.type.toLowerCase().includes(q) || a.manufacturer.toLowerCase().includes(q) ||
+        a.site.toLowerCase().includes(q) || a.firmware.toLowerCase().includes(q)
+      )
+    }
+    if (statusFilter !== 'all') rows = rows.filter(a => a.status === statusFilter)
+    return [...rows].sort((a, b) => {
+      const av = (a as Record<string, string>)[sort.field] ?? ''
+      const bv = (b as Record<string, string>)[sort.field] ?? ''
+      const cmp = av < bv ? -1 : av > bv ? 1 : 0
+      return sort.dir === 'asc' ? cmp : -cmp
+    })
+  }, [search, statusFilter, sort])
+
+  function toggleSort(field: string) {
+    setSort(s => s.field === field ? { field, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { field, dir: 'asc' })
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
@@ -1403,28 +1336,60 @@ function AssetsView() {
         </ChartCard>
       </div>
       <div>
-        <div className="mb-4 flex items-center gap-2">
-          <h2 className="text-base font-semibold">Asset List</h2>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-            showing {mockAssets.length} of {namespace.totalAssets.toLocaleString()}
+        {/* Toolbar */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="relative min-w-[200px] max-w-xs">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search assets…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-8 h-8 text-sm"
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            {['all', ...ASSET_STATUSES].map(s => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  statusFilter === s ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
+                }`}
+              >
+                {s === 'all' ? 'All' : s}
+              </button>
+            ))}
+          </div>
+          <span className="ml-auto text-xs text-muted-foreground">
+            {filtered.length.toLocaleString()} of {namespace.totalAssets.toLocaleString()}
           </span>
         </div>
-        <div className="rounded-lg border shadow-sm">
+        <div className="rounded-lg border shadow-sm overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-[90px]">Asset ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Manufacturer</TableHead>
-                <TableHead>Site</TableHead>
-                <TableHead>Firmware</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last Seen</TableHead>
+              <TableRow className="hover:bg-transparent">
+                {ASSET_SORT_FIELDS.map(col => (
+                  <TableHead
+                    key={col.field}
+                    className={`cursor-pointer select-none group ${col.cls ?? ''}`}
+                    onClick={() => toggleSort(col.field)}
+                  >
+                    <div className="flex items-center gap-1">
+                      {col.label}
+                      <SortIcon field={col.field} sort={sort} />
+                    </div>
+                  </TableHead>
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockAssets.map((a) => (
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                    No assets match your filters.
+                  </TableCell>
+                </TableRow>
+              ) : filtered.map(a => (
                 <TableRow key={a.id}>
                   <TableCell className="font-mono text-xs text-muted-foreground">{a.id}</TableCell>
                   <TableCell className="font-medium text-sm">{a.name}</TableCell>
@@ -1446,7 +1411,84 @@ function AssetsView() {
 
 /* ─── Devices View ───────────────────────────────────────────── */
 
+const DEVICE_STATUSES_FILTER = ['Healthy', 'Degraded', 'Unhealthy', 'Unknown']
+const CONNECTIVITY_OPTIONS = ['Connected', 'Disconnected', 'Never Connected']
+const DEVICE_SORT_FIELDS = [
+  { field: 'id', label: 'Device ID', cls: 'w-[90px]' },
+  { field: 'name', label: 'Name' },
+  { field: 'type', label: 'Type' },
+  { field: 'hub', label: 'IoT Hub' },
+  { field: 'site', label: 'Site' },
+  { field: 'firmware', label: 'Firmware' },
+  { field: 'connectivity', label: 'Connectivity' },
+  { field: 'status', label: 'Status' },
+  { field: 'lastSeen', label: 'Last Seen' },
+]
+const DEVICE_ACTIONS = [
+  { id: 'enable', label: 'Enable', icon: CheckCircle2, cls: 'text-emerald-700' },
+  { id: 'disable', label: 'Disable', icon: X, cls: 'text-slate-700' },
+  { id: 'revoke-cert', label: 'Revoke Certificate', icon: KeyRound, cls: 'text-amber-700' },
+  { id: 'update-firmware', label: 'Update Firmware', icon: Upload, cls: 'text-blue-700' },
+]
+
 function DevicesView() {
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [connectivityFilter, setConnectivityFilter] = useState('all')
+  const [sort, setSort] = useState({ field: 'id', dir: 'asc' })
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [pendingAction, setPendingAction] = useState<string | null>(null)
+  const [actionDone, setActionDone] = useState<string | null>(null)
+
+  const filtered = useMemo(() => {
+    let rows = mockDevices
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      rows = rows.filter(d =>
+        d.id.toLowerCase().includes(q) || d.name.toLowerCase().includes(q) ||
+        d.type.toLowerCase().includes(q) || d.hub.toLowerCase().includes(q) ||
+        d.site.toLowerCase().includes(q)
+      )
+    }
+    if (statusFilter !== 'all') rows = rows.filter(d => d.status === statusFilter)
+    if (connectivityFilter !== 'all') rows = rows.filter(d => d.connectivity === connectivityFilter)
+    return [...rows].sort((a, b) => {
+      const av = (a as Record<string, string>)[sort.field] ?? ''
+      const bv = (b as Record<string, string>)[sort.field] ?? ''
+      const cmp = av < bv ? -1 : av > bv ? 1 : 0
+      return sort.dir === 'asc' ? cmp : -cmp
+    })
+  }, [search, statusFilter, connectivityFilter, sort])
+
+  const allSelected = filtered.length > 0 && filtered.every(d => selected.has(d.id))
+  const someSelected = !allSelected && filtered.some(d => selected.has(d.id))
+  const selectionCount = selected.size
+
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelected(s => { const n = new Set(s); filtered.forEach(d => n.delete(d.id)); return n })
+    } else {
+      setSelected(s => { const n = new Set(s); filtered.forEach(d => n.add(d.id)); return n })
+    }
+  }
+
+  function toggleDevice(id: string) {
+    setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  }
+
+  function toggleSort(field: string) {
+    setSort(s => s.field === field ? { field, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { field, dir: 'asc' })
+  }
+
+  function confirmAction() {
+    const n = selectionCount
+    const label = DEVICE_ACTIONS.find(a => a.id === pendingAction)?.label ?? pendingAction ?? ''
+    setPendingAction(null)
+    setSelected(new Set())
+    setActionDone(`${label} applied to ${n} device${n !== 1 ? 's' : ''}.`)
+    setTimeout(() => setActionDone(null), 3000)
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
@@ -1468,49 +1510,180 @@ function DevicesView() {
         </ChartCard>
       </div>
       <div>
-        <div className="mb-4 flex items-center gap-2">
-          <h2 className="text-base font-semibold">Device List</h2>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-            showing {mockDevices.length} of {namespace.totalDevices.toLocaleString()}
+        {/* Toolbar */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="relative min-w-[200px] max-w-xs">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search devices…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-8 h-8 text-sm"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            {['all', ...DEVICE_STATUSES_FILTER].map(s => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  statusFilter === s ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
+                }`}
+              >{s === 'all' ? 'All status' : s}</button>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            {['all', ...CONNECTIVITY_OPTIONS].map(c => (
+              <button
+                key={c}
+                onClick={() => setConnectivityFilter(c)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  connectivityFilter === c ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
+                }`}
+              >{c === 'all' ? 'All connectivity' : c}</button>
+            ))}
+          </div>
+          <span className="ml-auto text-xs text-muted-foreground">
+            {filtered.length.toLocaleString()} of {namespace.totalDevices.toLocaleString()}
           </span>
         </div>
-        <div className="rounded-lg border shadow-sm">
+
+        {/* Action / confirmation bars */}
+        <AnimatePresence>
+          {selectionCount > 0 && !pendingAction && !actionDone && (
+            <motion.div
+              key="action-bar"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.18 }}
+              className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+            >
+              <span className="text-xs font-medium text-slate-700 mr-1">{selectionCount} selected</span>
+              {DEVICE_ACTIONS.map(action => (
+                <button
+                  key={action.id}
+                  onClick={() => setPendingAction(action.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-white hover:border-slate-400 ${action.cls}`}
+                >
+                  <action.icon className="h-3 w-3" />
+                  {action.label}
+                </button>
+              ))}
+              <button
+                onClick={() => setSelected(new Set())}
+                className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </motion.div>
+          )}
+          {pendingAction && (
+            <motion.div
+              key="confirm-bar"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.18 }}
+              className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2"
+            >
+              <span className="text-xs font-medium text-amber-900">
+                Apply <span className="font-semibold">{DEVICE_ACTIONS.find(a => a.id === pendingAction)?.label}</span> to {selectionCount} device{selectionCount !== 1 ? 's' : ''}?
+              </span>
+              <button
+                onClick={confirmAction}
+                className="rounded-md bg-slate-900 px-3 py-1 text-xs font-semibold text-white hover:bg-slate-700 transition-colors"
+              >Confirm</button>
+              <button
+                onClick={() => setPendingAction(null)}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >Cancel</button>
+            </motion.div>
+          )}
+          {actionDone && (
+            <motion.div
+              key="success-bar"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="mb-3 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+              <span className="text-xs font-medium text-emerald-800">{actionDone}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Table */}
+        <div className="rounded-lg border shadow-sm overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-[90px]">Device ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>IoT Hub</TableHead>
-                <TableHead>Site</TableHead>
-                <TableHead>Firmware</TableHead>
-                <TableHead>Connectivity</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last Seen</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-10 pr-0">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={el => { if (el) el.indeterminate = someSelected }}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-slate-300 cursor-pointer"
+                  />
+                </TableHead>
+                {DEVICE_SORT_FIELDS.map(col => (
+                  <TableHead
+                    key={col.field}
+                    className={`cursor-pointer select-none group ${col.cls ?? ''}`}
+                    onClick={() => toggleSort(col.field)}
+                  >
+                    <div className="flex items-center gap-1">
+                      {col.label}
+                      <SortIcon field={col.field} sort={sort} />
+                    </div>
+                  </TableHead>
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockDevices.map((d) => (
-                <TableRow key={d.id}>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{d.id}</TableCell>
-                  <TableCell className="font-mono text-xs font-medium">{d.name}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{d.type}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{d.hub}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{d.site}</TableCell>
-                  <TableCell className="font-mono text-xs">{d.firmware}</TableCell>
-                  <TableCell>
-                    <span className={`text-xs font-medium ${
-                      d.connectivity === 'Connected' ? 'text-emerald-600'
-                      : d.connectivity === 'Disconnected' ? 'text-amber-600'
-                      : 'text-slate-400'
-                    }`}>
-                      {d.connectivity}
-                    </span>
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="py-10 text-center text-sm text-muted-foreground">
+                    No devices match your filters.
                   </TableCell>
-                  <TableCell><StatusBadge status={d.status} /></TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{d.lastSeen}</TableCell>
                 </TableRow>
-              ))}
+              ) : filtered.map(d => {
+                const isSelected = selected.has(d.id)
+                return (
+                  <TableRow
+                    key={d.id}
+                    className={`cursor-pointer ${isSelected ? 'bg-blue-50/50' : ''}`}
+                    onClick={() => toggleDevice(d.id)}
+                  >
+                    <TableCell className="pr-0" onClick={e => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleDevice(d.id)}
+                        className="h-4 w-4 rounded border-slate-300 cursor-pointer"
+                      />
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{d.id}</TableCell>
+                    <TableCell className="font-mono text-xs font-medium">{d.name}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{d.type}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{d.hub}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{d.site}</TableCell>
+                    <TableCell className="font-mono text-xs">{d.firmware}</TableCell>
+                    <TableCell>
+                      <span className={`text-xs font-medium ${
+                        d.connectivity === 'Connected' ? 'text-emerald-600'
+                        : d.connectivity === 'Disconnected' ? 'text-amber-600'
+                        : 'text-slate-400'
+                      }`}>{d.connectivity}</span>
+                    </TableCell>
+                    <TableCell><StatusBadge status={d.status} /></TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{d.lastSeen}</TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </div>
@@ -1615,6 +1788,157 @@ function IotOpsView() {
   )
 }
 
+/* ─── Jobs View ─────────────────────────────────────────────── */
+
+interface JobsViewProps {
+  jobs: CreatedJob[]
+  setJobs: React.Dispatch<React.SetStateAction<CreatedJob[]>>
+  expandedJobId: string | null
+  setExpandedJobId: (id: string | null) => void
+  showNewJobWizard: boolean
+  setShowNewJobWizard: (v: boolean) => void
+  linkedHubs: Hub[]
+  aioInstances: { name: string; site: string; status: string; connectedDevices: number; assets: number }[]
+  namespaceSvcs: NamespaceService[]
+}
+
+const JOB_TYPE_COLOR: Record<string, string> = {
+  'Software Update': 'bg-blue-100 text-blue-700',
+  'Certificate': 'bg-purple-100 text-purple-700',
+  'Command': 'bg-slate-100 text-slate-600',
+  'Configuration': 'bg-teal-100 text-teal-700',
+}
+
+function JobsView({ jobs, setJobs, expandedJobId, setExpandedJobId, showNewJobWizard, setShowNewJobWizard, linkedHubs, aioInstances: aioInst, namespaceSvcs }: JobsViewProps) {
+  const deviceUpdateEnabled = namespaceSvcs.some(s => s.name === 'Device Update' && s.status === 'Healthy')
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="space-y-8"
+    >
+      <div className="flex items-center justify-between">
+        <SubViewHeader title="Jobs" count={jobs.length} subtitle="Texas-Wind-Namespace" />
+        <Button size="sm" className="gap-1.5 text-xs" onClick={() => setShowNewJobWizard(true)}>
+          <Plus className="h-3.5 w-3.5" />
+          New Job
+        </Button>
+      </div>
+      <div className="rounded-lg border shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="w-[90px]">Job ID</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Targets</TableHead>
+              <TableHead>Started</TableHead>
+              <TableHead className="w-[80px]" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {jobs.map(job => (
+              <>
+                <TableRow
+                  key={job.id}
+                  className="cursor-pointer"
+                  onClick={() => setExpandedJobId(expandedJobId === job.id ? null : job.id)}
+                >
+                  <TableCell className="font-mono text-xs text-muted-foreground">{job.id}</TableCell>
+                  <TableCell className="font-medium text-sm">{job.name}</TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium ${
+                      JOB_TYPE_COLOR[job.type] ?? 'bg-slate-100 text-slate-600'
+                    }`}>{job.type}</span>
+                  </TableCell>
+                  <TableCell><StatusBadge status={job.status} /></TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{job.targets}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{job.started}</TableCell>
+                  <TableCell>
+                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${
+                      expandedJobId === job.id ? 'rotate-90' : ''
+                    }`} />
+                  </TableCell>
+                </TableRow>
+                <AnimatePresence>
+                {expandedJobId === job.id && (
+                  <TableRow key={`${job.id}-exp`}>
+                    <TableCell colSpan={7} className="p-0">
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-6 py-4 bg-slate-50 border-t">
+                          {job.hubProgress && job.hubProgress.length > 0 ? (
+                            <div className="space-y-3">
+                              {job.hubProgress.map(hp => {
+                                const pct = hp.total > 0 ? Math.round(((hp.completed) / hp.total) * 100) : 0
+                                return (
+                                  <div key={hp.hubName}>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="font-mono text-xs font-medium">{hp.hubName}</span>
+                                      <span className="text-xs text-muted-foreground">{hp.completed.toLocaleString()} / {hp.total.toLocaleString()} · {pct}%</span>
+                                    </div>
+                                    <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full bg-emerald-500 transition-all"
+                                        style={{ width: `${pct}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">No per-hub breakdown available.</p>
+                          )}
+                        </div>
+                      </motion.div>
+                    </TableCell>
+                  </TableRow>
+                )}
+                </AnimatePresence>
+              </>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <AnimatePresence>
+        {showNewJobWizard && (
+          <motion.div
+            key="new-job-wizard"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm flex items-start justify-end p-6"
+          >
+            <NewJobWizard
+              linkedHubs={linkedHubs}
+              aioInstances={aioInst}
+              totalAssets={namespace.totalAssets}
+              existingJobs={jobs}
+              deviceUpdateEnabled={deviceUpdateEnabled}
+              onClose={() => setShowNewJobWizard(false)}
+              onCreate={(job) => {
+                setJobs(prev => [job, ...prev])
+                setShowNewJobWizard(false)
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
 /* ─── Firmware Analysis View ─────────────────────────────────── */
 
 const severityColor: Record<string, string> = {
@@ -1645,7 +1969,7 @@ function FirmwareAnalysisView() {
           <HBarChart data={fwByModel} />
         </ChartCard>
         <ChartCard title="CVEs by Severity">
-          <DonutChart segments={cveBySeverity} centerLabel="CVEs" />
+          <DonutChart segments={cveBySeverity} centerLabel="CVEs" legendBelow />
         </ChartCard>
         <ChartCard title="Top CVEs by Affected Devices">
           <div className="space-y-3 max-h-52 overflow-y-auto pr-1">
