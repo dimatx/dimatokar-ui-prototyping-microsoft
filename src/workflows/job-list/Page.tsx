@@ -127,13 +127,13 @@ export default function JobListPage() {
   return <JobListContent navigate={(path) => navigate(path)} showBackNav />
 }
 
-export function JobListEmbedded({ onNavigate }: { onNavigate?: (path: string) => void } = {}) {
+export function JobListEmbedded({ onNavigate, deviceUpdateEnabled = false }: { onNavigate?: (path: string) => void; deviceUpdateEnabled?: boolean } = {}) {
   const navigate = useNavigate()
   const navFn = onNavigate ?? ((path: string) => navigate(path))
-  return <JobListContent navigate={navFn} showBackNav={false} />
+  return <JobListContent navigate={navFn} showBackNav={false} deviceUpdateEnabled={deviceUpdateEnabled} />
 }
 
-function JobListContent({ navigate, showBackNav }: { navigate: (path: string) => void; showBackNav: boolean }) {
+function JobListContent({ navigate, showBackNav, deviceUpdateEnabled = false }: { navigate: (path: string) => void; showBackNav: boolean; deviceUpdateEnabled?: boolean }) {
 
   const [showWizard, setShowWizard] = useState(false)
   const [wizardPrefill, setWizardPrefill] = useState<JobPrefill | undefined>(undefined)
@@ -446,6 +446,7 @@ function JobListContent({ navigate, showBackNav }: { navigate: (path: string) =>
             totalAssets={3200}
             existingJobs={MOCK_EXISTING_JOBS}
             prefill={wizardPrefill}
+            deviceUpdateEnabled={deviceUpdateEnabled}
             onClose={() => setShowWizard(false)}
             onCreate={() => setShowWizard(false)}
           />

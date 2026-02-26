@@ -480,6 +480,7 @@ export default function AdrNamespacePage() {
 
   // Services state
   const [namespaceSvcs, setNamespaceSvcs] = useState<NamespaceService[]>(initialServices)
+  const deviceUpdateEnabled = namespaceSvcs.some(s => s.name === 'Device Update' && s.status === 'Healthy')
   const [svcConfigTarget, setSvcConfigTarget] = useState<NamespaceService | null>(null)
   const [disableConfirmText, setDisableConfirmText] = useState('')
   const [showAddService, setShowAddService] = useState(false)
@@ -631,7 +632,7 @@ export default function AdrNamespacePage() {
       ) : activeMenuItem === 'jobs' && location.pathname.includes('/jobs/job-detail') ? (
         <JobDetailPage key="job-detail" />
       ) : activeMenuItem === 'jobs' ? (
-        <JobListEmbedded key="jobs" onNavigate={(path) => {
+        <JobListEmbedded key="jobs" deviceUpdateEnabled={deviceUpdateEnabled} onNavigate={(path) => {
           if (path.startsWith('/job-detail')) {
             navigate(`/adr-namespace/jobs${path}&from=/adr-namespace/jobs`)
           } else {
@@ -685,7 +686,7 @@ export default function AdrNamespacePage() {
 
       {/* ── Services Health ──────────────────────────────────── */}
       <div>
-        <SectionHeading title="Namespace Services" />
+        <SectionHeading title="Capabilities" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {namespaceSvcs.map((svc) => (
             <Card key={svc.name} className="shadow-sm relative">
@@ -2364,30 +2365,6 @@ function IotHubView({ hubs, onAddHub, unlinkedCount }: { hubs: Hub[]; onAddHub: 
           Add Linked Hub
         </Button>
       </div>
-      <div className="rounded-lg border shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Hub Name</TableHead>
-              <TableHead>Region</TableHead>
-              <TableHead className="text-right">Connected Devices</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {hubs.map((hub) => (
-              <TableRow key={hub.name} className={hub.status === 'Adding' ? 'bg-blue-50/30' : ''}>
-                <TableCell className="font-mono text-sm font-medium">{hub.name}</TableCell>
-                <TableCell className="text-muted-foreground">{hub.region}</TableCell>
-                <TableCell className="text-right font-mono text-sm">
-                  {hub.status === 'Adding' ? '—' : hub.devices.toLocaleString()}
-                </TableCell>
-                <TableCell><StatusBadge status={hub.status} /></TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
       {/* Hub charts */}
       {(() => {
         const healthy = hubs.filter(h => h.status === 'Healthy').length
@@ -2440,6 +2417,30 @@ function IotHubView({ hubs, onAddHub, unlinkedCount }: { hubs: Hub[]; onAddHub: 
           </div>
         )
       })()}
+      <div className="rounded-lg border shadow-sm">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Hub Name</TableHead>
+              <TableHead>Region</TableHead>
+              <TableHead className="text-right">Connected Devices</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {hubs.map((hub) => (
+              <TableRow key={hub.name} className={hub.status === 'Adding' ? 'bg-blue-50/30' : ''}>
+                <TableCell className="font-mono text-sm font-medium">{hub.name}</TableCell>
+                <TableCell className="text-muted-foreground">{hub.region}</TableCell>
+                <TableCell className="text-right font-mono text-sm">
+                  {hub.status === 'Adding' ? '—' : hub.devices.toLocaleString()}
+                </TableCell>
+                <TableCell><StatusBadge status={hub.status} /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </motion.div>
   )
 }
@@ -2460,30 +2461,6 @@ function IotOpsView() {
         count={aioInstances.length}
         subtitle="Texas-Wind-Namespace"
       />
-      <div className="rounded-lg border shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Instance</TableHead>
-              <TableHead>Site</TableHead>
-              <TableHead className="text-right">Connected Devices</TableHead>
-              <TableHead className="text-right">Assets</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {aioInstances.map((inst) => (
-              <TableRow key={inst.name}>
-                <TableCell className="font-mono text-sm font-medium">{inst.name}</TableCell>
-                <TableCell className="text-muted-foreground">{inst.site}</TableCell>
-                <TableCell className="text-right font-mono text-sm">{inst.connectedDevices.toLocaleString()}</TableCell>
-                <TableCell className="text-right font-mono text-sm">{inst.assets.toLocaleString()}</TableCell>
-                <TableCell><StatusBadge status={inst.status} /></TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
       {/* AIO charts */}
       {(() => {
         const healthy = aioInstances.filter(i => i.status === 'Healthy').length
@@ -2533,6 +2510,30 @@ function IotOpsView() {
           </div>
         )
       })()}
+      <div className="rounded-lg border shadow-sm">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Instance</TableHead>
+              <TableHead>Site</TableHead>
+              <TableHead className="text-right">Connected Devices</TableHead>
+              <TableHead className="text-right">Assets</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {aioInstances.map((inst) => (
+              <TableRow key={inst.name}>
+                <TableCell className="font-mono text-sm font-medium">{inst.name}</TableCell>
+                <TableCell className="text-muted-foreground">{inst.site}</TableCell>
+                <TableCell className="text-right font-mono text-sm">{inst.connectedDevices.toLocaleString()}</TableCell>
+                <TableCell className="text-right font-mono text-sm">{inst.assets.toLocaleString()}</TableCell>
+                <TableCell><StatusBadge status={inst.status} /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </motion.div>
   )
 }
