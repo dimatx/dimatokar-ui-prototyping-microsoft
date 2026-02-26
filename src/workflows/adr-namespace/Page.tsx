@@ -1465,6 +1465,8 @@ function SortIcon({ field, sort }: { field: string; sort: { field: string; dir: 
 /* ─── Assets View ────────────────────────────────────────────── */
 
 const ASSET_STATUSES = ['Available', 'Degraded', 'Unhealthy', 'Unknown']
+const ASSET_MANUFACTURERS = [...new Set(mockAssets.map(a => a.manufacturer))].sort()
+const ASSET_FIRMWARE_VERSIONS = [...new Set(mockAssets.map(a => a.firmware).filter(f => f !== '—'))].sort()
 const ASSET_SORT_FIELDS = [
   { field: 'id', label: 'Asset ID', cls: 'w-[90px]' },
   { field: 'name', label: 'Name' },
@@ -1478,8 +1480,37 @@ const ASSET_SORT_FIELDS = [
 
 function AssetsView({ initialSearch = '' }: { initialSearch?: string }) {
   const [search, setSearch] = useState(initialSearch)
-  const [statusFilter, setStatusFilter] = useState('all')
+  // Health multi-select
+  const [statusValues, setStatusValues] = useState<Set<string>>(new Set())
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false)
+  const [statusSearch, setStatusSearch] = useState('')
+  const statusDropdownRef = useRef<HTMLDivElement>(null)
+  // Manufacturer multi-select
+  const [mfrValues, setMfrValues] = useState<Set<string>>(new Set())
+  const [mfrDropdownOpen, setMfrDropdownOpen] = useState(false)
+  const [mfrSearch, setMfrSearch] = useState('')
+  const mfrDropdownRef = useRef<HTMLDivElement>(null)
+  // Firmware multi-select
+  const [fwValues, setFwValues] = useState<Set<string>>(new Set())
+  const [fwDropdownOpen, setFwDropdownOpen] = useState(false)
+  const [fwSearch, setFwSearch] = useState('')
+  const fwDropdownRef = useRef<HTMLDivElement>(null)
+
   const [sort, setSort] = useState({ field: 'id', dir: 'asc' })
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) setStatusDropdownOpen(false)
+      if (mfrDropdownRef.current && !mfrDropdownRef.current.contains(e.target as Node)) setMfrDropdownOpen(false)
+      if (fwDropdownRef.current && !fwDropdownRef.current.contains(e.target as Node)) setFwDropdownOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const filteredStatusOptions = ASSET_STATUSES.filter(v => v.toLowerCase().includes(statusSearch.toLowerCase()))
+  const filteredMfrOptions = ASSET_MANUFACTURERS.filter(v => v.toLowerCase().includes(mfrSearch.toLowerCase()))
+  const filteredFwOptions = ASSET_FIRMWARE_VERSIONS.filter(v => v.toLowerCase().includes(fwSearch.toLowerCase()))
 
   const filtered = useMemo(() => {
     let rows = mockAssets
@@ -1491,17 +1522,77 @@ function AssetsView({ initialSearch = '' }: { initialSearch?: string }) {
         a.site.toLowerCase().includes(q) || a.firmware.toLowerCase().includes(q)
       )
     }
-    if (statusFilter !== 'all') rows = rows.filter(a => a.status === statusFilter)
+    if (statusValues.size > 0) rows = rows.filter(a => statusValues.has(a.status))
+    if (mfrValues.size > 0) rows = rows.filter(a => mfrValues.has(a.manufacturer))
+    if (fwValues.size > 0) rows = rows.filter(a => fwValues.has(a.firmware))
     return [...rows].sort((a, b) => {
       const av = (a as Record<string, string>)[sort.field] ?? ''
       const bv = (b as Record<string, string>)[sort.field] ?? ''
       const cmp = av < bv ? -1 : av > bv ? 1 : 0
       return sort.dir === 'asc' ? cmp : -cmp
     })
-  }, [search, statusFilter, sort])
+  }, [search, statusValues, mfrValues, fwValues, sort])
 
   function toggleSort(field: string) {
     setSort(s => s.field === field ? { field, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { field, dir: 'asc' })
+  }
+
+  const statusLabel = statusValues.size === 0 ? 'Health' : statusValues.size === 1 ? [...statusValues][0] : `${statusValues.size} statuses`
+  const mfrLabel = mfrValues.size === 0 ? 'Manufacturer' : mfrValues.size === 1 ? [...mfrValues][0] : `${mfrValues.size} selected`
+  const fwLabel = fwValues.size === 0 ? 'Firmware version' : fwValues.size === 1 ? [...fwValues][0] : `${fwValues.size} versions`
+
+  function mkDropdown<T extends string>(
+    label: string, open: boolean, setOpen: (v: boolean) => void,
+    ref: React.RefObject<HTMLDivElement>, searchVal: string, setSearch: (v: string) => void,
+    options: T[], values: Set<T>, toggle: (v: T) => void, clear: () => void,
+    mono = false
+  ) {
+    return (
+      <div className="relative" ref={ref}>
+        <button
+          onClick={() => setOpen(!open)}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+            values.size > 0 ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
+          }`}
+        >
+          {label}
+          {values.size > 0 && (
+            <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none"
+              onClick={e => { e.stopPropagation(); clear() }} title="Clear">×</span>
+          )}
+          <ChevronDown className="h-3 w-3 opacity-60" />
+        </button>
+        <AnimatePresence>
+          {open && (
+            <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.12 }}
+              className="absolute left-0 top-full mt-1 z-30 w-56 rounded-lg border bg-white shadow-lg">
+              <div className="p-2 border-b">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                  <input autoFocus placeholder="Search…" value={searchVal} onChange={e => setSearch(e.target.value)}
+                    className="w-full pl-6 pr-2 py-1 text-xs rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300" />
+                </div>
+              </div>
+              <div className="py-1 max-h-52 overflow-y-auto">
+                {options.length === 0
+                  ? <p className="px-3 py-2 text-xs text-muted-foreground">No matches.</p>
+                  : options.map(v => (
+                    <label key={v} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-muted/50 cursor-pointer">
+                      <input type="checkbox" checked={values.has(v)} onChange={() => toggle(v)} className="h-3.5 w-3.5 rounded border-slate-300 cursor-pointer" />
+                      <span className={`text-xs${mono ? ' font-mono' : ''}`}>{v}</span>
+                    </label>
+                  ))}
+              </div>
+              {values.size > 0 && (
+                <div className="border-t p-2">
+                  <button onClick={clear} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center">Clear selection</button>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    )
   }
 
   return (
@@ -1536,19 +1627,9 @@ function AssetsView({ initialSearch = '' }: { initialSearch?: string }) {
               className="pl-8 h-8 text-sm"
             />
           </div>
-          <div className="flex items-center gap-1">
-            {['all', ...ASSET_STATUSES].map(s => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                  statusFilter === s ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
-                }`}
-              >
-                {s === 'all' ? 'All' : s}
-              </button>
-            ))}
-          </div>
+          {mkDropdown(statusLabel, statusDropdownOpen, setStatusDropdownOpen, statusDropdownRef, statusSearch, setStatusSearch, filteredStatusOptions, statusValues, (v) => setStatusValues(p => { const n = new Set(p); n.has(v) ? n.delete(v) : n.add(v); return n }), () => setStatusValues(new Set()))}
+          {mkDropdown(mfrLabel, mfrDropdownOpen, setMfrDropdownOpen, mfrDropdownRef, mfrSearch, setMfrSearch, filteredMfrOptions, mfrValues, (v) => setMfrValues(p => { const n = new Set(p); n.has(v) ? n.delete(v) : n.add(v); return n }), () => setMfrValues(new Set()))}
+          {mkDropdown(fwLabel, fwDropdownOpen, setFwDropdownOpen, fwDropdownRef, fwSearch, setFwSearch, filteredFwOptions, fwValues, (v) => setFwValues(p => { const n = new Set(p); n.has(v) ? n.delete(v) : n.add(v); return n }), () => setFwValues(new Set()), true)}
           <span className="ml-auto text-xs text-muted-foreground">
             {filtered.length.toLocaleString()} of {namespace.totalAssets.toLocaleString()}
           </span>
@@ -1603,6 +1684,8 @@ function AssetsView({ initialSearch = '' }: { initialSearch?: string }) {
 const DEVICE_STATUSES_FILTER = ['Healthy', 'Degraded', 'Unhealthy', 'Unknown']
 const CONNECTIVITY_OPTIONS = ['Connected', 'Disconnected', 'Never Connected']
 const DEVICE_FIRMWARE_VERSIONS = [...new Set(mockDevices.map(d => d.firmware).filter(f => f !== '\u2014'))].sort()
+const DEVICE_MANUFACTURERS = [...new Set(mockDevices.map(d => d.manufacturer))].sort()
+const DEVICE_MODELS = [...new Set(mockDevices.map(d => d.model))].sort()
 const DEVICE_SORT_FIELDS = [
   { field: 'id', label: 'Device ID', cls: 'w-[90px]' },
   { field: 'name', label: 'Name' },
@@ -1628,6 +1711,16 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false)
   const [statusSearch, setStatusSearch] = useState('')
   const statusDropdownRef = useRef<HTMLDivElement>(null)
+  // Manufacturer multi-select
+  const [mfrValues, setMfrValues] = useState<Set<string>>(new Set())
+  const [mfrDropdownOpen, setMfrDropdownOpen] = useState(false)
+  const [mfrSearch, setMfrSearch] = useState('')
+  const mfrDropdownRef = useRef<HTMLDivElement>(null)
+  // Model multi-select
+  const [modelValues, setModelValues] = useState<Set<string>>(new Set())
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false)
+  const [modelSearch, setModelSearch] = useState('')
+  const modelDropdownRef = useRef<HTMLDivElement>(null)
   // Connectivity multi-select
   const [connectivityValues, setConnectivityValues] = useState<Set<string>>(new Set())
   const [connDropdownOpen, setConnDropdownOpen] = useState(false)
@@ -1652,6 +1745,8 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) setStatusDropdownOpen(false)
+      if (mfrDropdownRef.current && !mfrDropdownRef.current.contains(e.target as Node)) setMfrDropdownOpen(false)
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(e.target as Node)) setModelDropdownOpen(false)
       if (connDropdownRef.current && !connDropdownRef.current.contains(e.target as Node)) setConnDropdownOpen(false)
       if (fwDropdownRef.current && !fwDropdownRef.current.contains(e.target as Node)) setFwDropdownOpen(false)
     }
@@ -1660,6 +1755,8 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
   }, [])
 
   const filteredStatusOptions = DEVICE_STATUSES_FILTER.filter(v => v.toLowerCase().includes(statusSearch.toLowerCase()))
+  const filteredMfrOptions = DEVICE_MANUFACTURERS.filter(v => v.toLowerCase().includes(mfrSearch.toLowerCase()))
+  const filteredModelOptions = DEVICE_MODELS.filter(v => v.toLowerCase().includes(modelSearch.toLowerCase()))
   const filteredConnOptions = CONNECTIVITY_OPTIONS.filter(v => v.toLowerCase().includes(connSearch.toLowerCase()))
   const filteredFwOptions = DEVICE_FIRMWARE_VERSIONS.filter(v => v.toLowerCase().includes(fwSearch.toLowerCase()))
 
@@ -1675,6 +1772,8 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
       )
     }
     if (statusValues.size > 0) rows = rows.filter(d => statusValues.has(d.status))
+    if (mfrValues.size > 0) rows = rows.filter(d => mfrValues.has(d.manufacturer))
+    if (modelValues.size > 0) rows = rows.filter(d => modelValues.has(d.model))
     if (connectivityValues.size > 0) rows = rows.filter(d => connectivityValues.has(d.connectivity))
     if (firmwareVersions.size > 0) rows = rows.filter(d => firmwareVersions.has(d.firmware))
     return [...rows].sort((a, b) => {
@@ -1683,7 +1782,7 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
       const cmp = av < bv ? -1 : av > bv ? 1 : 0
       return sort.dir === 'asc' ? cmp : -cmp
     })
-  }, [search, statusValues, connectivityValues, firmwareVersions, sort])
+  }, [search, statusValues, mfrValues, modelValues, connectivityValues, firmwareVersions, sort])
 
   const allSelected = filtered.length > 0 && filtered.every(d => selected.has(d.id))
   const someSelected = !allSelected && filtered.some(d => selected.has(d.id))
@@ -1711,6 +1810,12 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
   function toggleStatusValue(v: string) {
     setStatusValues(prev => { const n = new Set(prev); n.has(v) ? n.delete(v) : n.add(v); return n })
   }
+  function toggleMfrValue(v: string) {
+    setMfrValues(prev => { const n = new Set(prev); n.has(v) ? n.delete(v) : n.add(v); return n })
+  }
+  function toggleModelValue(v: string) {
+    setModelValues(prev => { const n = new Set(prev); n.has(v) ? n.delete(v) : n.add(v); return n })
+  }
   function toggleConnValue(v: string) {
     setConnectivityValues(prev => { const n = new Set(prev); n.has(v) ? n.delete(v) : n.add(v); return n })
   }
@@ -1725,6 +1830,8 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
   }
 
   const statusLabel = statusValues.size === 0 ? 'Health' : statusValues.size === 1 ? [...statusValues][0] : `${statusValues.size} statuses`
+  const mfrLabel = mfrValues.size === 0 ? 'Manufacturer' : mfrValues.size === 1 ? [...mfrValues][0] : `${mfrValues.size} selected`
+  const modelLabel = modelValues.size === 0 ? 'Model' : modelValues.size === 1 ? [...modelValues][0] : `${modelValues.size} selected`
   const connLabel = connectivityValues.size === 0 ? 'Connectivity' : connectivityValues.size === 1 ? [...connectivityValues][0] : `${connectivityValues.size} selected`
   const fwLabel = firmwareVersions.size === 0 ? 'Firmware version' : firmwareVersions.size === 1 ? [...firmwareVersions][0] : `${firmwareVersions.size} versions`
 
@@ -1763,7 +1870,7 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
           {/* Health multi-select dropdown */}
           <div className="relative" ref={statusDropdownRef}>
             <button
-              onClick={() => { setStatusDropdownOpen(v => !v); setConnDropdownOpen(false); setFwDropdownOpen(false) }}
+              onClick={() => { setStatusDropdownOpen(v => !v); setMfrDropdownOpen(false); setModelDropdownOpen(false); setConnDropdownOpen(false); setFwDropdownOpen(false) }}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
                 statusValues.size > 0 ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
               }`}
@@ -1805,10 +1912,100 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
               )}
             </AnimatePresence>
           </div>
+          {/* Manufacturer multi-select dropdown */}
+          <div className="relative" ref={mfrDropdownRef}>
+            <button
+              onClick={() => { setMfrDropdownOpen(v => !v); setStatusDropdownOpen(false); setModelDropdownOpen(false); setConnDropdownOpen(false); setFwDropdownOpen(false) }}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                mfrValues.size > 0 ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
+              }`}
+            >
+              {mfrLabel}
+              {mfrValues.size > 0 && (
+                <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none"
+                  onClick={e => { e.stopPropagation(); setMfrValues(new Set()) }} title="Clear">×</span>
+              )}
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+            <AnimatePresence>
+              {mfrDropdownOpen && (
+                <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.12 }}
+                  className="absolute left-0 top-full mt-1 z-30 w-64 rounded-lg border bg-white shadow-lg">
+                  <div className="p-2 border-b">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                      <input autoFocus placeholder="Search…" value={mfrSearch} onChange={e => setMfrSearch(e.target.value)}
+                        className="w-full pl-6 pr-2 py-1 text-xs rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300" />
+                    </div>
+                  </div>
+                  <div className="py-1 max-h-52 overflow-y-auto">
+                    {filteredMfrOptions.length === 0
+                      ? <p className="px-3 py-2 text-xs text-muted-foreground">No matches.</p>
+                      : filteredMfrOptions.map(v => (
+                        <label key={v} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-muted/50 cursor-pointer">
+                          <input type="checkbox" checked={mfrValues.has(v)} onChange={() => toggleMfrValue(v)} className="h-3.5 w-3.5 rounded border-slate-300 cursor-pointer" />
+                          <span className="text-xs">{v}</span>
+                        </label>
+                      ))}
+                  </div>
+                  {mfrValues.size > 0 && (
+                    <div className="border-t p-2">
+                      <button onClick={() => setMfrValues(new Set())} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center">Clear selection</button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          {/* Model multi-select dropdown */}
+          <div className="relative" ref={modelDropdownRef}>
+            <button
+              onClick={() => { setModelDropdownOpen(v => !v); setStatusDropdownOpen(false); setMfrDropdownOpen(false); setConnDropdownOpen(false); setFwDropdownOpen(false) }}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                modelValues.size > 0 ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
+              }`}
+            >
+              {modelLabel}
+              {modelValues.size > 0 && (
+                <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none"
+                  onClick={e => { e.stopPropagation(); setModelValues(new Set()) }} title="Clear">×</span>
+              )}
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+            <AnimatePresence>
+              {modelDropdownOpen && (
+                <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.12 }}
+                  className="absolute left-0 top-full mt-1 z-30 w-64 rounded-lg border bg-white shadow-lg">
+                  <div className="p-2 border-b">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                      <input autoFocus placeholder="Search…" value={modelSearch} onChange={e => setModelSearch(e.target.value)}
+                        className="w-full pl-6 pr-2 py-1 text-xs rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300" />
+                    </div>
+                  </div>
+                  <div className="py-1 max-h-52 overflow-y-auto">
+                    {filteredModelOptions.length === 0
+                      ? <p className="px-3 py-2 text-xs text-muted-foreground">No matches.</p>
+                      : filteredModelOptions.map(v => (
+                        <label key={v} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-muted/50 cursor-pointer">
+                          <input type="checkbox" checked={modelValues.has(v)} onChange={() => toggleModelValue(v)} className="h-3.5 w-3.5 rounded border-slate-300 cursor-pointer" />
+                          <span className="font-mono text-xs">{v}</span>
+                        </label>
+                      ))}
+                  </div>
+                  {modelValues.size > 0 && (
+                    <div className="border-t p-2">
+                      <button onClick={() => setModelValues(new Set())} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center">Clear selection</button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           {/* Connectivity multi-select dropdown */}
           <div className="relative" ref={connDropdownRef}>
             <button
-              onClick={() => { setConnDropdownOpen(v => !v); setStatusDropdownOpen(false); setFwDropdownOpen(false) }}
+              onClick={() => { setConnDropdownOpen(v => !v); setStatusDropdownOpen(false); setMfrDropdownOpen(false); setModelDropdownOpen(false); setFwDropdownOpen(false) }}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
                 connectivityValues.size > 0 ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
               }`}
@@ -1853,7 +2050,7 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
           {/* Firmware version multi-select dropdown */}
           <div className="relative" ref={fwDropdownRef}>
             <button
-              onClick={() => { setFwDropdownOpen(v => !v); setStatusDropdownOpen(false); setConnDropdownOpen(false) }}
+              onClick={() => { setFwDropdownOpen(v => !v); setStatusDropdownOpen(false); setMfrDropdownOpen(false); setModelDropdownOpen(false); setConnDropdownOpen(false) }}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
                 firmwareVersions.size > 0
                   ? 'bg-slate-900 text-white border-slate-900'
