@@ -680,7 +680,6 @@ export default function AdrNamespacePage() {
               className="gap-1.5 text-xs relative"
               onClick={(e) => {
                 e.stopPropagation()
-                navigateTo('iot-hub')
                 setShowHubPicker(true)
               }}
               disabled={unlinkedHubs.length === 0}
