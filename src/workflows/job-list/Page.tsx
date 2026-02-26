@@ -124,6 +124,15 @@ const ALL_TYPES = Array.from(new Set(ALL_JOBS.map(j => j.type)))
 
 export default function JobListPage() {
   const navigate = useNavigate()
+  return <JobListContent navigate={(path) => navigate(path)} showBackNav />
+}
+
+export function JobListEmbedded() {
+  const navigate = useNavigate()
+  return <JobListContent navigate={(path) => navigate(path)} showBackNav={false} />
+}
+
+function JobListContent({ navigate, showBackNav }: { navigate: (path: string) => void; showBackNav: boolean }) {
 
   const [showWizard, setShowWizard] = useState(false)
   const [wizardPrefill, setWizardPrefill] = useState<JobPrefill | undefined>(undefined)
@@ -210,15 +219,19 @@ export default function JobListPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/adr-namespace')}
-            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Texas-Wind-Namespace
-          </button>
-          <span className="text-slate-300">/</span>
-          <span className="text-sm font-semibold text-slate-900">Jobs</span>
+          {showBackNav && (
+            <>
+              <button
+                onClick={() => navigate('/adr-namespace')}
+                className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Texas-Wind-Namespace
+              </button>
+              <span className="text-slate-300">/</span>
+              <span className="text-sm font-semibold text-slate-900">Jobs</span>
+            </>
+          )}
         </div>
         <Button size="sm" className="gap-1.5" onClick={openNewJob}>
           <Play className="w-3.5 h-3.5" />

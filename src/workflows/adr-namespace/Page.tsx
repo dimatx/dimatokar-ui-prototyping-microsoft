@@ -44,6 +44,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { NewJobWizard, type CreatedJob } from './NewJobWizard'
+import { JobListEmbedded } from '@/workflows/job-list/Page'
 
 /* ─── Mock Data ───────────────────────────────────────────────── */
 
@@ -563,7 +564,7 @@ export default function AdrNamespacePage() {
           onModelClick={(m) => navigateTo('devices', { deviceFilter: m })}
         />
       ) : activeMenuItem === 'jobs' ? (
-        <JobsView key="jobs" jobs={jobs} setJobs={setJobs} expandedJobId={expandedJobId} setExpandedJobId={setExpandedJobId} showNewJobWizard={showNewJobWizard} setShowNewJobWizard={setShowNewJobWizard} linkedHubs={linkedHubs} aioInstances={aioInstances} namespaceSvcs={namespaceSvcs} />
+        <JobListEmbedded key="jobs" />
       ) : activeMenuItem === 'credentials' ? (
         <PlaceholderView key="credentials" title="Credentials" description="Manage device certificates and credentials stored in this namespace. Assign credentials to devices, rotate keys, and set expiry policies." icon={KeyRound} />
       ) : activeMenuItem === 'policies' ? (
