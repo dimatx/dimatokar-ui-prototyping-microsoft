@@ -1621,9 +1621,11 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
   const [connSearch, setConnSearch] = useState('')
   const connDropdownRef = useRef<HTMLDivElement>(null)
   // Firmware multi-select
-  const [firmwareVersions, setFirmwareVersions] = useState<Set<string>>(
-    () => initialFirmwareFilter ? new Set([initialFirmwareFilter]) : new Set()
-  )
+  const [firmwareVersions, setFirmwareVersions] = useState<Set<string>>(() => {
+    if (!initialFirmwareFilter) return new Set()
+    const v = initialFirmwareFilter.startsWith('v') ? initialFirmwareFilter : `v${initialFirmwareFilter}`
+    return new Set([v])
+  })
   const [fwDropdownOpen, setFwDropdownOpen] = useState(false)
   const [fwSearch, setFwSearch] = useState('')
   const fwDropdownRef = useRef<HTMLDivElement>(null)
