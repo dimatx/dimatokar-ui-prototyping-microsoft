@@ -2757,14 +2757,7 @@ function FirmwareAnalysisView({ onFirmwareSelect, onVersionClick, onManufacturer
                     <TableCell className="text-sm">{fw.manufacturer}</TableCell>
                     <TableCell className="text-sm">{fw.model}</TableCell>
                     <TableCell>
-                      {onVersionClick ? (
-                        <button
-                          onClick={() => onVersionClick(`v${fw.version}`)}
-                          className="font-mono text-xs text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 transition-colors"
-                        >v{fw.version}</button>
-                      ) : (
-                        <span className="font-mono text-xs">v{fw.version}</span>
-                      )}
+                      <span className="font-mono text-xs">v{fw.version}</span>
                     </TableCell>
                     <TableCell>
                       {totalCves === 0 ? (
