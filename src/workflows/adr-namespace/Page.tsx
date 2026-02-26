@@ -1610,13 +1610,43 @@ const DEVICE_ACTIONS = [
 
 function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwareSelect }: { initialSearch?: string; initialFirmwareFilter?: string; onFirmwareSelect?: (version: string) => void }) {
   const [search, setSearch] = useState(initialSearch)
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [connectivityFilter, setConnectivityFilter] = useState('all')
-  const [firmwareFilter, setFirmwareFilter] = useState(initialFirmwareFilter)
+  // Status multi-select
+  const [statusValues, setStatusValues] = useState<Set<string>>(new Set())
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false)
+  const [statusSearch, setStatusSearch] = useState('')
+  const statusDropdownRef = useRef<HTMLDivElement>(null)
+  // Connectivity multi-select
+  const [connectivityValues, setConnectivityValues] = useState<Set<string>>(new Set())
+  const [connDropdownOpen, setConnDropdownOpen] = useState(false)
+  const [connSearch, setConnSearch] = useState('')
+  const connDropdownRef = useRef<HTMLDivElement>(null)
+  // Firmware multi-select
+  const [firmwareVersions, setFirmwareVersions] = useState<Set<string>>(
+    () => initialFirmwareFilter ? new Set([initialFirmwareFilter]) : new Set()
+  )
+  const [fwDropdownOpen, setFwDropdownOpen] = useState(false)
+  const [fwSearch, setFwSearch] = useState('')
+  const fwDropdownRef = useRef<HTMLDivElement>(null)
+
   const [sort, setSort] = useState({ field: 'id', dir: 'asc' })
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [pendingAction, setPendingAction] = useState<string | null>(null)
   const [actionDone, setActionDone] = useState<string | null>(null)
+
+  // Close any dropdown on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) setStatusDropdownOpen(false)
+      if (connDropdownRef.current && !connDropdownRef.current.contains(e.target as Node)) setConnDropdownOpen(false)
+      if (fwDropdownRef.current && !fwDropdownRef.current.contains(e.target as Node)) setFwDropdownOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const filteredStatusOptions = DEVICE_STATUSES_FILTER.filter(v => v.toLowerCase().includes(statusSearch.toLowerCase()))
+  const filteredConnOptions = CONNECTIVITY_OPTIONS.filter(v => v.toLowerCase().includes(connSearch.toLowerCase()))
+  const filteredFwOptions = DEVICE_FIRMWARE_VERSIONS.filter(v => v.toLowerCase().includes(fwSearch.toLowerCase()))
 
   const filtered = useMemo(() => {
     let rows = mockDevices
@@ -1626,19 +1656,19 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
         d.id.toLowerCase().includes(q) || d.name.toLowerCase().includes(q) ||
         d.type.toLowerCase().includes(q) || d.hub.toLowerCase().includes(q) ||
         d.site.toLowerCase().includes(q) || d.manufacturer.toLowerCase().includes(q) ||
-        d.model.toLowerCase().includes(q) || d.firmware.toLowerCase().includes(q)
+        d.model.toLowerCase().includes(q)
       )
     }
-    if (statusFilter !== 'all') rows = rows.filter(d => d.status === statusFilter)
-    if (connectivityFilter !== 'all') rows = rows.filter(d => d.connectivity === connectivityFilter)
-    if (firmwareFilter !== 'all' && firmwareFilter !== '') rows = rows.filter(d => d.firmware === firmwareFilter)
+    if (statusValues.size > 0) rows = rows.filter(d => statusValues.has(d.status))
+    if (connectivityValues.size > 0) rows = rows.filter(d => connectivityValues.has(d.connectivity))
+    if (firmwareVersions.size > 0) rows = rows.filter(d => firmwareVersions.has(d.firmware))
     return [...rows].sort((a, b) => {
       const av = (a as Record<string, string>)[sort.field] ?? ''
       const bv = (b as Record<string, string>)[sort.field] ?? ''
       const cmp = av < bv ? -1 : av > bv ? 1 : 0
       return sort.dir === 'asc' ? cmp : -cmp
     })
-  }, [search, statusFilter, connectivityFilter, firmwareFilter, sort])
+  }, [search, statusValues, connectivityValues, firmwareVersions, sort])
 
   const allSelected = filtered.length > 0 && filtered.every(d => selected.has(d.id))
   const someSelected = !allSelected && filtered.some(d => selected.has(d.id))
@@ -1660,6 +1690,16 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
     setSort(s => s.field === field ? { field, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { field, dir: 'asc' })
   }
 
+  function toggleFwVersion(v: string) {
+    setFirmwareVersions(prev => { const n = new Set(prev); n.has(v) ? n.delete(v) : n.add(v); return n })
+  }
+  function toggleStatusValue(v: string) {
+    setStatusValues(prev => { const n = new Set(prev); n.has(v) ? n.delete(v) : n.add(v); return n })
+  }
+  function toggleConnValue(v: string) {
+    setConnectivityValues(prev => { const n = new Set(prev); n.has(v) ? n.delete(v) : n.add(v); return n })
+  }
+
   function confirmAction() {
     const n = selectionCount
     const label = DEVICE_ACTIONS.find(a => a.id === pendingAction)?.label ?? pendingAction ?? ''
@@ -1668,6 +1708,10 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
     setActionDone(`${label} applied to ${n} device${n !== 1 ? 's' : ''}.`)
     setTimeout(() => setActionDone(null), 3000)
   }
+
+  const statusLabel = statusValues.size === 0 ? 'Health' : statusValues.size === 1 ? [...statusValues][0] : `${statusValues.size} statuses`
+  const connLabel = connectivityValues.size === 0 ? 'Connectivity' : connectivityValues.size === 1 ? [...connectivityValues][0] : `${connectivityValues.size} selected`
+  const fwLabel = firmwareVersions.size === 0 ? 'Firmware version' : firmwareVersions.size === 1 ? [...firmwareVersions][0] : `${firmwareVersions.size} versions`
 
   return (
     <motion.div
@@ -1701,41 +1745,166 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
               className="pl-8 h-8 text-sm"
             />
           </div>
-          <div className="flex flex-wrap items-center gap-1">
-            {['all', ...DEVICE_STATUSES_FILTER].map(s => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                  statusFilter === s ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
-                }`}
-              >{s === 'all' ? 'All status' : s}</button>
-            ))}
+          {/* Health multi-select dropdown */}
+          <div className="relative" ref={statusDropdownRef}>
+            <button
+              onClick={() => { setStatusDropdownOpen(v => !v); setConnDropdownOpen(false); setFwDropdownOpen(false) }}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                statusValues.size > 0 ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
+              }`}
+            >
+              {statusLabel}
+              {statusValues.size > 0 && (
+                <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none"
+                  onClick={e => { e.stopPropagation(); setStatusValues(new Set()) }} title="Clear">×</span>
+              )}
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+            <AnimatePresence>
+              {statusDropdownOpen && (
+                <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.12 }}
+                  className="absolute left-0 top-full mt-1 z-30 w-48 rounded-lg border bg-white shadow-lg">
+                  <div className="p-2 border-b">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                      <input autoFocus placeholder="Search…" value={statusSearch} onChange={e => setStatusSearch(e.target.value)}
+                        className="w-full pl-6 pr-2 py-1 text-xs rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300" />
+                    </div>
+                  </div>
+                  <div className="py-1 max-h-52 overflow-y-auto">
+                    {filteredStatusOptions.length === 0
+                      ? <p className="px-3 py-2 text-xs text-muted-foreground">No matches.</p>
+                      : filteredStatusOptions.map(v => (
+                        <label key={v} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-muted/50 cursor-pointer">
+                          <input type="checkbox" checked={statusValues.has(v)} onChange={() => toggleStatusValue(v)} className="h-3.5 w-3.5 rounded border-slate-300 cursor-pointer" />
+                          <span className="text-xs">{v}</span>
+                        </label>
+                      ))}
+                  </div>
+                  {statusValues.size > 0 && (
+                    <div className="border-t p-2">
+                      <button onClick={() => setStatusValues(new Set())} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center">Clear selection</button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <div className="flex flex-wrap items-center gap-1">
-            {['all', ...CONNECTIVITY_OPTIONS].map(c => (
-              <button
-                key={c}
-                onClick={() => setConnectivityFilter(c)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                  connectivityFilter === c ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
-                }`}
-              >{c === 'all' ? 'All connectivity' : c}</button>
-            ))}
+          {/* Connectivity multi-select dropdown */}
+          <div className="relative" ref={connDropdownRef}>
+            <button
+              onClick={() => { setConnDropdownOpen(v => !v); setStatusDropdownOpen(false); setFwDropdownOpen(false) }}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                connectivityValues.size > 0 ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
+              }`}
+            >
+              {connLabel}
+              {connectivityValues.size > 0 && (
+                <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none"
+                  onClick={e => { e.stopPropagation(); setConnectivityValues(new Set()) }} title="Clear">×</span>
+              )}
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+            <AnimatePresence>
+              {connDropdownOpen && (
+                <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.12 }}
+                  className="absolute left-0 top-full mt-1 z-30 w-52 rounded-lg border bg-white shadow-lg">
+                  <div className="p-2 border-b">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                      <input autoFocus placeholder="Search…" value={connSearch} onChange={e => setConnSearch(e.target.value)}
+                        className="w-full pl-6 pr-2 py-1 text-xs rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300" />
+                    </div>
+                  </div>
+                  <div className="py-1 max-h-52 overflow-y-auto">
+                    {filteredConnOptions.length === 0
+                      ? <p className="px-3 py-2 text-xs text-muted-foreground">No matches.</p>
+                      : filteredConnOptions.map(v => (
+                        <label key={v} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-muted/50 cursor-pointer">
+                          <input type="checkbox" checked={connectivityValues.has(v)} onChange={() => toggleConnValue(v)} className="h-3.5 w-3.5 rounded border-slate-300 cursor-pointer" />
+                          <span className="text-xs">{v}</span>
+                        </label>
+                      ))}
+                  </div>
+                  {connectivityValues.size > 0 && (
+                    <div className="border-t p-2">
+                      <button onClick={() => setConnectivityValues(new Set())} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center">Clear selection</button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <div className="flex flex-wrap items-center gap-1">
-            <span className="text-xs text-muted-foreground pr-0.5">FW:</span>
-            {['all', ...DEVICE_FIRMWARE_VERSIONS].map(v => (
-              <button
-                key={v}
-                onClick={() => setFirmwareFilter(v === 'all' ? '' : v)}
-                className={`px-2.5 py-1 rounded-md text-xs font-mono font-medium border transition-colors ${
-                  (v === 'all' ? firmwareFilter === '' || firmwareFilter === 'all' : firmwareFilter === v)
-                    ? 'bg-slate-900 text-white border-slate-900'
-                    : 'border-slate-200 text-slate-600 hover:bg-muted/50'
-                }`}
-              >{v === 'all' ? 'All' : v}</button>
-            ))}
+          {/* Firmware version multi-select dropdown */}
+          <div className="relative" ref={fwDropdownRef}>
+            <button
+              onClick={() => { setFwDropdownOpen(v => !v); setStatusDropdownOpen(false); setConnDropdownOpen(false) }}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                firmwareVersions.size > 0
+                  ? 'bg-slate-900 text-white border-slate-900'
+                  : 'border-slate-200 text-slate-600 hover:bg-muted/50'
+              }`}
+            >
+              <span className="font-mono">{fwLabel}</span>
+              {firmwareVersions.size > 0 && (
+                <span
+                  className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none"
+                  onClick={e => { e.stopPropagation(); setFirmwareVersions(new Set()) }}
+                  title="Clear"
+                >×</span>
+              )}
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+            <AnimatePresence>
+              {fwDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                  transition={{ duration: 0.12 }}
+                  className="absolute left-0 top-full mt-1 z-30 w-52 rounded-lg border bg-white shadow-lg"
+                >
+                  <div className="p-2 border-b">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                      <input
+                        autoFocus
+                        placeholder="Search versions…"
+                        value={fwSearch}
+                        onChange={e => setFwSearch(e.target.value)}
+                        className="w-full pl-6 pr-2 py-1 text-xs rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300"
+                      />
+                    </div>
+                  </div>
+                  <div className="py-1 max-h-52 overflow-y-auto">
+                    {filteredFwOptions.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-muted-foreground">No versions match.</p>
+                    ) : filteredFwOptions.map(v => (
+                      <label
+                        key={v}
+                        className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-muted/50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={firmwareVersions.has(v)}
+                          onChange={() => toggleFwVersion(v)}
+                          className="h-3.5 w-3.5 rounded border-slate-300 cursor-pointer"
+                        />
+                        <span className="font-mono text-xs">{v}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {firmwareVersions.size > 0 && (
+                    <div className="border-t p-2">
+                      <button
+                        onClick={() => setFirmwareVersions(new Set())}
+                        className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center"
+                      >Clear selection</button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
           <span className="ml-auto text-xs text-muted-foreground">
             {filtered.length.toLocaleString()} of {namespace.totalDevices.toLocaleString()}
