@@ -157,6 +157,89 @@ const initialJobs = [
   { id: 'JOB-1038', name: 'Firmware update – v3.1.0', type: 'Update', status: 'Completed', targets: '8,200 devices', started: '2 weeks ago' },
 ]
 
+/* ─── Assets Mock Data ───────────────────────────────────────── */
+
+const assetHealthData = [
+  { label: 'Available', value: 2_847, color: '#10b981' },
+  { label: 'Degraded', value: 198, color: '#f59e0b' },
+  { label: 'Unhealthy', value: 91, color: '#ef4444' },
+  { label: 'Unknown', value: 79, color: '#94a3b8' },
+]
+
+const assetsByManufacturer = [
+  { label: 'Contoso Wind Systems', value: 1_420, color: '#3b82f6' },
+  { label: 'Zephyr Sensors Inc.', value: 782, color: '#3b82f6' },
+  { label: 'Meridian Edge Tech.', value: 541, color: '#3b82f6' },
+  { label: 'AeroLogix Systems', value: 320, color: '#3b82f6' },
+  { label: 'Others', value: 152, color: '#3b82f6' },
+]
+
+const assetsBySite = [
+  { label: 'Abilene Wind Farm', value: 1_247, color: '#8b5cf6' },
+  { label: 'Midland Wind Farm', value: 892, color: '#8b5cf6' },
+  { label: 'Odessa Wind Farm', value: 634, color: '#8b5cf6' },
+  { label: 'San Angelo Wind Farm', value: 442, color: '#8b5cf6' },
+]
+
+const mockAssets = [
+  { id: 'AST-0001', name: 'Turbine Controller #A-001', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', site: 'Abilene Wind Farm', status: 'Available', firmware: 'v3.2.1', lastSeen: '1 min ago' },
+  { id: 'AST-0002', name: 'Anemometer Sensor #A-014', type: 'Anemometer', manufacturer: 'Zephyr Sensors Inc.', site: 'Abilene Wind Farm', status: 'Available', firmware: 'v2.4.0', lastSeen: '4 min ago' },
+  { id: 'AST-0003', name: 'Edge Gateway #AB-03', type: 'Edge Gateway', manufacturer: 'Meridian Edge Tech.', site: 'Abilene Wind Farm', status: 'Available', firmware: 'v1.9.3', lastSeen: '2 min ago' },
+  { id: 'AST-0004', name: 'Pitch Controller #A-021', type: 'Pitch Controller', manufacturer: 'AeroLogix Systems', site: 'Abilene Wind Farm', status: 'Degraded', firmware: 'v5.0.2', lastSeen: '12 min ago' },
+  { id: 'AST-0005', name: 'Turbine Controller #M-007', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', site: 'Midland Wind Farm', status: 'Available', firmware: 'v3.2.1', lastSeen: '2 min ago' },
+  { id: 'AST-0006', name: 'Anemometer Sensor #M-023', type: 'Anemometer', manufacturer: 'Zephyr Sensors Inc.', site: 'Midland Wind Farm', status: 'Available', firmware: 'v2.4.0', lastSeen: '7 min ago' },
+  { id: 'AST-0007', name: 'Turbine Controller #M-011', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', site: 'Midland Wind Farm', status: 'Unhealthy', firmware: 'v3.1.0', lastSeen: '3 hrs ago' },
+  { id: 'AST-0008', name: 'Edge Gateway #MB-01', type: 'Edge Gateway', manufacturer: 'Meridian Edge Tech.', site: 'Midland Wind Farm', status: 'Available', firmware: 'v1.9.3', lastSeen: '1 min ago' },
+  { id: 'AST-0009', name: 'Turbine Controller #O-003', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', site: 'Odessa Wind Farm', status: 'Available', firmware: 'v3.2.1', lastSeen: '3 min ago' },
+  { id: 'AST-0010', name: 'Pitch Controller #O-017', type: 'Pitch Controller', manufacturer: 'AeroLogix Systems', site: 'Odessa Wind Farm', status: 'Degraded', firmware: 'v5.0.2', lastSeen: '28 min ago' },
+  { id: 'AST-0011', name: 'Anemometer Sensor #O-009', type: 'Anemometer', manufacturer: 'Zephyr Sensors Inc.', site: 'Odessa Wind Farm', status: 'Available', firmware: 'v2.4.0', lastSeen: '5 min ago' },
+  { id: 'AST-0012', name: 'Turbine Controller #S-002', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', site: 'San Angelo Wind Farm', status: 'Available', firmware: 'v3.2.1', lastSeen: '6 min ago' },
+  { id: 'AST-0013', name: 'Edge Gateway #SB-02', type: 'Edge Gateway', manufacturer: 'Meridian Edge Tech.', site: 'San Angelo Wind Farm', status: 'Available', firmware: 'v1.9.3', lastSeen: '2 min ago' },
+  { id: 'AST-0014', name: 'Turbine Controller #A-044', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', site: 'Abilene Wind Farm', status: 'Available', firmware: 'v3.1.0', lastSeen: '9 min ago' },
+  { id: 'AST-0015', name: 'Pitch Controller #M-031', type: 'Pitch Controller', manufacturer: 'AeroLogix Systems', site: 'Midland Wind Farm', status: 'Unknown', firmware: '—', lastSeen: '2 days ago' },
+]
+
+/* ─── Devices Mock Data ──────────────────────────────────────── */
+
+const deviceHealthData = [
+  { label: 'Healthy', value: 11_423, color: '#10b981' },
+  { label: 'Degraded', value: 847, color: '#f59e0b' },
+  { label: 'Unhealthy', value: 341, color: '#ef4444' },
+  { label: 'Unknown', value: 236, color: '#94a3b8' },
+]
+
+const deviceConnectivity = [
+  { label: 'Connected', value: 11_912, color: '#3b82f6' },
+  { label: 'Disconnected', value: 621, color: '#f59e0b' },
+  { label: 'Never Connected', value: 314, color: '#94a3b8' },
+]
+
+const deviceFirmwareVersions = [
+  { label: 'v3.2.1 (latest)', value: 2_847, color: '#10b981' },
+  { label: 'v3.1.0', value: 6_203, color: '#f59e0b' },
+  { label: 'v2.4.0', value: 1_412, color: '#3b82f6' },
+  { label: 'v1.9.3', value: 985, color: '#f97316' },
+  { label: 'Other', value: 1_400, color: '#94a3b8' },
+]
+
+const mockDevices = [
+  { id: 'DEV-0001', name: 'tx-wind-a001-ctrl', type: 'Turbine Controller', hub: 'hub-tx-wind-01', site: 'Abilene Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.2.1', lastSeen: '1 min ago' },
+  { id: 'DEV-0002', name: 'tx-wind-a014-anem', type: 'Anemometer', hub: 'hub-tx-wind-01', site: 'Abilene Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v2.4.0', lastSeen: '3 min ago' },
+  { id: 'DEV-0003', name: 'tx-wind-a021-pitch', type: 'Pitch Controller', hub: 'hub-tx-wind-02', site: 'Abilene Wind Farm', status: 'Degraded', connectivity: 'Connected', firmware: 'v5.0.2', lastSeen: '8 min ago' },
+  { id: 'DEV-0004', name: 'tx-wind-m007-ctrl', type: 'Turbine Controller', hub: 'hub-tx-wind-01', site: 'Midland Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.1.0', lastSeen: '2 min ago' },
+  { id: 'DEV-0005', name: 'tx-wind-m011-ctrl', type: 'Turbine Controller', hub: 'hub-tx-wind-02', site: 'Midland Wind Farm', status: 'Unhealthy', connectivity: 'Disconnected', firmware: 'v3.1.0', lastSeen: '4 hrs ago' },
+  { id: 'DEV-0006', name: 'tx-wind-o003-ctrl', type: 'Turbine Controller', hub: 'hub-tx-wind-03', site: 'Odessa Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.2.1', lastSeen: '1 min ago' },
+  { id: 'DEV-0007', name: 'tx-wind-o017-pitch', type: 'Pitch Controller', hub: 'hub-tx-wind-03', site: 'Odessa Wind Farm', status: 'Degraded', connectivity: 'Connected', firmware: 'v5.0.2', lastSeen: '31 min ago' },
+  { id: 'DEV-0008', name: 'tx-wind-s002-ctrl', type: 'Turbine Controller', hub: 'hub-tx-wind-04', site: 'San Angelo Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.2.1', lastSeen: '5 min ago' },
+  { id: 'DEV-0009', name: 'tx-wind-a033-edge', type: 'Edge Gateway', hub: 'hub-tx-wind-01', site: 'Abilene Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v1.9.3', lastSeen: '2 min ago' },
+  { id: 'DEV-0010', name: 'tx-wind-m023-anem', type: 'Anemometer', hub: 'hub-tx-wind-02', site: 'Midland Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v2.4.0', lastSeen: '6 min ago' },
+  { id: 'DEV-0011', name: 'tx-wind-o009-anem', type: 'Anemometer', hub: 'hub-tx-wind-03', site: 'Odessa Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v2.4.0', lastSeen: '4 min ago' },
+  { id: 'DEV-0012', name: 'tx-wind-s015-ctrl', type: 'Turbine Controller', hub: 'hub-tx-wind-04', site: 'San Angelo Wind Farm', status: 'Degraded', connectivity: 'Connected', firmware: 'v3.1.0', lastSeen: '19 min ago' },
+  { id: 'DEV-0013', name: 'tx-wind-a044-ctrl', type: 'Turbine Controller', hub: 'hub-tx-wind-01', site: 'Abilene Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.1.0', lastSeen: '7 min ago' },
+  { id: 'DEV-0014', name: 'tx-wind-m031-pitch', type: 'Pitch Controller', hub: 'hub-tx-wind-02', site: 'Midland Wind Farm', status: 'Unknown', connectivity: 'Never Connected', firmware: '—', lastSeen: 'Never' },
+  { id: 'DEV-0015', name: 'tx-wind-s008-edge', type: 'Edge Gateway', hub: 'hub-tx-wind-04', site: 'San Angelo Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v1.9.3', lastSeen: '3 min ago' },
+]
+
 /* ─── Page ────────────────────────────────────────────────────── */
 
 export default function AdrNamespacePage() {
@@ -280,7 +363,18 @@ export default function AdrNamespacePage() {
         activeItem={activeMenuItem}
         onItemClick={setActiveMenuItem}
       />
-      <div className="flex-1 min-w-0 space-y-8 pl-6">
+      <div className="flex-1 min-w-0 pl-6">
+      <AnimatePresence mode="wait">
+      {activeMenuItem === 'assets' ? (
+        <AssetsView key="assets" />
+      ) : activeMenuItem === 'devices' ? (
+        <DevicesView key="devices" />
+      ) : activeMenuItem === 'iot-hub' ? (
+        <IotHubView key="iot-hub" hubs={linkedHubs} onAddHub={() => setShowHubPicker(true)} unlinkedCount={unlinkedHubs.length} />
+      ) : activeMenuItem === 'iot-ops' ? (
+        <IotOpsView key="iot-ops" />
+      ) : (
+      <motion.div key="main" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="space-y-8">
       {/* ── Header / Hero ────────────────────────────────────── */}
       <div className="flex items-start justify-between">
         <div className="space-y-1">
@@ -1032,6 +1126,9 @@ export default function AdrNamespacePage() {
         </motion.div>,
         document.body
       )}
+      </motion.div>
+      )}
+      </AnimatePresence>
       </div>
     </motion.div>
   )
@@ -1232,5 +1329,329 @@ function SummaryStatusDots({ statuses }: { statuses: string[] }) {
         />
       ))}
     </span>
+  )
+}
+
+/* ─── Chart Helpers ─────────────────────────────────────────── */
+
+function DonutChart({ segments, centerLabel }: { segments: { label: string; value: number; color: string }[]; centerLabel?: string }) {
+  const total = segments.reduce((s, seg) => s + seg.value, 0)
+  const size = 130
+  const cx = size / 2, cy = size / 2
+  const r = 48, innerR = 30
+  let cumulative = 0
+  const paths = segments.map((seg) => {
+    const startAngle = (cumulative / total) * 2 * Math.PI - Math.PI / 2
+    cumulative += seg.value
+    const endAngle = (cumulative / total) * 2 * Math.PI - Math.PI / 2
+    const x1 = cx + r * Math.cos(startAngle), y1 = cy + r * Math.sin(startAngle)
+    const x2 = cx + r * Math.cos(endAngle), y2 = cy + r * Math.sin(endAngle)
+    const ix1 = cx + innerR * Math.cos(startAngle), iy1 = cy + innerR * Math.sin(startAngle)
+    const ix2 = cx + innerR * Math.cos(endAngle), iy2 = cy + innerR * Math.sin(endAngle)
+    const largeArc = seg.value / total > 0.5 ? 1 : 0
+    const d = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${innerR} ${innerR} 0 ${largeArc} 0 ${ix1} ${iy1} Z`
+    return { d, ...seg }
+  })
+  const mainSeg = segments.reduce((a, b) => (a.value > b.value ? a : b))
+  const mainPct = Math.round((mainSeg.value / total) * 100)
+  return (
+    <div className="flex items-center gap-5">
+      <div className="shrink-0">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          {paths.map((p, i) => <path key={i} d={p.d} fill={p.color} />)}
+          <text x={cx} y={cy - 5} textAnchor="middle" style={{ fontSize: 18, fontWeight: 600, fill: '#0f172a' }}>{mainPct}%</text>
+          <text x={cx} y={cy + 12} textAnchor="middle" style={{ fontSize: 10, fill: '#64748b' }}>{centerLabel ?? mainSeg.label}</text>
+        </svg>
+      </div>
+      <div className="space-y-2 flex-1 min-w-0">
+        {segments.map((seg) => (
+          <div key={seg.label} className="flex items-center gap-2 text-xs">
+            <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
+            <span className="text-muted-foreground truncate">{seg.label}</span>
+            <span className="ml-auto font-mono pl-2 tabular-nums">{seg.value.toLocaleString()}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function HBarChart({ data }: { data: { label: string; value: number; color: string }[] }) {
+  const max = Math.max(...data.map(d => d.value))
+  return (
+    <div className="space-y-3">
+      {data.map((d, i) => (
+        <div key={i}>
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="text-muted-foreground truncate mr-2">{d.label}</span>
+            <span className="font-mono tabular-nums shrink-0">{d.value.toLocaleString()}</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-full rounded-full transition-all" style={{ width: `${(d.value / max) * 100}%`, backgroundColor: d.color }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Card className="shadow-sm">
+      <CardContent className="p-5">
+        <p className="text-sm font-semibold mb-4">{title}</p>
+        {children}
+      </CardContent>
+    </Card>
+  )
+}
+
+function SubViewHeader({ title, subtitle, count }: { title: React.ReactNode; subtitle?: string; count?: number }) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        {count !== undefined && (
+          <span className="rounded-full bg-muted px-2.5 py-0.5 text-sm font-medium text-muted-foreground">{count.toLocaleString()}</span>
+        )}
+      </div>
+      {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+    </div>
+  )
+}
+
+/* ─── Assets View ────────────────────────────────────────────── */
+
+function AssetsView() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="space-y-8"
+    >
+      <SubViewHeader title="Assets" count={namespace.totalAssets} subtitle="Texas-Wind-Namespace" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <ChartCard title="Asset Health">
+          <DonutChart segments={assetHealthData} centerLabel="Available" />
+        </ChartCard>
+        <ChartCard title="By Manufacturer">
+          <HBarChart data={assetsByManufacturer} />
+        </ChartCard>
+        <ChartCard title="By Site">
+          <HBarChart data={assetsBySite} />
+        </ChartCard>
+      </div>
+      <div>
+        <div className="mb-4 flex items-center gap-2">
+          <h2 className="text-base font-semibold">Asset List</h2>
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            showing {mockAssets.length} of {namespace.totalAssets.toLocaleString()}
+          </span>
+        </div>
+        <div className="rounded-lg border shadow-sm">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[90px]">Asset ID</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Manufacturer</TableHead>
+                <TableHead>Site</TableHead>
+                <TableHead>Firmware</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Last Seen</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mockAssets.map((a) => (
+                <TableRow key={a.id}>
+                  <TableCell className="font-mono text-xs text-muted-foreground">{a.id}</TableCell>
+                  <TableCell className="font-medium text-sm">{a.name}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{a.type}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{a.manufacturer}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{a.site}</TableCell>
+                  <TableCell className="font-mono text-xs">{a.firmware}</TableCell>
+                  <TableCell><StatusBadge status={a.status} /></TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{a.lastSeen}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+/* ─── Devices View ───────────────────────────────────────────── */
+
+function DevicesView() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="space-y-8"
+    >
+      <SubViewHeader title="Devices" count={namespace.totalDevices} subtitle="Texas-Wind-Namespace" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <ChartCard title="Device Health">
+          <DonutChart segments={deviceHealthData} centerLabel="Healthy" />
+        </ChartCard>
+        <ChartCard title="Connectivity Status">
+          <HBarChart data={deviceConnectivity} />
+        </ChartCard>
+        <ChartCard title="Firmware Version">
+          <HBarChart data={deviceFirmwareVersions} />
+        </ChartCard>
+      </div>
+      <div>
+        <div className="mb-4 flex items-center gap-2">
+          <h2 className="text-base font-semibold">Device List</h2>
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            showing {mockDevices.length} of {namespace.totalDevices.toLocaleString()}
+          </span>
+        </div>
+        <div className="rounded-lg border shadow-sm">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[90px]">Device ID</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>IoT Hub</TableHead>
+                <TableHead>Site</TableHead>
+                <TableHead>Firmware</TableHead>
+                <TableHead>Connectivity</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Last Seen</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mockDevices.map((d) => (
+                <TableRow key={d.id}>
+                  <TableCell className="font-mono text-xs text-muted-foreground">{d.id}</TableCell>
+                  <TableCell className="font-mono text-xs font-medium">{d.name}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{d.type}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">{d.hub}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{d.site}</TableCell>
+                  <TableCell className="font-mono text-xs">{d.firmware}</TableCell>
+                  <TableCell>
+                    <span className={`text-xs font-medium ${
+                      d.connectivity === 'Connected' ? 'text-emerald-600'
+                      : d.connectivity === 'Disconnected' ? 'text-amber-600'
+                      : 'text-slate-400'
+                    }`}>
+                      {d.connectivity}
+                    </span>
+                  </TableCell>
+                  <TableCell><StatusBadge status={d.status} /></TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{d.lastSeen}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+/* ─── IoT Hub View ───────────────────────────────────────────── */
+
+function IotHubView({ hubs, onAddHub, unlinkedCount }: { hubs: Hub[]; onAddHub: () => void; unlinkedCount: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="space-y-8"
+    >
+      <div className="flex items-center justify-between">
+        <SubViewHeader title="IoT Hubs" count={hubs.length} subtitle="Texas-Wind-Namespace" />
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 text-xs"
+          onClick={onAddHub}
+          disabled={unlinkedCount === 0}
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Add Linked Hub
+        </Button>
+      </div>
+      <div className="rounded-lg border shadow-sm">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Hub Name</TableHead>
+              <TableHead>Region</TableHead>
+              <TableHead className="text-right">Connected Devices</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {hubs.map((hub) => (
+              <TableRow key={hub.name} className={hub.status === 'Adding' ? 'bg-blue-50/30' : ''}>
+                <TableCell className="font-mono text-sm font-medium">{hub.name}</TableCell>
+                <TableCell className="text-muted-foreground">{hub.region}</TableCell>
+                <TableCell className="text-right font-mono text-sm">
+                  {hub.status === 'Adding' ? '—' : hub.devices.toLocaleString()}
+                </TableCell>
+                <TableCell><StatusBadge status={hub.status} /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </motion.div>
+  )
+}
+
+/* ─── IoT Operations View ────────────────────────────────────── */
+
+function IotOpsView() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="space-y-8"
+    >
+      <SubViewHeader
+        title={<><span className="whitespace-nowrap">IoT&nbsp;Operations</span> Instances</>}
+        count={aioInstances.length}
+        subtitle="Texas-Wind-Namespace"
+      />
+      <div className="rounded-lg border shadow-sm">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Instance</TableHead>
+              <TableHead>Site</TableHead>
+              <TableHead className="text-right">Connected Devices</TableHead>
+              <TableHead className="text-right">Assets</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {aioInstances.map((inst) => (
+              <TableRow key={inst.name}>
+                <TableCell className="font-mono text-sm font-medium">{inst.name}</TableCell>
+                <TableCell className="text-muted-foreground">{inst.site}</TableCell>
+                <TableCell className="text-right font-mono text-sm">{inst.connectedDevices.toLocaleString()}</TableCell>
+                <TableCell className="text-right font-mono text-sm">{inst.assets.toLocaleString()}</TableCell>
+                <TableCell><StatusBadge status={inst.status} /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </motion.div>
   )
 }
