@@ -16,6 +16,7 @@ import {
   Plus,
   ChevronRight,
   ChevronDown,
+  ChevronLeft,
   Wind,
   X,
   Search,
