@@ -730,144 +730,6 @@ export default function AdrNamespacePage() {
           )}
         </AnimatePresence>
 
-        {/* Hub picker modal */}
-        {showHubPicker && createPortal(
-          <AnimatePresence>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-              onClick={() => { setShowHubPicker(false); setHubToConfirm(null); setHubConfirmText('') }}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 8 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 8 }}
-                transition={{ duration: 0.2 }}
-                className="w-full max-w-lg rounded-xl border bg-white shadow-xl"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between border-b px-6 py-4">
-                  <div>
-                    <h3 className="text-base font-semibold">Add Linked Hub</h3>
-                    <p className="text-sm text-muted-foreground">Select an existing hub to link to this namespace</p>
-                  </div>
-                  <button
-                    onClick={() => { setShowHubPicker(false); setHubToConfirm(null); setHubConfirmText('') }}
-                    className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="border-b px-6 py-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      ref={searchInputRef}
-                      placeholder="Search hubs by name or region…"
-                      value={hubSearch}
-                      onChange={(e) => setHubSearch(e.target.value)}
-                      className="pl-9 text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="max-h-72 overflow-y-auto px-6 py-3">
-                  {hubToConfirm ? (
-                    <div className="space-y-4 py-2">
-                      <div className="rounded-lg border p-3">
-                        <p className="text-xs font-medium">{hubToConfirm.name}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {hubToConfirm.region} · {hubToConfirm.devices.toLocaleString()} devices
-                        </p>
-                      </div>
-                      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                        <p className="text-xs font-medium text-amber-800">This is an irreversible operation.</p>
-                        <p className="text-[11px] text-amber-700 mt-0.5">Once linked, this hub cannot be removed from the namespace.</p>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label
-                          className="text-xs font-medium text-foreground cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
-                          onClick={() => setHubConfirmText(hubToConfirm.name)}
-                          title="Click to fill"
-                        >
-                          Type <span className="font-mono text-foreground">{hubToConfirm.name}</span> to confirm
-                          <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span>
-                        </label>
-                        <Input
-                          value={hubConfirmText}
-                          onChange={(e) => setHubConfirmText(e.target.value)}
-                          placeholder={hubToConfirm.name}
-                          className="h-8 text-sm font-mono"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && hubConfirmText === hubToConfirm.name) {
-                              handleAddHub(hubToConfirm)
-                              setHubToConfirm(null)
-                              setHubConfirmText('')
-                            }
-                            if (e.key === 'Escape') {
-                              setHubToConfirm(null)
-                              setHubConfirmText('')
-                            }
-                          }}
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          className="flex-1 gap-2"
-                          disabled={hubConfirmText !== hubToConfirm.name}
-                          onClick={() => {
-                            handleAddHub(hubToConfirm)
-                            setHubToConfirm(null)
-                            setHubConfirmText('')
-                          }}
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                          Link Hub
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => { setHubToConfirm(null); setHubConfirmText('') }}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : hubSearching ? (
-                    <div className="flex items-center justify-center gap-2 py-10">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">Searching…</span>
-                    </div>
-                  ) : hubSearchResults.length === 0 ? (
-                    <p className="py-10 text-center text-sm text-muted-foreground">
-                      {hubSearch.trim() ? 'No hubs matching your search.' : 'No additional hubs available to link.'}
-                    </p>
-                  ) : (
-                    <div className="space-y-1.5">
-                      {hubSearchResults.map((hub) => (
-                        <button
-                          key={hub.name}
-                          onClick={() => { setHubToConfirm(hub); setHubConfirmText('') }}
-                          className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-left transition-colors hover:bg-muted/50"
-                        >
-                          <div>
-                            <p className="text-xs font-medium">{hub.name}</p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {hub.region} · {hub.devices.toLocaleString()} devices
-                            </p>
-                          </div>
-                          <Plus className="h-3.5 w-3.5 text-muted-foreground" />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            </motion.div>
-          </AnimatePresence>,
-          document.body
-        )}
       </div>
 
       {/* ── IoT Operations Instances (collapsible) ───────────── */}
@@ -1107,6 +969,144 @@ export default function AdrNamespacePage() {
       </motion.div>
       )}
       </AnimatePresence>
+      {/* Hub picker modal — rendered at top level so it works from any view */}
+      {showHubPicker && createPortal(
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            onClick={() => { setShowHubPicker(false); setHubToConfirm(null); setHubConfirmText('') }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-lg rounded-xl border bg-white shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b px-6 py-4">
+                <div>
+                  <h3 className="text-base font-semibold">Add Linked Hub</h3>
+                  <p className="text-sm text-muted-foreground">Select an existing hub to link to this namespace</p>
+                </div>
+                <button
+                  onClick={() => { setShowHubPicker(false); setHubToConfirm(null); setHubConfirmText('') }}
+                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="border-b px-6 py-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    ref={searchInputRef}
+                    placeholder="Search hubs by name or region…"
+                    value={hubSearch}
+                    onChange={(e) => setHubSearch(e.target.value)}
+                    className="pl-9 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="max-h-72 overflow-y-auto px-6 py-3">
+                {hubToConfirm ? (
+                  <div className="space-y-4 py-2">
+                    <div className="rounded-lg border p-3">
+                      <p className="text-xs font-medium">{hubToConfirm.name}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {hubToConfirm.region} · {hubToConfirm.devices.toLocaleString()} devices
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                      <p className="text-xs font-medium text-amber-800">This is an irreversible operation.</p>
+                      <p className="text-[11px] text-amber-700 mt-0.5">Once linked, this hub cannot be removed from the namespace.</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label
+                        className="text-xs font-medium text-foreground cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
+                        onClick={() => setHubConfirmText(hubToConfirm.name)}
+                        title="Click to fill"
+                      >
+                        Type <span className="font-mono text-foreground">{hubToConfirm.name}</span> to confirm
+                        <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span>
+                      </label>
+                      <Input
+                        value={hubConfirmText}
+                        onChange={(e) => setHubConfirmText(e.target.value)}
+                        placeholder={hubToConfirm.name}
+                        className="h-8 text-sm font-mono"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && hubConfirmText === hubToConfirm.name) {
+                            handleAddHub(hubToConfirm)
+                            setHubToConfirm(null)
+                            setHubConfirmText('')
+                          }
+                          if (e.key === 'Escape') {
+                            setHubToConfirm(null)
+                            setHubConfirmText('')
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1 gap-2"
+                        disabled={hubConfirmText !== hubToConfirm.name}
+                        onClick={() => {
+                          handleAddHub(hubToConfirm)
+                          setHubToConfirm(null)
+                          setHubConfirmText('')
+                        }}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Link Hub
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => { setHubToConfirm(null); setHubConfirmText('') }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : hubSearching ? (
+                  <div className="flex items-center justify-center gap-2 py-10">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Searching…</span>
+                  </div>
+                ) : hubSearchResults.length === 0 ? (
+                  <p className="py-10 text-center text-sm text-muted-foreground">
+                    {hubSearch.trim() ? 'No hubs matching your search.' : 'No additional hubs available to link.'}
+                  </p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {hubSearchResults.map((hub) => (
+                      <button
+                        key={hub.name}
+                        onClick={() => { setHubToConfirm(hub); setHubConfirmText('') }}
+                        className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-left transition-colors hover:bg-muted/50"
+                      >
+                        <div>
+                          <p className="text-xs font-medium">{hub.name}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {hub.region} · {hub.devices.toLocaleString()} devices
+                          </p>
+                        </div>
+                        <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>,
+        document.body
+      )}
       </div>
     </motion.div>
   )
