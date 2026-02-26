@@ -12,7 +12,7 @@ export default function App() {
         {workflows.map((workflow) => (
           <Route
             key={workflow.id}
-            path={workflow.path}
+            path={workflow.id === 'adr-namespace' ? workflow.path + '/*' : workflow.path}
             element={
               <Suspense
                 fallback={

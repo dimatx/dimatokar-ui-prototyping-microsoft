@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Server,
   Cpu,
@@ -45,6 +45,7 @@ import {
 } from '@/components/ui/table'
 import { NewJobWizard, type CreatedJob } from './NewJobWizard'
 import { JobListEmbedded } from '@/workflows/job-list/Page'
+import JobDetailPage from '@/workflows/job-detail/Page'
 
 /* ─── Mock Data ───────────────────────────────────────────────── */
 
@@ -397,10 +398,47 @@ const mockDevices = [
   { id: 'DEV-0015', name: 'tx-wind-s008-edge', type: 'Edge Gateway', manufacturer: 'Meridian Edge Technologies', model: 'EdgeGateway-1900', hub: 'hub-tx-wind-04', site: 'San Angelo Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v1.9.3', lastSeen: '3 min ago' },
 ]
 
+/* ─── URL mapping ────────────────────────────────────────────── */
+
+const ID_TO_SEGMENT: Record<string, string> = {
+  '':              '',
+  'assets':        'assets',
+  'devices':       'devices',
+  'credentials':   'credentials',
+  'policies':      'policies',
+  'provisioning':  'provisioning',
+  'cert-mgmt':     'cert-mgmt',
+  'groups':        'groups',
+  'jobs':          'jobs',
+  'device-update': 'device-update',
+  'firmware':      'firmware',
+  'iot-hub':       'iot-hubs',
+  'iot-ops':       'iot-ops',
+  '3p':            '3p',
+}
+const SEGMENT_TO_ID: Record<string, string> = Object.fromEntries(
+  Object.entries(ID_TO_SEGMENT).map(([k, v]) => [v || k, k])
+)
+
+function parseMenuFromPath(pathname: string): string {
+  const sub = pathname.replace(/^\/adr-namespace\/?/, '')
+  const seg = sub.split('/')[0]
+  return SEGMENT_TO_ID[seg] ?? ''
+}
+
+function parseFirmwareFromPath(pathname: string): string | null {
+  const parts = pathname.replace(/^\/adr-namespace\/?/, '').split('/')
+  if (parts[0] === 'firmware' && parts[1]) {
+    return parts[1].startsWith('v') ? parts[1].slice(1) : parts[1]
+  }
+  return null
+}
+
 /* ─── Page ────────────────────────────────────────────────────── */
 
 export default function AdrNamespacePage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [hubsOpen, setHubsOpen] = useState(true)
   const [aioOpen, setAioOpen] = useState(true)
   const [linkedHubs, setLinkedHubs] = useState<Hub[]>(initialHubs)
@@ -422,8 +460,8 @@ export default function AdrNamespacePage() {
   const [showAddService, setShowAddService] = useState(false)
   const [enableInstanceName, setEnableInstanceName] = useState<string>('')
   const [leftMenuOpen, setLeftMenuOpen] = useState(true)
-  const [activeMenuItem, setActiveMenuItem] = useState<string>('')
-  const [firmwareTarget, setFirmwareTarget] = useState<string | null>(null)
+  const [activeMenuItem, setActiveMenuItem] = useState<string>(() => parseMenuFromPath(location.pathname))
+  const [firmwareTarget, setFirmwareTarget] = useState<string | null>(() => parseFirmwareFromPath(location.pathname))
   const [devicePrefilter, setDevicePrefilter] = useState<string>('')
   const [deviceFirmwarePrefilter, setDeviceFirmwarePrefilter] = useState<string>('')
   const [assetPrefilter, setAssetPrefilter] = useState<string>('')
@@ -434,6 +472,8 @@ export default function AdrNamespacePage() {
     setDevicePrefilter(opts?.deviceFilter ?? '')
     setDeviceFirmwarePrefilter(opts?.firmwareVersionFilter ?? '')
     setAssetPrefilter(opts?.assetFilter ?? '')
+    const seg = ID_TO_SEGMENT[id] ?? id
+    navigate(`/adr-namespace${seg ? '/' + seg : ''}`)
   }
 
   // Simulate per-hub progress ticking for running jobs
@@ -551,20 +591,28 @@ export default function AdrNamespacePage() {
         <FirmwareDetailView
           key={`fw-${firmwareTarget}`}
           version={firmwareTarget}
-          onBack={() => setFirmwareTarget(null)}
+          onBack={() => { setFirmwareTarget(null); navigate('/adr-namespace/firmware') }}
           onDevicesClick={(v, mfr) => navigateTo('devices', { firmwareVersionFilter: `v${v}`, deviceFilter: mfr })}
           onAssetsClick={(mfr) => navigateTo('assets', { assetFilter: mfr })}
         />
       ) : activeMenuItem === 'firmware' ? (
         <FirmwareAnalysisView
           key="firmware"
-          onFirmwareSelect={(v) => setFirmwareTarget(v)}
+          onFirmwareSelect={(v) => { setFirmwareTarget(v); navigate(`/adr-namespace/firmware/${v}`) }}
           onVersionClick={(v) => navigateTo('devices', { firmwareVersionFilter: v })}
           onManufacturerClick={(m) => navigateTo('devices', { deviceFilter: m })}
           onModelClick={(m) => navigateTo('devices', { deviceFilter: m })}
         />
+      ) : activeMenuItem === 'jobs' && location.pathname.includes('/jobs/job-detail') ? (
+        <JobDetailPage key="job-detail" />
       ) : activeMenuItem === 'jobs' ? (
-        <JobListEmbedded key="jobs" />
+        <JobListEmbedded key="jobs" onNavigate={(path) => {
+          if (path.startsWith('/job-detail')) {
+            navigate(`/adr-namespace/jobs${path}&from=/adr-namespace/jobs`)
+          } else {
+            navigate(path)
+          }
+        }} />
       ) : activeMenuItem === 'credentials' ? (
         <PlaceholderView key="credentials" title="Credentials" description="Manage device certificates and credentials stored in this namespace. Assign credentials to devices, rotate keys, and set expiry policies." icon={KeyRound} />
       ) : activeMenuItem === 'policies' ? (

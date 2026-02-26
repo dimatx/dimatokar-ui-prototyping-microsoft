@@ -187,6 +187,7 @@ export default function JobDetailPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const jobId = params.get('id') ?? ALL_JOBS[0]?.id ?? ''
+  const backPath = params.get('from') ?? '/job-list'
   const job = ALL_JOBS.find(j => j.id === jobId)
 
   if (!job) {
@@ -194,7 +195,7 @@ export default function JobDetailPage() {
       <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-2">
         <XCircle className="w-8 h-8" />
         <p className="text-sm">Job <span className="font-mono">{jobId || '(none)'}</span> not found.</p>
-        <button onClick={() => navigate('/job-list')} className="text-sm text-blue-600 hover:underline mt-2">
+        <button onClick={() => navigate(backPath)} className="text-sm text-blue-600 hover:underline mt-2">
           Back to Job List
         </button>
       </div>
@@ -249,7 +250,7 @@ export default function JobDetailPage() {
           Texas-Wind-Namespace
         </button>
         <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-        <button onClick={() => navigate('/job-list')} className="hover:text-slate-900 transition-colors">
+        <button onClick={() => navigate(backPath)} className="hover:text-slate-900 transition-colors">
           Jobs
         </button>
         <ChevronRight className="w-3.5 h-3.5 text-slate-300" />

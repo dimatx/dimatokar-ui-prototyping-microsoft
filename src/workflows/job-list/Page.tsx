@@ -127,9 +127,10 @@ export default function JobListPage() {
   return <JobListContent navigate={(path) => navigate(path)} showBackNav />
 }
 
-export function JobListEmbedded() {
+export function JobListEmbedded({ onNavigate }: { onNavigate?: (path: string) => void } = {}) {
   const navigate = useNavigate()
-  return <JobListContent navigate={(path) => navigate(path)} showBackNav={false} />
+  const navFn = onNavigate ?? ((path: string) => navigate(path))
+  return <JobListContent navigate={navFn} showBackNav={false} />
 }
 
 function JobListContent({ navigate, showBackNav }: { navigate: (path: string) => void; showBackNav: boolean }) {
