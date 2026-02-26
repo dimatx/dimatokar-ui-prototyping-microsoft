@@ -109,7 +109,10 @@ const availableHubs: Hub[] = [
 ]
 
 const aioInstances = [
-  { name: 'aio-tx-abilene-01', site: 'Abilene Wind Farm', status: 'Healthy', connectedDevices: 842, assets: 434 },
+  { name: 'aio-tx-abilene-01',  site: 'Abilene Wind Farm',    status: 'Healthy',  connectedDevices: 842, assets: 434 },
+  { name: 'aio-tx-midland-01',  site: 'Midland Wind Farm',    status: 'Healthy',  connectedDevices: 671, assets: 318 },
+  { name: 'aio-tx-sanangelo-01',site: 'San Angelo Wind Farm', status: 'Degraded', connectedDevices: 512, assets: 244 },
+  { name: 'aio-tx-lubbock-01',  site: 'Lubbock Wind Farm',   status: 'Healthy',  connectedDevices: 390, assets: 187 },
 ]
 
 const firmwareImages = [
@@ -398,6 +401,28 @@ const mockDevices = [
   { id: 'DEV-0015', name: 'tx-wind-s008-edge', type: 'Edge Gateway', manufacturer: 'Meridian Edge Technologies', model: 'EdgeGateway-1900', hub: 'hub-tx-wind-04', site: 'San Angelo Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v1.9.3', lastSeen: '3 min ago' },
 ]
 
+/* ─── Mini chart helpers ─────────────────────────────────────── */
+
+function SegBar({ segs }: { segs: { v: number; c: string }[] }) {
+  const total = segs.reduce((s, x) => s + x.v, 0)
+  if (!total) return null
+  return (
+    <div className="flex h-2 w-full overflow-hidden rounded-full gap-px">
+      {segs.filter(s => s.v > 0).map((s, i) => (
+        <div key={i} style={{ width: `${(s.v / total) * 100}%`, background: s.c }} />
+      ))}
+    </div>
+  )
+}
+
+function HBar({ value, max, color = '#3b82f6' }: { value: number; max: number; color?: string }) {
+  return (
+    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+      <div className="h-full rounded-full" style={{ width: `${Math.round((value / Math.max(max, 1)) * 100)}%`, background: color }} />
+    </div>
+  )
+}
+
 /* ─── URL mapping ────────────────────────────────────────────── */
 
 const ID_TO_SEGMENT: Record<string, string> = {
@@ -665,9 +690,7 @@ export default function AdrNamespacePage() {
           {namespaceSvcs.map((svc) => (
             <Card key={svc.name} className="shadow-sm relative">
               {svc.name === 'Device Update' && svc.status === 'Disabled' && (
-                <span className="absolute -right-2 -top-2 z-10 rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase shadow-sm">
-                  try me
-                </span>
+                <></>
               )}
               <CardContent className="flex items-start gap-4 p-5">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
@@ -702,9 +725,6 @@ export default function AdrNamespacePage() {
               className="shadow-sm border-dashed cursor-pointer hover:bg-muted/20 transition-colors relative"
               onClick={() => setShowAddService(true)}
             >
-              <span className="absolute -right-2 -top-2 z-10 rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase shadow-sm">
-                try me
-              </span>
               <CardContent className="flex items-center justify-center gap-2 p-5 h-full">
                 <Plus className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">Add Service</span>
@@ -732,9 +752,6 @@ export default function AdrNamespacePage() {
                 navigateTo('iot-hub')
               }}
             >
-              <span className="absolute -right-2 -top-2 z-10 rounded-full border border-orange-300 bg-orange-50 px-1.5 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase shadow-sm">
-                try me
-              </span>
               <Server className="h-3.5 w-3.5" />
               Manage Hubs
             </Button>
@@ -774,6 +791,64 @@ export default function AdrNamespacePage() {
                   </TableBody>
                 </Table>
               </div>
+              {/* Hub mini charts */}
+              {(() => {
+                const healthy = linkedHubs.filter(h => h.status === 'Healthy').length
+                const degraded = linkedHubs.filter(h => h.status === 'Degraded').length
+                const other = linkedHubs.length - healthy - degraded
+                const byRegion = linkedHubs.reduce<Record<string, number>>((acc, h) => { acc[h.region] = (acc[h.region] ?? 0) + h.devices; return acc }, {})
+                const regionEntries = Object.entries(byRegion).sort((a, b) => b[1] - a[1])
+                const maxRegionDevices = Math.max(...regionEntries.map(r => r[1]))
+                const maxHubDevices = Math.max(...linkedHubs.filter(h => h.status !== 'Adding').map(h => h.devices))
+                return (
+                  <div className="grid grid-cols-3 gap-4 mt-4">
+                    {/* Health breakdown */}
+                    <div className="rounded-lg border p-4 space-y-3">
+                      <p className="text-xs font-medium text-muted-foreground">Hub Health</p>
+                      <SegBar segs={[
+                        { v: healthy, c: '#22c55e' },
+                        { v: degraded, c: '#f59e0b' },
+                        { v: other, c: '#94a3b8' },
+                      ]} />
+                      <div className="flex flex-wrap gap-x-4 gap-y-1">
+                        {healthy > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />{healthy} Healthy</span>}
+                        {degraded > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />{degraded} Degraded</span>}
+                        {other > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-slate-300 shrink-0" />{other} Other</span>}
+                      </div>
+                    </div>
+                    {/* Devices by region */}
+                    <div className="rounded-lg border p-4 space-y-3">
+                      <p className="text-xs font-medium text-muted-foreground">Devices by Region</p>
+                      <div className="space-y-2">
+                        {regionEntries.map(([region, count]) => (
+                          <div key={region}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[11px] text-muted-foreground truncate max-w-[130px]">{region}</span>
+                              <span className="text-[11px] font-mono text-foreground ml-2">{count.toLocaleString()}</span>
+                            </div>
+                            <HBar value={count} max={maxRegionDevices} color="#6366f1" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Device load per hub */}
+                    <div className="rounded-lg border p-4 space-y-3">
+                      <p className="text-xs font-medium text-muted-foreground">Device Load per Hub</p>
+                      <div className="space-y-2">
+                        {linkedHubs.filter(h => h.status !== 'Adding').map(hub => (
+                          <div key={hub.name}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[120px]">{hub.name.replace('hub-', '')}</span>
+                              <span className="text-[11px] font-mono text-foreground ml-2">{hub.devices.toLocaleString()}</span>
+                            </div>
+                            <HBar value={hub.devices} max={maxHubDevices} color={hub.status === 'Degraded' ? '#f59e0b' : '#3b82f6'} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
             </motion.div>
           )}
         </AnimatePresence>
@@ -820,6 +895,62 @@ export default function AdrNamespacePage() {
                   </TableBody>
                 </Table>
               </div>
+              {/* AIO mini charts */}
+              {(() => {
+                const healthy = aioInstances.filter(i => i.status === 'Healthy').length
+                const degraded = aioInstances.filter(i => i.status === 'Degraded').length
+                const other = aioInstances.length - healthy - degraded
+                const maxDevices = Math.max(...aioInstances.map(i => i.connectedDevices))
+                const maxAssets  = Math.max(...aioInstances.map(i => i.assets))
+                return (
+                  <div className="grid grid-cols-3 gap-4 mt-4">
+                    {/* Instance health */}
+                    <div className="rounded-lg border p-4 space-y-3">
+                      <p className="text-xs font-medium text-muted-foreground">Instance Health</p>
+                      <SegBar segs={[
+                        { v: healthy, c: '#22c55e' },
+                        { v: degraded, c: '#f59e0b' },
+                        { v: other, c: '#94a3b8' },
+                      ]} />
+                      <div className="flex flex-wrap gap-x-4 gap-y-1">
+                        {healthy > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />{healthy} Healthy</span>}
+                        {degraded > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />{degraded} Degraded</span>}
+                        {other > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-slate-300 shrink-0" />{other} Other</span>}
+                      </div>
+                    </div>
+                    {/* Connected devices per instance */}
+                    <div className="rounded-lg border p-4 space-y-3">
+                      <p className="text-xs font-medium text-muted-foreground">Connected Devices</p>
+                      <div className="space-y-2">
+                        {aioInstances.map(inst => (
+                          <div key={inst.name}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[120px]">{inst.name.replace('aio-tx-', '')}</span>
+                              <span className="text-[11px] font-mono text-foreground ml-2">{inst.connectedDevices.toLocaleString()}</span>
+                            </div>
+                            <HBar value={inst.connectedDevices} max={maxDevices} color={inst.status === 'Degraded' ? '#f59e0b' : '#3b82f6'} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Assets per instance */}
+                    <div className="rounded-lg border p-4 space-y-3">
+                      <p className="text-xs font-medium text-muted-foreground">Assets Managed</p>
+                      <div className="space-y-2">
+                        {aioInstances.map(inst => (
+                          <div key={inst.name}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[120px]">{inst.name.replace('aio-tx-', '')}</span>
+                              <span className="text-[11px] font-mono text-foreground ml-2">{inst.assets.toLocaleString()}</span>
+                            </div>
+                            <HBar value={inst.assets} max={maxAssets} color="#8b5cf6" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
             </motion.div>
           )}
         </AnimatePresence>
