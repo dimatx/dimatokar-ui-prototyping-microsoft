@@ -542,6 +542,7 @@ export default function AdrNamespacePage() {
         <FirmwareAnalysisView
           key="firmware"
           onFirmwareSelect={(v) => setFirmwareTarget(v)}
+          onVersionClick={(v) => navigateTo('devices', { deviceFilter: v })}
           onManufacturerClick={(m) => navigateTo('devices', { deviceFilter: m })}
           onModelClick={(m) => navigateTo('devices', { deviceFilter: m })}
         />
@@ -2455,8 +2456,9 @@ const severityBg: Record<string, string> = {
   Low: 'bg-slate-100 text-slate-500 border border-slate-200',
 }
 
-function FirmwareAnalysisView({ onFirmwareSelect, onManufacturerClick, onModelClick }: {
+function FirmwareAnalysisView({ onFirmwareSelect, onVersionClick, onManufacturerClick, onModelClick }: {
   onFirmwareSelect?: (version: string) => void
+  onVersionClick?: (version: string) => void
   onManufacturerClick?: (name: string) => void
   onModelClick?: (name: string) => void
 }) {
@@ -2532,9 +2534,9 @@ function FirmwareAnalysisView({ onFirmwareSelect, onManufacturerClick, onModelCl
                     <TableCell className="text-sm">{fw.manufacturer}</TableCell>
                     <TableCell className="text-sm">{fw.model}</TableCell>
                     <TableCell>
-                      {onFirmwareSelect ? (
+                      {onVersionClick ? (
                         <button
-                          onClick={() => onFirmwareSelect(fw.version)}
+                          onClick={() => onVersionClick(fw.version)}
                           className="font-mono text-xs text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 transition-colors"
                         >{fw.version}</button>
                       ) : (
