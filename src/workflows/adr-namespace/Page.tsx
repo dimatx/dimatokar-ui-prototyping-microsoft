@@ -680,15 +680,14 @@ export default function AdrNamespacePage() {
               className="gap-1.5 text-xs relative"
               onClick={(e) => {
                 e.stopPropagation()
-                setShowHubPicker(true)
+                navigateTo('iot-hub')
               }}
-              disabled={unlinkedHubs.length === 0}
             >
               <span className="absolute -right-2 -top-2 z-10 rounded-full border border-orange-300 bg-orange-50 px-1.5 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase shadow-sm">
                 try me
               </span>
-              <Plus className="h-3.5 w-3.5" />
-              Add Linked Hub
+              <Server className="h-3.5 w-3.5" />
+              Manage Hubs
             </Button>
           }
         />
