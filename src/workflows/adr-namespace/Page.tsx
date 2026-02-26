@@ -419,11 +419,13 @@ export default function AdrNamespacePage() {
   const [activeMenuItem, setActiveMenuItem] = useState<string>('')
   const [firmwareTarget, setFirmwareTarget] = useState<string | null>(null)
   const [devicePrefilter, setDevicePrefilter] = useState<string>('')
+  const [deviceFirmwarePrefilter, setDeviceFirmwarePrefilter] = useState<string>('')
 
-  const navigateTo = (id: string, opts?: { firmware?: string; deviceFilter?: string }) => {
+  const navigateTo = (id: string, opts?: { firmware?: string; deviceFilter?: string; firmwareVersionFilter?: string }) => {
     setActiveMenuItem(id)
     setFirmwareTarget(opts?.firmware ?? null)
     setDevicePrefilter(opts?.deviceFilter ?? '')
+    setDeviceFirmwarePrefilter(opts?.firmwareVersionFilter ?? '')
   }
 
   // Simulate per-hub progress ticking for running jobs
@@ -528,8 +530,9 @@ export default function AdrNamespacePage() {
         <AssetsView key="assets" />
       ) : activeMenuItem === 'devices' ? (
         <DevicesView
-          key={`devices-${devicePrefilter}`}
+          key={`devices-${devicePrefilter}-${deviceFirmwarePrefilter}`}
           initialSearch={devicePrefilter}
+          initialFirmwareFilter={deviceFirmwarePrefilter}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
         />
       ) : activeMenuItem === 'iot-hub' ? (
@@ -542,7 +545,7 @@ export default function AdrNamespacePage() {
         <FirmwareAnalysisView
           key="firmware"
           onFirmwareSelect={(v) => setFirmwareTarget(v)}
-          onVersionClick={(v) => navigateTo('devices', { deviceFilter: v })}
+          onVersionClick={(v) => navigateTo('devices', { firmwareVersionFilter: v })}
           onManufacturerClick={(m) => navigateTo('devices', { deviceFilter: m })}
           onModelClick={(m) => navigateTo('devices', { deviceFilter: m })}
         />
@@ -1586,6 +1589,7 @@ function AssetsView() {
 
 const DEVICE_STATUSES_FILTER = ['Healthy', 'Degraded', 'Unhealthy', 'Unknown']
 const CONNECTIVITY_OPTIONS = ['Connected', 'Disconnected', 'Never Connected']
+const DEVICE_FIRMWARE_VERSIONS = [...new Set(mockDevices.map(d => d.firmware).filter(f => f !== '\u2014'))].sort()
 const DEVICE_SORT_FIELDS = [
   { field: 'id', label: 'Device ID', cls: 'w-[90px]' },
   { field: 'name', label: 'Name' },
@@ -1604,10 +1608,11 @@ const DEVICE_ACTIONS = [
   { id: 'update-firmware', label: 'Update Firmware', icon: Upload, cls: 'text-blue-700' },
 ]
 
-function DevicesView({ initialSearch = '', onFirmwareSelect }: { initialSearch?: string; onFirmwareSelect?: (version: string) => void }) {
+function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwareSelect }: { initialSearch?: string; initialFirmwareFilter?: string; onFirmwareSelect?: (version: string) => void }) {
   const [search, setSearch] = useState(initialSearch)
   const [statusFilter, setStatusFilter] = useState('all')
   const [connectivityFilter, setConnectivityFilter] = useState('all')
+  const [firmwareFilter, setFirmwareFilter] = useState(initialFirmwareFilter)
   const [sort, setSort] = useState({ field: 'id', dir: 'asc' })
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [pendingAction, setPendingAction] = useState<string | null>(null)
@@ -1626,13 +1631,14 @@ function DevicesView({ initialSearch = '', onFirmwareSelect }: { initialSearch?:
     }
     if (statusFilter !== 'all') rows = rows.filter(d => d.status === statusFilter)
     if (connectivityFilter !== 'all') rows = rows.filter(d => d.connectivity === connectivityFilter)
+    if (firmwareFilter !== 'all' && firmwareFilter !== '') rows = rows.filter(d => d.firmware === firmwareFilter)
     return [...rows].sort((a, b) => {
       const av = (a as Record<string, string>)[sort.field] ?? ''
       const bv = (b as Record<string, string>)[sort.field] ?? ''
       const cmp = av < bv ? -1 : av > bv ? 1 : 0
       return sort.dir === 'asc' ? cmp : -cmp
     })
-  }, [search, statusFilter, connectivityFilter, sort])
+  }, [search, statusFilter, connectivityFilter, firmwareFilter, sort])
 
   const allSelected = filtered.length > 0 && filtered.every(d => selected.has(d.id))
   const someSelected = !allSelected && filtered.some(d => selected.has(d.id))
@@ -1715,6 +1721,20 @@ function DevicesView({ initialSearch = '', onFirmwareSelect }: { initialSearch?:
                   connectivityFilter === c ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
                 }`}
               >{c === 'all' ? 'All connectivity' : c}</button>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="text-xs text-muted-foreground pr-0.5">FW:</span>
+            {['all', ...DEVICE_FIRMWARE_VERSIONS].map(v => (
+              <button
+                key={v}
+                onClick={() => setFirmwareFilter(v === 'all' ? '' : v)}
+                className={`px-2.5 py-1 rounded-md text-xs font-mono font-medium border transition-colors ${
+                  (v === 'all' ? firmwareFilter === '' || firmwareFilter === 'all' : firmwareFilter === v)
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'border-slate-200 text-slate-600 hover:bg-muted/50'
+                }`}
+              >{v === 'all' ? 'All' : v}</button>
             ))}
           </div>
           <span className="ml-auto text-xs text-muted-foreground">
