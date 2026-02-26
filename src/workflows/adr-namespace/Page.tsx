@@ -26,6 +26,7 @@ import {
   FileText,
   ExternalLink,
   Users,
+  LayoutDashboard,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -73,10 +74,10 @@ const initialServices: NamespaceService[] = [
   { name: 'Provisioning', icon: Upload, status: 'Healthy', instanceName: 'dps-zava-tx-01' },
   { name: 'Certificate Management', icon: KeyRound, status: 'Healthy', configurable: true, instanceName: 'certmgr-zava-tx-01' },
   { name: 'Device Update', icon: RefreshCw, status: 'Healthy', configurable: true },
+  { name: 'Firmware Analysis', icon: Shield, status: 'Healthy', configurable: true, instanceName: 'fwa-zava-tx-01' },
 ]
 
 const addableServices: NamespaceService[] = [
-  { name: 'Firmware Analysis', icon: Shield, status: 'Disabled', configurable: true, description: 'Scan firmware images for known vulnerabilities' },
   { name: 'Future 3P Integration', icon: Puzzle, status: 'Disabled', configurable: true, description: 'Connect third-party services to the namespace' },
 ]
 
@@ -147,6 +148,43 @@ const firmwareImages = [
     cves: { critical: 0, high: 0, medium: 0, low: 1 },
     devicesAffected: 1_400,
   },
+]
+
+// Derived chart data from firmwareImages
+const fwByManufacturer = [
+  { label: 'Contoso Wind Systems', value: 9_050, color: '#3b82f6' },
+  { label: 'Zephyr Sensors Inc.', value: 1_412, color: '#3b82f6' },
+  { label: 'AeroLogix Systems', value: 1_400, color: '#3b82f6' },
+  { label: 'Meridian Edge Tech.', value: 985, color: '#3b82f6' },
+]
+
+const fwByModel = [
+  { label: 'TurbineController-X700', value: 9_050, color: '#8b5cf6' },
+  { label: 'AnemometerPro-2400', value: 1_412, color: '#8b5cf6' },
+  { label: 'PitchController-5000', value: 1_400, color: '#8b5cf6' },
+  { label: 'EdgeGateway-1900', value: 985, color: '#8b5cf6' },
+]
+
+const cveBySeverity = [
+  { label: 'Critical', value: 3, color: '#dc2626' },
+  { label: 'High', value: 7, color: '#f97316' },
+  { label: 'Medium', value: 14, color: '#f59e0b' },
+  { label: 'Low', value: 19, color: '#94a3b8' },
+]
+
+const cveByName = [
+  { cve: 'CVE-2025-2841', severity: 'Critical', devices: 6_203, description: 'Remote code execution via crafted OTA payload' },
+  { cve: 'CVE-2024-9901', severity: 'Critical', devices: 985, description: 'Buffer overflow in MQTT client' },
+  { cve: 'CVE-2024-4812', severity: 'Critical', devices: 6_203, description: 'Improper cert validation in TLS handshake' },
+  { cve: 'CVE-2024-7723', severity: 'High', devices: 9_050, description: 'Heap use-after-free in firmware parser' },
+  { cve: 'CVE-2024-5612', severity: 'High', devices: 6_203, description: 'Privilege escalation via /proc traversal' },
+  { cve: 'CVE-2024-4401', severity: 'High', devices: 2_847, description: 'Weak RNG used for device key generation' },
+  { cve: 'CVE-2025-1099', severity: 'High', devices: 985, description: 'Command injection in diagnostic endpoint' },
+  { cve: 'CVE-2024-3301', severity: 'High', devices: 985, description: 'Unauthenticated REST API access' },
+  { cve: 'CVE-2024-6612', severity: 'Medium', devices: 9_050, description: 'Cleartext credentials in debug logs' },
+  { cve: 'CVE-2024-8831', severity: 'Medium', devices: 6_203, description: 'Missing input validation in config parser' },
+  { cve: 'CVE-2024-2201', severity: 'Medium', devices: 1_412, description: 'Side-channel timing vulnerability' },
+  { cve: 'CVE-2024-9102', severity: 'Medium', devices: 985, description: 'Path traversal in file upload handler' },
 ]
 
 const initialJobs = [
@@ -373,6 +411,8 @@ export default function AdrNamespacePage() {
         <IotHubView key="iot-hub" hubs={linkedHubs} onAddHub={() => setShowHubPicker(true)} unlinkedCount={unlinkedHubs.length} />
       ) : activeMenuItem === 'iot-ops' ? (
         <IotOpsView key="iot-ops" />
+      ) : activeMenuItem === 'firmware' ? (
+        <FirmwareAnalysisView key="firmware" />
       ) : (
       <motion.div key="main" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="space-y-8">
       {/* ── Header / Hero ────────────────────────────────────── */}
@@ -831,94 +871,7 @@ export default function AdrNamespacePage() {
         </div>
       </div>
 
-      {/* ── Firmware Analysis ────────────────────────────────── */}
-      <AnimatePresence>
-        {namespaceSvcs.some(s => s.name === 'Firmware Analysis' && s.status !== 'Disabled') && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold tracking-tight">Firmware Analysis</h2>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{firmwareImages.length} images</span>
-              </div>
-            </div>
-            <div className="rounded-lg border shadow-sm">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Firmware Image</TableHead>
-                    <TableHead>Manufacturer</TableHead>
-                    <TableHead>Model</TableHead>
-                    <TableHead>Version</TableHead>
-                    <TableHead>Vulnerabilities</TableHead>
-                    <TableHead>Devices Affected</TableHead>
-                    <TableHead className="w-[100px]" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {firmwareImages.map((fw) => {
-                    const totalCves = fw.cves.critical + fw.cves.high + fw.cves.medium + fw.cves.low
-                    return (
-                      <TableRow key={fw.file}>
-                        <TableCell className="font-mono text-xs text-muted-foreground">{fw.file}</TableCell>
-                        <TableCell className="text-sm">{fw.manufacturer}</TableCell>
-                        <TableCell className="text-sm">{fw.model}</TableCell>
-                        <TableCell className="font-mono text-xs">{fw.version}</TableCell>
-                        <TableCell>
-                          {totalCves === 0 ? (
-                            <span className="text-xs text-emerald-600 font-medium">Clean</span>
-                          ) : (
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {fw.cves.critical > 0 && (
-                                <span className="relative inline-flex items-center">
-                                  <span className="absolute inset-0 rounded-md bg-red-500 animate-ping opacity-75" />
-                                  <span className="relative inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold bg-red-600 text-white">
-                                    {fw.cves.critical} Critical
-                                  </span>
-                                </span>
-                              )}
-                              {fw.cves.high > 0 && (
-                                <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold bg-orange-500 text-white">
-                                  {fw.cves.high} High
-                                </span>
-                              )}
-                              {fw.cves.medium > 0 && (
-                                <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium bg-amber-100 text-amber-700 border border-amber-200">
-                                  {fw.cves.medium} Medium
-                                </span>
-                              )}
-                              {fw.cves.low > 0 && (
-                                <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
-                                  {fw.cves.low} Low
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm">{fw.devicesAffected.toLocaleString()}</TableCell>
-                        <TableCell>
-                          <button
-                            className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
-                            onClick={() => {}}
-                          >
-                            <FileText className="h-3 w-3" />
-                            Report
-                            <ExternalLink className="h-2.5 w-2.5" />
-                          </button>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Firmware Analysis moved to dedicated menu sub-view */}
 
       {/* ── New Job Wizard ───────────────────────────────────── */}
       <AnimatePresence>
@@ -1138,6 +1091,12 @@ export default function AdrNamespacePage() {
 
 const LEFT_MENU_SECTIONS = [
   {
+    title: 'Navigation',
+    items: [
+      { id: '', label: 'Dashboard', icon: LayoutDashboard },
+    ],
+  },
+  {
     title: 'ADR Resources',
     items: [
       { id: 'assets', label: 'Assets', icon: Cpu },
@@ -1214,7 +1173,7 @@ function LeftMenu({
                 {section.items.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => onItemClick(activeItem === item.id ? '' : item.id)}
+                    onClick={() => onItemClick(item.id)}
                     className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors whitespace-nowrap ${
                       activeItem === item.id
                         ? 'bg-blue-50 text-blue-700 font-medium'
@@ -1651,6 +1610,162 @@ function IotOpsView() {
             ))}
           </TableBody>
         </Table>
+      </div>
+    </motion.div>
+  )
+}
+
+/* ─── Firmware Analysis View ─────────────────────────────────── */
+
+const severityColor: Record<string, string> = {
+  Critical: '#dc2626', High: '#f97316', Medium: '#f59e0b', Low: '#94a3b8',
+}
+const severityBg: Record<string, string> = {
+  Critical: 'bg-red-600 text-white', High: 'bg-orange-500 text-white',
+  Medium: 'bg-amber-100 text-amber-700 border border-amber-200',
+  Low: 'bg-slate-100 text-slate-500 border border-slate-200',
+}
+
+function FirmwareAnalysisView() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="space-y-8"
+    >
+      <SubViewHeader title="Firmware Analysis" subtitle="Texas-Wind-Namespace" count={firmwareImages.length} />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ChartCard title="Affected Devices by Manufacturer">
+          <HBarChart data={fwByManufacturer} />
+        </ChartCard>
+        <ChartCard title="Affected Devices by Model">
+          <HBarChart data={fwByModel} />
+        </ChartCard>
+        <ChartCard title="CVEs by Severity">
+          <DonutChart segments={cveBySeverity} centerLabel="CVEs" />
+        </ChartCard>
+        <ChartCard title="Top CVEs by Affected Devices">
+          <div className="space-y-3 max-h-52 overflow-y-auto pr-1">
+            {cveByName.map((c) => (
+              <div key={c.cve}>
+                <div className="flex items-center justify-between mb-0.5">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ${severityBg[c.severity]}`}>
+                      {c.severity[0]}
+                    </span>
+                    <span className="font-mono text-[11px] truncate text-foreground">{c.cve}</span>
+                  </div>
+                  <span className="font-mono text-xs tabular-nums ml-2 shrink-0">{c.devices.toLocaleString()}</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${(c.devices / 12_847) * 100}%`, backgroundColor: severityColor[c.severity] }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </ChartCard>
+      </div>
+
+      <div>
+        <div className="mb-4 flex items-center gap-2">
+          <h2 className="text-base font-semibold">Firmware Images</h2>
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{firmwareImages.length} images</span>
+        </div>
+        <div className="rounded-lg border shadow-sm">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Firmware Image</TableHead>
+                <TableHead>Manufacturer</TableHead>
+                <TableHead>Model</TableHead>
+                <TableHead>Version</TableHead>
+                <TableHead>Vulnerabilities</TableHead>
+                <TableHead className="text-right">Devices Affected</TableHead>
+                <TableHead className="w-[100px]" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {firmwareImages.map((fw) => {
+                const totalCves = fw.cves.critical + fw.cves.high + fw.cves.medium + fw.cves.low
+                return (
+                  <TableRow key={fw.file}>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{fw.file}</TableCell>
+                    <TableCell className="text-sm">{fw.manufacturer}</TableCell>
+                    <TableCell className="text-sm">{fw.model}</TableCell>
+                    <TableCell className="font-mono text-xs">{fw.version}</TableCell>
+                    <TableCell>
+                      {totalCves === 0 ? (
+                        <span className="text-xs text-emerald-600 font-medium">Clean</span>
+                      ) : (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {fw.cves.critical > 0 && (
+                            <span className="relative inline-flex items-center">
+                              <span className="absolute inset-0 rounded-md bg-red-500 animate-ping opacity-75" />
+                              <span className="relative inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold bg-red-600 text-white">
+                                {fw.cves.critical} Critical
+                              </span>
+                            </span>
+                          )}
+                          {fw.cves.high > 0 && <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold bg-orange-500 text-white">{fw.cves.high} High</span>}
+                          {fw.cves.medium > 0 && <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium bg-amber-100 text-amber-700 border border-amber-200">{fw.cves.medium} Medium</span>}
+                          {fw.cves.low > 0 && <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-500 border border-slate-200">{fw.cves.low} Low</span>}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm">{fw.devicesAffected.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <button className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors">
+                        <FileText className="h-3 w-3" />
+                        Report
+                        <ExternalLink className="h-2.5 w-2.5" />
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* CVE Detail Table */}
+      <div>
+        <div className="mb-4 flex items-center gap-2">
+          <h2 className="text-base font-semibold">CVE Detail</h2>
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{cveByName.length} vulnerabilities</span>
+        </div>
+        <div className="rounded-lg border shadow-sm">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>CVE ID</TableHead>
+                <TableHead>Severity</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead className="text-right">Devices Affected</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {cveByName.map((c) => (
+                <TableRow key={c.cve}>
+                  <TableCell className="font-mono text-xs font-medium">{c.cve}</TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ${severityBg[c.severity]}`}>
+                      {c.severity}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{c.description}</TableCell>
+                  <TableCell className="text-right font-mono text-sm">{c.devices.toLocaleString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </motion.div>
   )
