@@ -791,64 +791,6 @@ export default function AdrNamespacePage() {
                   </TableBody>
                 </Table>
               </div>
-              {/* Hub mini charts */}
-              {(() => {
-                const healthy = linkedHubs.filter(h => h.status === 'Healthy').length
-                const degraded = linkedHubs.filter(h => h.status === 'Degraded').length
-                const other = linkedHubs.length - healthy - degraded
-                const byRegion = linkedHubs.reduce<Record<string, number>>((acc, h) => { acc[h.region] = (acc[h.region] ?? 0) + h.devices; return acc }, {})
-                const regionEntries = Object.entries(byRegion).sort((a, b) => b[1] - a[1])
-                const maxRegionDevices = Math.max(...regionEntries.map(r => r[1]))
-                const maxHubDevices = Math.max(...linkedHubs.filter(h => h.status !== 'Adding').map(h => h.devices))
-                return (
-                  <div className="grid grid-cols-3 gap-4 mt-4">
-                    {/* Health breakdown */}
-                    <div className="rounded-lg border p-4 space-y-3">
-                      <p className="text-xs font-medium text-muted-foreground">Hub Health</p>
-                      <SegBar segs={[
-                        { v: healthy, c: '#22c55e' },
-                        { v: degraded, c: '#f59e0b' },
-                        { v: other, c: '#94a3b8' },
-                      ]} />
-                      <div className="flex flex-wrap gap-x-4 gap-y-1">
-                        {healthy > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />{healthy} Healthy</span>}
-                        {degraded > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />{degraded} Degraded</span>}
-                        {other > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-slate-300 shrink-0" />{other} Other</span>}
-                      </div>
-                    </div>
-                    {/* Devices by region */}
-                    <div className="rounded-lg border p-4 space-y-3">
-                      <p className="text-xs font-medium text-muted-foreground">Devices by Region</p>
-                      <div className="space-y-2">
-                        {regionEntries.map(([region, count]) => (
-                          <div key={region}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-[11px] text-muted-foreground truncate max-w-[130px]">{region}</span>
-                              <span className="text-[11px] font-mono text-foreground ml-2">{count.toLocaleString()}</span>
-                            </div>
-                            <HBar value={count} max={maxRegionDevices} color="#6366f1" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    {/* Device load per hub */}
-                    <div className="rounded-lg border p-4 space-y-3">
-                      <p className="text-xs font-medium text-muted-foreground">Device Load per Hub</p>
-                      <div className="space-y-2">
-                        {linkedHubs.filter(h => h.status !== 'Adding').map(hub => (
-                          <div key={hub.name}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[120px]">{hub.name.replace('hub-', '')}</span>
-                              <span className="text-[11px] font-mono text-foreground ml-2">{hub.devices.toLocaleString()}</span>
-                            </div>
-                            <HBar value={hub.devices} max={maxHubDevices} color={hub.status === 'Degraded' ? '#f59e0b' : '#3b82f6'} />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })()}
             </motion.div>
           )}
         </AnimatePresence>
@@ -895,62 +837,6 @@ export default function AdrNamespacePage() {
                   </TableBody>
                 </Table>
               </div>
-              {/* AIO mini charts */}
-              {(() => {
-                const healthy = aioInstances.filter(i => i.status === 'Healthy').length
-                const degraded = aioInstances.filter(i => i.status === 'Degraded').length
-                const other = aioInstances.length - healthy - degraded
-                const maxDevices = Math.max(...aioInstances.map(i => i.connectedDevices))
-                const maxAssets  = Math.max(...aioInstances.map(i => i.assets))
-                return (
-                  <div className="grid grid-cols-3 gap-4 mt-4">
-                    {/* Instance health */}
-                    <div className="rounded-lg border p-4 space-y-3">
-                      <p className="text-xs font-medium text-muted-foreground">Instance Health</p>
-                      <SegBar segs={[
-                        { v: healthy, c: '#22c55e' },
-                        { v: degraded, c: '#f59e0b' },
-                        { v: other, c: '#94a3b8' },
-                      ]} />
-                      <div className="flex flex-wrap gap-x-4 gap-y-1">
-                        {healthy > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />{healthy} Healthy</span>}
-                        {degraded > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />{degraded} Degraded</span>}
-                        {other > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-slate-300 shrink-0" />{other} Other</span>}
-                      </div>
-                    </div>
-                    {/* Connected devices per instance */}
-                    <div className="rounded-lg border p-4 space-y-3">
-                      <p className="text-xs font-medium text-muted-foreground">Connected Devices</p>
-                      <div className="space-y-2">
-                        {aioInstances.map(inst => (
-                          <div key={inst.name}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[120px]">{inst.name.replace('aio-tx-', '')}</span>
-                              <span className="text-[11px] font-mono text-foreground ml-2">{inst.connectedDevices.toLocaleString()}</span>
-                            </div>
-                            <HBar value={inst.connectedDevices} max={maxDevices} color={inst.status === 'Degraded' ? '#f59e0b' : '#3b82f6'} />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    {/* Assets per instance */}
-                    <div className="rounded-lg border p-4 space-y-3">
-                      <p className="text-xs font-medium text-muted-foreground">Assets Managed</p>
-                      <div className="space-y-2">
-                        {aioInstances.map(inst => (
-                          <div key={inst.name}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[120px]">{inst.name.replace('aio-tx-', '')}</span>
-                              <span className="text-[11px] font-mono text-foreground ml-2">{inst.assets.toLocaleString()}</span>
-                            </div>
-                            <HBar value={inst.assets} max={maxAssets} color="#8b5cf6" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })()}
             </motion.div>
           )}
         </AnimatePresence>
@@ -2502,6 +2388,58 @@ function IotHubView({ hubs, onAddHub, unlinkedCount }: { hubs: Hub[]; onAddHub: 
           </TableBody>
         </Table>
       </div>
+      {/* Hub charts */}
+      {(() => {
+        const healthy = hubs.filter(h => h.status === 'Healthy').length
+        const degraded = hubs.filter(h => h.status === 'Degraded').length
+        const other = hubs.length - healthy - degraded
+        const byRegion = hubs.reduce<Record<string, number>>((acc, h) => { acc[h.region] = (acc[h.region] ?? 0) + h.devices; return acc }, {})
+        const regionEntries = Object.entries(byRegion).sort((a, b) => b[1] - a[1])
+        const maxRegion = Math.max(...regionEntries.map(r => r[1]))
+        const maxHub = Math.max(...hubs.filter(h => h.status !== 'Adding').map(h => h.devices))
+        if (hubs.length === 0) return null
+        return (
+          <div className="grid grid-cols-3 gap-4">
+            <div className="rounded-lg border p-4 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground">Hub Health</p>
+              <SegBar segs={[{ v: healthy, c: '#22c55e' }, { v: degraded, c: '#f59e0b' }, { v: other, c: '#94a3b8' }]} />
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {healthy > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />{healthy} Healthy</span>}
+                {degraded > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />{degraded} Degraded</span>}
+                {other > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-slate-300 shrink-0" />{other} Other</span>}
+              </div>
+            </div>
+            <div className="rounded-lg border p-4 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground">Devices by Region</p>
+              <div className="space-y-2">
+                {regionEntries.map(([region, count]) => (
+                  <div key={region}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] text-muted-foreground truncate max-w-[130px]">{region}</span>
+                      <span className="text-[11px] font-mono text-foreground ml-2">{count.toLocaleString()}</span>
+                    </div>
+                    <HBar value={count} max={maxRegion} color="#6366f1" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-lg border p-4 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground">Device Load per Hub</p>
+              <div className="space-y-2">
+                {hubs.filter(h => h.status !== 'Adding').map(hub => (
+                  <div key={hub.name}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[120px]">{hub.name.replace('hub-', '')}</span>
+                      <span className="text-[11px] font-mono text-foreground ml-2">{hub.devices.toLocaleString()}</span>
+                    </div>
+                    <HBar value={hub.devices} max={maxHub} color={hub.status === 'Degraded' ? '#f59e0b' : '#3b82f6'} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </motion.div>
   )
 }
@@ -2546,6 +2484,55 @@ function IotOpsView() {
           </TableBody>
         </Table>
       </div>
+      {/* AIO charts */}
+      {(() => {
+        const healthy = aioInstances.filter(i => i.status === 'Healthy').length
+        const degraded = aioInstances.filter(i => i.status === 'Degraded').length
+        const other = aioInstances.length - healthy - degraded
+        const maxDevices = Math.max(...aioInstances.map(i => i.connectedDevices))
+        const maxAssets  = Math.max(...aioInstances.map(i => i.assets))
+        return (
+          <div className="grid grid-cols-3 gap-4">
+            <div className="rounded-lg border p-4 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground">Instance Health</p>
+              <SegBar segs={[{ v: healthy, c: '#22c55e' }, { v: degraded, c: '#f59e0b' }, { v: other, c: '#94a3b8' }]} />
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {healthy > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />{healthy} Healthy</span>}
+                {degraded > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />{degraded} Degraded</span>}
+                {other > 0 && <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><span className="h-2 w-2 rounded-full bg-slate-300 shrink-0" />{other} Other</span>}
+              </div>
+            </div>
+            <div className="rounded-lg border p-4 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground">Connected Devices</p>
+              <div className="space-y-2">
+                {aioInstances.map(inst => (
+                  <div key={inst.name}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[130px]">{inst.name.replace('aio-tx-', '')}</span>
+                      <span className="text-[11px] font-mono text-foreground ml-2">{inst.connectedDevices.toLocaleString()}</span>
+                    </div>
+                    <HBar value={inst.connectedDevices} max={maxDevices} color={inst.status === 'Degraded' ? '#f59e0b' : '#3b82f6'} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-lg border p-4 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground">Assets Managed</p>
+              <div className="space-y-2">
+                {aioInstances.map(inst => (
+                  <div key={inst.name}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[130px]">{inst.name.replace('aio-tx-', '')}</span>
+                      <span className="text-[11px] font-mono text-foreground ml-2">{inst.assets.toLocaleString()}</span>
+                    </div>
+                    <HBar value={inst.assets} max={maxAssets} color="#8b5cf6" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </motion.div>
   )
 }

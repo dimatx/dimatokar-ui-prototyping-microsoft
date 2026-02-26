@@ -519,10 +519,18 @@ function StepJobType({
 }) {
   const [showMore, setShowMore] = useState(false)
 
-  const visibleTypes = showMore ? JOB_TYPES : JOB_TYPES_MAIN
+  // When Device Update is enabled, promote Software Update into the main list
+  const mainTypes = deviceUpdateEnabled
+    ? [...JOB_TYPES_MAIN, JOB_TYPES_MORE.find(t => t.id === 'software-update')!]
+    : JOB_TYPES_MAIN
+  const extraTypes = deviceUpdateEnabled
+    ? JOB_TYPES_MORE.filter(t => t.id !== 'software-update')
+    : JOB_TYPES_MORE
+
+  const visibleTypes = showMore ? [...mainTypes, ...extraTypes] : mainTypes
 
   // If the selected job is in the "more" section, always show all types
-  const hasMoreSelected = JOB_TYPES_MORE.some((t) => t.id === selected)
+  const hasMoreSelected = extraTypes.some((t) => t.id === selected)
 
   useEffect(() => {
     if (hasMoreSelected) setShowMore(true)
@@ -600,7 +608,7 @@ function StepJobType({
         className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
         <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showMore ? 'rotate-180' : ''}`} />
-        {showMore ? 'Show fewer job types' : `Show ${JOB_TYPES_MORE.length} more job type${JOB_TYPES_MORE.length !== 1 ? 's' : ''}`}
+        {showMore ? 'Show fewer job types' : `Show ${extraTypes.length} more job type${extraTypes.length !== 1 ? 's' : ''}`}
       </button>
 
       {/* Separator + Copy from Existing */}
