@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { StatusBadge } from '@/components/StatusBadge'
 import { ALL_JOBS, JobRecord } from '@/workflows/adr-namespace/jobData'
 import { NewJobWizard } from '@/workflows/adr-namespace/NewJobWizard'
-import type { JobPrefill } from '@/workflows/adr-namespace/NewJobWizard'
+import type { JobPrefill, CreatedJob } from '@/workflows/adr-namespace/NewJobWizard'
 import type { Hub } from '@/workflows/adr-namespace/Page'
 // ─── Map job display type → wizard job-type id ───────────────────────────────
 const TYPE_TO_WIZARD_ID: Record<string, string> = {
@@ -137,6 +137,70 @@ function JobListContent({ navigate, showBackNav, deviceUpdateEnabled = false }: 
 
   const [showWizard, setShowWizard] = useState(false)
   const [wizardPrefill, setWizardPrefill] = useState<JobPrefill | undefined>(undefined)
+  const [createdJobs, setCreatedJobs] = useState<JobRecord[]>([])
+
+  function handleJobCreate(job: CreatedJob) {
+    const totalDevices = job.hubProgress ? job.hubProgress.reduce((s, h) => s + h.total, 0) : 0
+    const newRecord: JobRecord = {
+      id: job.id,
+      name: job.name,
+      type: job.type,
+      status: 'Running',
+      namespace: 'Texas-Wind-Namespace',
+      targetMode: 'namespace',
+      targetName: 'Texas-Wind-Namespace',
+      targetDevices: totalDevices,
+      scheduleMode: 'now',
+      priority: '5',
+      started: 'Just now',
+      startedIso: new Date().toISOString(),
+      createdBy: 'dima@zava.energy',
+      devices: { succeeded: 0, pending: totalDevices, failed: 0 },
+      hubProgress: (job.hubProgress ?? []).map(hp => ({
+        hubName: hp.hubName,
+        total: hp.total,
+        succeeded: 0,
+        failed: 0,
+        pending: hp.total,
+        status: 'Running' as const,
+      })),
+      timeline: [{ time: 'Just now', event: 'Job created', detail: `Created by dima@zava.energy`, type: 'start' }],
+    }
+    setCreatedJobs(prev => [newRecord, ...prev])
+    setShowWizard(false)
+  }
+
+  // Simulate progress on running created jobs
+  useEffect(() => {
+    const running = createdJobs.filter(j => j.status === 'Running')
+    if (running.length === 0) return
+    const interval = setInterval(() => {
+      setCreatedJobs(prev => prev.map(job => {
+        if (job.status !== 'Running') return job
+        const updatedHubs = job.hubProgress.map(hp => {
+          if (hp.status === 'Completed' || hp.status === 'Failed') return hp
+          const increment = Math.floor(Math.random() * Math.ceil(hp.total * 0.12)) + Math.ceil(hp.total * 0.05)
+          const newSucceeded = Math.min(hp.succeeded + increment, hp.total)
+          return {
+            ...hp,
+            succeeded: newSucceeded,
+            pending: hp.total - newSucceeded - hp.failed,
+            status: (newSucceeded >= hp.total ? 'Completed' : 'Running') as 'Completed' | 'Running',
+          }
+        })
+        const totalSucceeded = updatedHubs.reduce((s, h) => s + h.succeeded, 0)
+        const totalFailed = updatedHubs.reduce((s, h) => s + h.failed, 0)
+        const allDone = updatedHubs.every(h => h.status === 'Completed' || h.status === 'Failed')
+        return {
+          ...job,
+          hubProgress: updatedHubs,
+          devices: { succeeded: totalSucceeded, failed: totalFailed, pending: job.targetDevices - totalSucceeded - totalFailed },
+          status: allDone ? 'Completed' : 'Running',
+        }
+      }))
+    }, 2_000)
+    return () => clearInterval(interval)
+  }, [createdJobs])
 
   function openNewJob() {
     setWizardPrefill(undefined)
@@ -175,8 +239,10 @@ function JobListContent({ navigate, showBackNav, deviceUpdateEnabled = false }: 
     setSearch(''); setStatusFilter([]); setTypeFilter([])
   }
 
+  const allJobs = useMemo(() => [...createdJobs, ...ALL_JOBS], [createdJobs])
+
   const filtered = useMemo(() => {
-    let jobs = [...ALL_JOBS]
+    let jobs = [...allJobs]
     if (search.trim()) {
       const q = search.toLowerCase()
       jobs = jobs.filter(j => j.id.toLowerCase().includes(q) || j.name.toLowerCase().includes(q))
@@ -199,13 +265,13 @@ function JobListContent({ navigate, showBackNav, deviceUpdateEnabled = false }: 
       return 0
     })
     return jobs
-  }, [search, statusFilter, typeFilter, sort])
+  }, [allJobs, search, statusFilter, typeFilter, sort])
 
   const counts = {
-    running: ALL_JOBS.filter(j => j.status === 'Running').length,
-    completed: ALL_JOBS.filter(j => j.status === 'Completed').length,
-    failed: ALL_JOBS.filter(j => j.status === 'Failed').length,
-    scheduled: ALL_JOBS.filter(j => j.status === 'Scheduled').length,
+    running: allJobs.filter(j => j.status === 'Running').length,
+    completed: allJobs.filter(j => j.status === 'Completed').length,
+    failed: allJobs.filter(j => j.status === 'Failed').length,
+    scheduled: allJobs.filter(j => j.status === 'Scheduled').length,
   }
 
   const hasFilters = search.trim() || statusFilter.length || typeFilter.length
@@ -448,7 +514,7 @@ function JobListContent({ navigate, showBackNav, deviceUpdateEnabled = false }: 
             prefill={wizardPrefill}
             deviceUpdateEnabled={deviceUpdateEnabled}
             onClose={() => setShowWizard(false)}
-            onCreate={() => setShowWizard(false)}
+            onCreate={handleJobCreate}
           />
         )}
       </AnimatePresence>
