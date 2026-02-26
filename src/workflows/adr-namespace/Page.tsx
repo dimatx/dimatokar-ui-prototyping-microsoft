@@ -1847,7 +1847,7 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
                   : 'border-slate-200 text-slate-600 hover:bg-muted/50'
               }`}
             >
-              <span className="font-mono">{fwLabel}</span>
+              <span>{fwLabel}</span>
               {firmwareVersions.size > 0 && (
                 <span
                   className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none"
