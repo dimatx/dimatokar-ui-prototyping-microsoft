@@ -920,14 +920,15 @@ export default function AdrNamespacePage() {
       <motion.div key="main" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="space-y-8">
       {/* ── Header / Hero ────────────────────────────────────── */}
       <div className="flex items-start justify-between">
-        <div className="space-y-1">
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Azure Device Registry</p>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
               <Wind className="h-5 w-5" />
             </div>
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">{namespace.name}</h1>
-              <p className="text-sm text-muted-foreground">ADR Namespace</p>
+              <p className="text-sm text-muted-foreground">Namespace</p>
             </div>
           </div>
         </div>
