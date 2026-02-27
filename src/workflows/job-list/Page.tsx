@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Search, ChevronUp, ChevronDown, CheckCircle2, Loader2,
-  XCircle, Clock, Play, RotateCcw, Copy,
+  XCircle, Clock, Play, RotateCcw, Copy, Activity,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -288,10 +288,10 @@ function JobListContent({ navigate, showBackNav, deviceUpdateEnabled = false }: 
       className="max-w-6xl mx-auto space-y-6"
     >
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {showBackNav && (
-            <>
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-3">
+          {showBackNav ? (
+            <div className="flex items-center gap-3 mt-1">
               <button
                 onClick={() => navigate('/adr-namespace')}
                 className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors"
@@ -301,6 +301,16 @@ function JobListContent({ navigate, showBackNav, deviceUpdateEnabled = false }: 
               </button>
               <span className="text-slate-300">/</span>
               <span className="text-sm font-semibold text-slate-900">Jobs</span>
+            </div>
+          ) : (
+            <>
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+                <Activity className="h-5 w-5 text-slate-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight">Jobs</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">Texas-Wind-Namespace</p>
+              </div>
             </>
           )}
         </div>
@@ -310,13 +320,15 @@ function JobListContent({ navigate, showBackNav, deviceUpdateEnabled = false }: 
         </Button>
       </div>
 
-      {/* Page title */}
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Jobs</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          All jobs in <span className="font-medium text-slate-700">Texas-Wind-Namespace</span> — sorted by most recent
-        </p>
-      </div>
+      {/* Page title — standalone only */}
+      {showBackNav && (
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Jobs</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            All jobs in <span className="font-medium text-slate-700">Texas-Wind-Namespace</span> — sorted by most recent
+          </p>
+        </div>
+      )}
 
       {/* Stat cards */}
       <div className="grid grid-cols-4 gap-4">
