@@ -2110,7 +2110,7 @@ function CreateGroupWizard({ onClose, onCreate }: { onClose: () => void; onCreat
                   className="text-xs font-medium cursor-pointer select-none hover:text-blue-600 transition-colors"
                   title="Click to autofill"
                   onClick={() => setDraft(d => ({ ...d, freeQuery: 'devices that have not reported telemetry in the last 24 hours' }))}
-                >Additional Query (plain English)</label>
+                >Additional Query</label>
                 <textarea value={draft.freeQuery} onChange={e => setDraft(d => ({ ...d, freeQuery: e.target.value }))}
                   placeholder="e.g. devices that have not reported telemetry in the last 24 hours"
                   rows={2}
