@@ -1092,7 +1092,7 @@ export default function AdrNamespacePage() {
             >
               <div className="flex items-center justify-between border-b px-6 py-4">
                 <div>
-                  <h3 className="text-base font-semibold">Add Linked Hub</h3>
+                  <h3 className="text-base font-semibold">Add Existing Hub</h3>
                   <p className="text-sm text-muted-foreground">Select an existing hub to link to this namespace</p>
                 </div>
                 <button
@@ -3010,16 +3010,26 @@ function IotHubView({ hubs, onAddHub, unlinkedCount }: { hubs: Hub[]; onAddHub: 
     >
       <div className="flex items-center justify-between">
         <SubViewHeader title="IoT Hubs" count={hubs.length} subtitle="Texas-Wind-Namespace" />
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5 text-xs"
-          onClick={onAddHub}
-          disabled={unlinkedCount === 0}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add Linked Hub
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={onAddHub}
+            disabled={unlinkedCount === 0}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Existing Hub
+          </Button>
+          <Button
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={() => window.open('https://portal.azure.com', '_blank')}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Add New Hub
+          </Button>
+        </div>
       </div>
       {/* Hub charts */}
       {(() => {
@@ -3112,11 +3122,21 @@ function IotOpsView() {
       transition={{ duration: 0.25 }}
       className="space-y-8"
     >
-      <SubViewHeader
-        title={<><span className="whitespace-nowrap">IoT&nbsp;Operations</span> Instances</>}
-        count={aioInstances.length}
-        subtitle="Texas-Wind-Namespace"
-      />
+      <div className="flex items-center justify-between">
+        <SubViewHeader
+          title={<><span className="whitespace-nowrap">IoT&nbsp;Operations</span> Instances</>}
+          count={aioInstances.length}
+          subtitle="Texas-Wind-Namespace"
+        />
+        <Button
+          size="sm"
+          className="gap-1.5 text-xs"
+          onClick={() => window.open('https://portal.azure.com', '_blank')}
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          Deploy new IoT Operations instance
+        </Button>
+      </div>
       {/* AIO charts */}
       {(() => {
         const healthy = aioInstances.filter(i => i.status === 'Healthy').length
