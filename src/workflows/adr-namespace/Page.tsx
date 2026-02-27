@@ -2170,7 +2170,7 @@ function GroupsView({ onGroupSelect }: { onGroupSelect?: (id: string) => void })
           <DonutChart segments={[
             { label: 'Device Groups', value: deviceGroups.length, color: '#3b82f6' },
             { label: 'Asset Groups',  value: assetGroups.length,  color: '#8b5cf6' },
-          ]} centerLabel="Groups" />
+          ]} centerLabel="Groups" legendBelow />
         </ChartCard>
         <ChartCard title="Member Count by Group">
           <HBarChart data={groups.slice(0, 6).map(g => ({
