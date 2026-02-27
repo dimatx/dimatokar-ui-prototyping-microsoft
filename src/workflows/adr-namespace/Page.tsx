@@ -588,6 +588,7 @@ export default function AdrNamespacePage() {
   }
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -880,134 +881,6 @@ export default function AdrNamespacePage() {
 
       {/* Jobs + Firmware Analysis moved to dedicated menu sub-views */}
 
-      {/* ── Service Config Dialog ────────────────────────────── */}
-      {svcConfigTarget && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setSvcConfigTarget(null)}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-            className="w-full max-w-sm rounded-xl border bg-white shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b px-6 py-4">
-              <div>
-                <h3 className="text-base font-semibold">Configure {svcConfigTarget.name}</h3>
-                <p className="text-sm text-muted-foreground">Manage service availability</p>
-              </div>
-              <button
-                onClick={() => setSvcConfigTarget(null)}
-                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="px-6 py-5 space-y-4">
-              <div className="flex items-center justify-between rounded-lg border p-4">
-                <div>
-                  <p className="text-sm font-medium">Service Status</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {svcConfigTarget.status === 'Disabled'
-                      ? 'This service is currently disabled for the namespace.'
-                      : svcConfigTarget.status === 'Enabling'
-                      ? 'This service is being enabled…'
-                      : 'This service is active and healthy.'}
-                  </p>
-                  {svcConfigTarget.instanceName && svcConfigTarget.status !== 'Disabled' && (
-                    <p className="text-xs font-mono text-muted-foreground mt-1">{svcConfigTarget.instanceName}</p>
-                  )}
-                </div>
-                <StatusBadge status={svcConfigTarget.status} />
-              </div>
-              {svcConfigTarget.status === 'Enabling' ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Enabling service…
-                </div>
-              ) : svcConfigTarget.status === 'Disabled' ? (
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-foreground">Instance Name</label>
-                    <select
-                      value={enableInstanceName}
-                      onChange={(e) => setEnableInstanceName(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono"
-                    >
-                      {(INSTANCE_NAME_OPTIONS[svcConfigTarget.name] ?? []).map(n => (
-                        <option key={n} value={n}>{n}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <Button
-                    className="w-full gap-2"
-                    disabled={!enableInstanceName}
-                    onClick={() => {
-                      const name = svcConfigTarget.name
-                      const inst = enableInstanceName
-                      setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Enabling', instanceName: inst } : s))
-                      setSvcConfigTarget(prev => prev ? { ...prev, status: 'Enabling', instanceName: inst } : null)
-                      setTimeout(() => {
-                        setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Healthy' } : s))
-                        setSvcConfigTarget(prev => prev && prev.name === name ? { ...prev, status: 'Healthy' } : prev)
-                      }, 3_000)
-                    }}
-                  >
-                    <Activity className="h-4 w-4" />
-                    Enable {svcConfigTarget.name}
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label
-                      className="text-xs font-medium text-foreground cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
-                      onClick={() => setDisableConfirmText('disable')}
-                      title="Click to fill"
-                    >
-                      Type <span className="font-mono text-red-600">disable</span> to confirm
-                      <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span>
-                    </label>
-                    <Input
-                      value={disableConfirmText}
-                      onChange={(e) => setDisableConfirmText(e.target.value)}
-                      placeholder="disable"
-                      className="h-8 text-sm font-mono"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && disableConfirmText === 'disable') {
-                          const name = svcConfigTarget.name
-                          setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Disabled', instanceName: undefined } : s))
-                          setSvcConfigTarget(prev => prev ? { ...prev, status: 'Disabled', instanceName: undefined } : null)
-                          setDisableConfirmText('')
-                        }
-                      }}
-                    />
-                  </div>
-                  <Button
-                    variant="outline"
-                    className="w-full gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                    disabled={disableConfirmText !== 'disable'}
-                    onClick={() => {
-                      const name = svcConfigTarget.name
-                      setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Disabled', instanceName: undefined } : s))
-                      setSvcConfigTarget(prev => prev ? { ...prev, status: 'Disabled', instanceName: undefined } : null)
-                      setDisableConfirmText('')
-                    }}
-                  >
-                    Disable {svcConfigTarget.name}
-                  </Button>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-
       {/* ── Add Service Dialog ───────────────────────────────── */}
       {showAddService && createPortal(
         <motion.div
@@ -1222,6 +1095,135 @@ export default function AdrNamespacePage() {
       )}
       </div>
     </motion.div>
+
+    {/* ── Service Config Dialog (outside motion.div to avoid transform containing block) ── */}
+    {svcConfigTarget && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+        onClick={() => setSvcConfigTarget(null)}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+          className="w-full max-w-sm rounded-xl border bg-white shadow-xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between border-b px-6 py-4">
+            <div>
+              <h3 className="text-base font-semibold">Configure {svcConfigTarget.name}</h3>
+              <p className="text-sm text-muted-foreground">Manage service availability</p>
+            </div>
+            <button
+              onClick={() => setSvcConfigTarget(null)}
+              className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="px-6 py-5 space-y-4">
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div>
+                <p className="text-sm font-medium">Service Status</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {svcConfigTarget.status === 'Disabled'
+                    ? 'This service is currently disabled for the namespace.'
+                    : svcConfigTarget.status === 'Enabling'
+                    ? 'This service is being enabled…'
+                    : 'This service is active and healthy.'}
+                </p>
+                {svcConfigTarget.instanceName && svcConfigTarget.status !== 'Disabled' && (
+                  <p className="text-xs font-mono text-muted-foreground mt-1">{svcConfigTarget.instanceName}</p>
+                )}
+              </div>
+              <StatusBadge status={svcConfigTarget.status} />
+            </div>
+            {svcConfigTarget.status === 'Enabling' ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Enabling service…
+              </div>
+            ) : svcConfigTarget.status === 'Disabled' ? (
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground">Instance Name</label>
+                  <select
+                    value={enableInstanceName}
+                    onChange={(e) => setEnableInstanceName(e.target.value)}
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono"
+                  >
+                    {(INSTANCE_NAME_OPTIONS[svcConfigTarget.name] ?? []).map(n => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
+                <Button
+                  className="w-full gap-2"
+                  disabled={!enableInstanceName}
+                  onClick={() => {
+                    const name = svcConfigTarget.name
+                    const inst = enableInstanceName
+                    setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Enabling', instanceName: inst } : s))
+                    setSvcConfigTarget(prev => prev ? { ...prev, status: 'Enabling', instanceName: inst } : null)
+                    setTimeout(() => {
+                      setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Healthy' } : s))
+                      setSvcConfigTarget(prev => prev && prev.name === name ? { ...prev, status: 'Healthy' } : prev)
+                    }, 3_000)
+                  }}
+                >
+                  <Activity className="h-4 w-4" />
+                  Enable {svcConfigTarget.name}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label
+                    className="text-xs font-medium text-foreground cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
+                    onClick={() => setDisableConfirmText('disable')}
+                    title="Click to fill"
+                  >
+                    Type <span className="font-mono text-red-600">disable</span> to confirm
+                    <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span>
+                  </label>
+                  <Input
+                    value={disableConfirmText}
+                    onChange={(e) => setDisableConfirmText(e.target.value)}
+                    placeholder="disable"
+                    className="h-8 text-sm font-mono"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && disableConfirmText === 'disable') {
+                        const name = svcConfigTarget.name
+                        setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Disabled', instanceName: undefined } : s))
+                        setSvcConfigTarget(prev => prev ? { ...prev, status: 'Disabled', instanceName: undefined } : null)
+                        setDisableConfirmText('')
+                      }
+                    }}
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                  disabled={disableConfirmText !== 'disable'}
+                  onClick={() => {
+                    const name = svcConfigTarget.name
+                    setNamespaceSvcs(prev => prev.map(s => s.name === name ? { ...s, status: 'Disabled', instanceName: undefined } : s))
+                    setSvcConfigTarget(prev => prev ? { ...prev, status: 'Disabled', instanceName: undefined } : null)
+                    setDisableConfirmText('')
+                  }}
+                >
+                  Disable {svcConfigTarget.name}
+                </Button>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    )}
+    </>
   )
 }
 
