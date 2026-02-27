@@ -42,6 +42,8 @@ import {
   BarChart2,
   Network,
   ClipboardList,
+  Zap,
+  Trash2,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -55,7 +57,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { NewJobWizard, type CreatedJob } from './NewJobWizard'
+import { NewJobWizard, type CreatedJob, type JobPrefill } from './NewJobWizard'
 import { JobListEmbedded } from '@/workflows/job-list/Page'
 import JobDetailPage from '@/workflows/job-detail/Page'
 
@@ -83,7 +85,7 @@ const INSTANCE_NAME_OPTIONS: Record<string, string[]> = {
   'Provisioning': ['dps-zava-tx-01', 'dps-zava-tx-02', 'dps-zava-global'],
   'Certificate Management': ['certmgr-zava-tx-01', 'certmgr-zava-prod', 'certmgr-zava-internal'],
   'Device Update': ['adu-zava-tx-01', 'adu-zava-prod-01', 'adu-zava-staging'],
-  'OTA Management': ['fwa-zava-tx-01', 'fwa-zava-prod-01'],
+  'Firmware Analysis': ['fwa-zava-tx-01', 'fwa-zava-prod-01'],
   'Future 3P Integration': ['3p-zava-tx-01', '3p-zava-dev-01'],
 }
 
@@ -91,7 +93,7 @@ const initialServices: NamespaceService[] = [
   { name: 'Provisioning', icon: Upload, status: 'Healthy', instanceName: 'dps-zava-tx-01' },
   { name: 'Certificate Management', icon: KeyRound, status: 'Healthy', configurable: true, instanceName: 'certmgr-zava-tx-01' },
   { name: 'Device Update', icon: RefreshCw, status: 'Healthy', configurable: true },
-  { name: 'OTA Management', icon: Shield, status: 'Healthy', configurable: true, instanceName: 'fwa-zava-tx-01' },
+  { name: 'Firmware Analysis', icon: Shield, status: 'Healthy', configurable: true, instanceName: 'fwa-zava-tx-01' },
 ]
 
 const addableServices: NamespaceService[] = [
@@ -450,6 +452,7 @@ const ID_TO_SEGMENT: Record<string, string> = {
   'jobs':           'jobs',
   'device-update':  'device-update',
   'firmware':       'firmware',
+  'ota-management': 'ota-management',
   'iot-hub':        'iot-hubs',
   'iot-ops':        'iot-ops',
   '3p':             '3p',
@@ -503,6 +506,7 @@ export default function AdrNamespacePage() {
   const [hubConfirmText, setHubConfirmText] = useState('')
   const [jobs, setJobs] = useState<CreatedJob[]>(initialJobs)
   const [runJobTarget, setRunJobTarget] = useState<{ ids: string[]; names: Record<string, string>; source: 'Devices' | 'Assets' } | null>(null)
+  const [jobPrefill, setJobPrefill] = useState<JobPrefill | null>(null)
 
   // Services state
   const [namespaceSvcs, setNamespaceSvcs] = useState<NamespaceService[]>(initialServices)
@@ -744,6 +748,12 @@ export default function AdrNamespacePage() {
         <IotHubView key="iot-hub" hubs={linkedHubs} onAddHub={() => setShowHubPicker(true)} unlinkedCount={unlinkedHubs.length} />
       ) : activeMenuItem === 'iot-ops' ? (
         <IotOpsView key="iot-ops" />
+      ) : activeMenuItem === 'ota-management' ? (
+        <OtaManagementView
+          key="ota-management"
+          onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
+          onDeploy={(prefill) => setJobPrefill(prefill)}
+        />
       ) : activeMenuItem === 'firmware' && firmwareTarget ? (
         <FirmwareDetailView
           key={`fw-${firmwareTarget}`}
@@ -881,7 +891,7 @@ export default function AdrNamespacePage() {
               'Certificate Management': 'cert-mgmt',
               'Device Update': 'device-update',
               'IoT Operations': 'iot-ops',
-              'OTA Management': 'firmware',
+              'Firmware Analysis': 'firmware',
             }
             const navId = SVC_NAV_ID[svc.name]
             return (
@@ -1255,6 +1265,19 @@ export default function AdrNamespacePage() {
         />,
         document.body
       )}
+      {jobPrefill && createPortal(
+        <NewJobWizard
+          linkedHubs={linkedHubs}
+          aioInstances={[]}
+          totalAssets={namespace.totalAssets}
+          existingJobs={jobs}
+          prefill={jobPrefill}
+          onClose={() => setJobPrefill(null)}
+          onCreate={(job) => { setJobs(prev => [job, ...prev]); setJobPrefill(null) }}
+          deviceUpdateEnabled={deviceUpdateEnabled}
+        />,
+        document.body
+      )}
       </div>
     </motion.div>
 
@@ -1415,9 +1438,7 @@ const LEFT_MENU_SECTIONS = [
       { id: 'cert-mgmt', label: 'Certificate Management', icon: KeyRound },
       { id: 'groups', label: 'Groups', icon: Users },
       { id: 'jobs', label: 'Jobs', icon: Activity },
-      { id: 'device-update', label: 'Device Update', icon: RefreshCw },
-      { id: 'firmware', label: 'OTA Management', icon: Shield },
-      { id: '3p', label: '3P Capability', icon: Puzzle, disabled: true },
+      { id: 'ota-management', label: 'OTA Management', icon: Zap },
     ],
   },
   {
@@ -1425,6 +1446,16 @@ const LEFT_MENU_SECTIONS = [
     items: [
       { id: 'iot-hub', label: 'IoT Hub', icon: Server },
       { id: 'iot-ops', label: 'IoT Operations', icon: Wind },
+    ],
+  },
+  {
+    title: 'Other',
+    collapsible: true,
+    defaultCollapsed: true,
+    items: [
+      { id: 'firmware', label: 'Firmware Analysis', icon: Shield },
+      { id: 'device-update', label: 'Device Update', icon: RefreshCw },
+      { id: '3p', label: '3P Capability', icon: Puzzle, disabled: true },
     ],
   },
 ]
@@ -1440,6 +1471,9 @@ function LeftMenu({
   activeItem: string
   onItemClick: (id: string) => void
 }) {
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
+    () => new Set((LEFT_MENU_SECTIONS as Array<{ title: string; collapsible?: boolean; defaultCollapsed?: boolean; items: unknown[] }>).filter(s => s.defaultCollapsed).map(s => s.title))
+  )
   return (
     <motion.div
       animate={{ width: open ? 204 : 40 }}
@@ -1468,12 +1502,26 @@ function LeftMenu({
             transition={{ duration: 0.15 }}
             className="py-3"
           >
-            {LEFT_MENU_SECTIONS.map((section, si) => (
+            {(LEFT_MENU_SECTIONS as Array<{ title: string; collapsible?: boolean; defaultCollapsed?: boolean; items: { id: string; label: string; icon: typeof Cpu; disabled?: boolean }[] }>).map((section, si) => {
+              const isSectionCollapsed = !!(section.collapsible && collapsedSections.has(section.title))
+              return (
               <div key={section.title} className={si > 0 ? 'mt-3 pt-3 border-t border-slate-100' : ''}>
-                <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 whitespace-nowrap">
-                  {section.title}
-                </p>
-                {section.items.map((item) => (
+                {section.collapsible ? (
+                  <button
+                    onClick={() => setCollapsedSections(p => { const n = new Set(p); n.has(section.title) ? n.delete(section.title) : n.add(section.title); return n })}
+                    className="w-full flex items-center justify-between px-3 py-0.5 mb-1 group"
+                  >
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 whitespace-nowrap group-hover:text-muted-foreground/80 transition-colors">
+                      {section.title}
+                    </span>
+                    <ChevronDown className={`h-3 w-3 text-muted-foreground/40 transition-transform duration-150 ${isSectionCollapsed ? '-rotate-90' : ''}`} />
+                  </button>
+                ) : (
+                  <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 whitespace-nowrap">
+                    {section.title}
+                  </p>
+                )}
+                {!isSectionCollapsed && section.items.map((item) => (
                   <button
                     key={item.id}
                     onClick={() => !('disabled' in item && item.disabled) && onItemClick(item.id)}
@@ -1492,7 +1540,8 @@ function LeftMenu({
                   </button>
                 ))}
               </div>
-            ))}
+              )
+            })}
           </motion.div>
         )}
       </AnimatePresence>
@@ -3611,7 +3660,7 @@ function FirmwareDetailView({ version, onBack, onDevicesClick, onAssetsClick }: 
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-3"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
-          OTA Management
+          Firmware Analysis
         </button>
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">{fw.file}</h1>
@@ -3883,7 +3932,7 @@ function FirmwareAnalysisView({ onFirmwareSelect, onVersionClick, onManufacturer
       transition={{ duration: 0.25 }}
       className="space-y-8"
     >
-      <SubViewHeader title="OTA Management" subtitle="Texas-Wind-Namespace" count={firmwareImages.length} />
+      <SubViewHeader title="Firmware Analysis" subtitle="Texas-Wind-Namespace" count={firmwareImages.length} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <ChartCard title="Affected Devices by Manufacturer">
@@ -4022,6 +4071,280 @@ function FirmwareAnalysisView({ onFirmwareSelect, onVersionClick, onManufacturer
     </motion.div>
   )
 }
+/* ─── OTA Management View ─────────────────────────────────── */
+
+function OtaManagementView({ onFirmwareSelect, onDeploy }: {
+  onFirmwareSelect?: (version: string) => void
+  onDeploy?: (prefill: JobPrefill) => void
+}) {
+  const [images, setImages] = useState(() => [...firmwareImages])
+  const [showUpload, setShowUpload] = useState(false)
+  const [uploadDraft, setUploadDraft] = useState({ file: '', manufacturer: '', model: '', version: '' })
+
+  const latestByModel = useMemo(() => {
+    const map: Record<string, string> = {}
+    images.forEach(f => { if (!map[f.model] || f.version > map[f.model]) map[f.model] = f.version })
+    return map
+  }, [images])
+
+  const deviceBarData = useMemo(() =>
+    images.map(f => ({
+      label: `v${f.version} · ${f.model.replace(/([A-Z])/g, ' $1').trim().split(' ')[0]}`,
+      value: f.devicesAffected,
+      color: f.version === latestByModel[f.model] ? '#22c55e' : '#f97316',
+    })).sort((a, b) => b.value - a.value),
+    [images, latestByModel]
+  )
+
+  const assetBarData = useMemo(() =>
+    images.map(f => ({
+      label: `v${f.version} · ${f.model.replace(/([A-Z])/g, ' $1').trim().split(' ')[0]}`,
+      value: f.assetsAffected,
+      color: f.version === latestByModel[f.model] ? '#22c55e' : '#f97316',
+    })).sort((a, b) => b.value - a.value),
+    [images, latestByModel]
+  )
+
+  const totalCritical = images.reduce((s, f) => s + f.cves.critical, 0)
+  const devicesNeedingUpdate = images.filter(f => f.version !== latestByModel[f.model]).reduce((s, f) => s + f.devicesAffected, 0)
+  const devicesUpToDate = images.filter(f => f.version === latestByModel[f.model]).reduce((s, f) => s + f.devicesAffected, 0)
+
+  function handleUpload() {
+    if (!uploadDraft.file.trim() || !uploadDraft.version.trim()) return
+    setImages(prev => [...prev, {
+      file: uploadDraft.file,
+      manufacturer: uploadDraft.manufacturer || GROUP_MANUFACTURERS[0],
+      model: uploadDraft.model || 'Unknown',
+      version: uploadDraft.version,
+      cves: { critical: 0, high: 0, medium: 0, low: 0 },
+      devicesAffected: 0,
+      assetsAffected: 0,
+    }])
+    setUploadDraft({ file: '', manufacturer: '', model: '', version: '' })
+    setShowUpload(false)
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="space-y-8"
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <SubViewHeader title="OTA Management" subtitle="Texas-Wind-Namespace" />
+        <button
+          onClick={() => onDeploy?.({ jobType: 'software-update' })}
+          className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-slate-700"
+        >
+          <Play className="h-3.5 w-3.5" />
+          Deploy Update
+        </button>
+      </div>
+
+      {/* KPI row */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <HeroStat icon={Shield} label="Firmware Images" value={String(images.length)} />
+        <HeroStat icon={CheckCircle2} label="Devices Up-to-Date" value={devicesUpToDate.toLocaleString()} />
+        <HeroStat icon={RefreshCw} label="Devices Need Update" value={devicesNeedingUpdate.toLocaleString()} />
+        <HeroStat icon={AlertTriangle} label="Critical CVEs" value={String(totalCritical)} />
+      </div>
+
+      {/* Distribution charts */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <ChartCard title="Devices by Firmware Version">
+          <HBarChart data={deviceBarData} />
+        </ChartCard>
+        <ChartCard title="Assets by Firmware Version">
+          <HBarChart data={assetBarData} />
+        </ChartCard>
+      </div>
+
+      {/* Firmware Library */}
+      <div>
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold">Firmware Library</h2>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{images.length} images</span>
+          </div>
+          <button
+            onClick={() => setShowUpload(true)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            Upload Firmware
+          </button>
+        </div>
+        <div className="rounded-lg border shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Image File</TableHead>
+                <TableHead>Manufacturer</TableHead>
+                <TableHead>Model</TableHead>
+                <TableHead>Version</TableHead>
+                <TableHead>Vulnerabilities</TableHead>
+                <TableHead className="text-right">Devices</TableHead>
+                <TableHead className="text-right">Assets</TableHead>
+                <TableHead className="w-[170px]" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {images.map(fw => {
+                const isLatest = fw.version === latestByModel[fw.model]
+                return (
+                  <TableRow key={fw.file} className="hover:bg-slate-50/80">
+                    <TableCell className="font-mono text-xs text-muted-foreground">{fw.file}</TableCell>
+                    <TableCell className="text-sm">{fw.manufacturer}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{fw.model}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-xs">v{fw.version}</span>
+                        {isLatest
+                          ? <span className="inline-flex items-center rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">Latest</span>
+                          : <span className="inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">Outdated</span>
+                        }
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {(fw.cves.critical + fw.cves.high + fw.cves.medium + fw.cves.low) === 0 ? (
+                        <span className="text-xs text-emerald-600 font-medium">Clean</span>
+                      ) : (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {fw.cves.critical > 0 && (
+                            <span className="relative inline-flex items-center">
+                              <span className="absolute inset-0 rounded-md bg-red-500 animate-ping opacity-75" />
+                              <span className="relative inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold bg-red-600 text-white">{fw.cves.critical} Critical</span>
+                            </span>
+                          )}
+                          {fw.cves.high > 0 && <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold bg-orange-500 text-white">{fw.cves.high} High</span>}
+                          {fw.cves.medium > 0 && <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium bg-amber-100 text-amber-700 border border-amber-200">{fw.cves.medium} Medium</span>}
+                          {fw.cves.low > 0 && <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-500 border border-slate-200">{fw.cves.low} Low</span>}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm">{fw.devicesAffected.toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-mono text-sm">{fw.assetsAffected.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => onDeploy?.({ jobType: 'software-update' })}
+                          className="inline-flex items-center gap-1 rounded-md bg-slate-900 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-slate-700"
+                        >
+                          <Play className="h-3 w-3" />
+                          Deploy
+                        </button>
+                        <button
+                          onClick={() => onFirmwareSelect?.(fw.version)}
+                          className="inline-flex items-center gap-1 rounded-md border border-blue-200 px-2.5 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors"
+                        >
+                          <FileText className="h-3 w-3" />
+                          Analyze
+                        </button>
+                        <button
+                          onClick={() => setImages(prev => prev.filter(f => f.file !== fw.file))}
+                          className="rounded-md border border-slate-200 p-1 text-slate-400 hover:text-red-500 hover:border-red-200 transition-colors"
+                          title="Remove firmware image"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+              {images.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                    No firmware images. Upload one to get started.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Upload Firmware Modal */}
+      <AnimatePresence>
+        {showUpload && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            onClick={() => setShowUpload(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-md rounded-xl border bg-white shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b px-6 py-4">
+                <div>
+                  <h3 className="text-base font-semibold">Upload Firmware Image</h3>
+                  <p className="text-xs text-muted-foreground">Add a new image to the firmware library</p>
+                </div>
+                <button onClick={() => setShowUpload(false)} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"><X className="h-4 w-4" /></button>
+              </div>
+              <div className="px-6 py-5 space-y-4">
+                <div className="space-y-1.5">
+                  <label
+                    className="text-xs font-medium cursor-pointer select-none hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
+                    title="Click to fill"
+                    onClick={() => setUploadDraft(d => ({ ...d, file: 'turbine-ctrl-x700-v3.3.0.bin' }))}
+                  >File Name<span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span></label>
+                  <Input value={uploadDraft.file} onChange={e => setUploadDraft(d => ({ ...d, file: e.target.value }))} placeholder="e.g. turbine-ctrl-x700-v3.3.0.bin" className="h-9 text-sm font-mono" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label
+                      className="text-xs font-medium cursor-pointer select-none hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
+                      title="Click to fill"
+                      onClick={() => setUploadDraft(d => ({ ...d, manufacturer: 'Contoso Wind Systems' }))}
+                    >Manufacturer<span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span></label>
+                    <select value={uploadDraft.manufacturer} onChange={e => setUploadDraft(d => ({ ...d, manufacturer: e.target.value }))} className="flex h-9 w-full rounded-md border border-input bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                      <option value="">Select…</option>
+                      {GROUP_MANUFACTURERS.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label
+                      className="text-xs font-medium cursor-pointer select-none hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
+                      title="Click to fill"
+                      onClick={() => setUploadDraft(d => ({ ...d, model: 'TurbineController-X700' }))}
+                    >Model<span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span></label>
+                    <select value={uploadDraft.model} onChange={e => setUploadDraft(d => ({ ...d, model: e.target.value }))} className="flex h-9 w-full rounded-md border border-input bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                      <option value="">Select…</option>
+                      {['TurbineController-X700', 'AnemometerPro-2400', 'PitchController-5000', 'EdgeGateway-1900'].map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label
+                    className="text-xs font-medium cursor-pointer select-none hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
+                    title="Click to fill"
+                    onClick={() => setUploadDraft(d => ({ ...d, version: '3.3.0' }))}
+                  >Version<span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span></label>
+                  <Input value={uploadDraft.version} onChange={e => setUploadDraft(d => ({ ...d, version: e.target.value }))} placeholder="e.g. 3.3.0" className="h-9 text-sm font-mono" />
+                </div>
+              </div>
+              <div className="flex items-center justify-between border-t px-6 py-4">
+                <Button variant="outline" size="sm" onClick={() => setShowUpload(false)}>Cancel</Button>
+                <Button size="sm" disabled={!uploadDraft.file.trim() || !uploadDraft.version.trim()} onClick={handleUpload}>
+                  <Upload className="h-3.5 w-3.5 mr-1.5" />
+                  Upload
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
 /* ─── Asset Detail View ──────────────────────────────────────── */
 
 const ASSET_MODEL_MAP: Record<string, string> = {
