@@ -185,7 +185,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export default function JobDetailPage() {
+export default function JobDetailPage({ hideBreadcrumb }: { hideBreadcrumb?: boolean } = {}) {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const jobId = params.get('id') ?? ALL_JOBS[0]?.id ?? ''
@@ -258,6 +258,7 @@ export default function JobDetailPage() {
       className="max-w-6xl mx-auto space-y-6"
     >
       {/* Breadcrumb */}
+      {!hideBreadcrumb && (
       <div className="flex items-center gap-2 text-sm text-slate-500">
         <button onClick={() => navigate('/adr-namespace')} className="hover:text-slate-900 transition-colors">
           Texas-Wind-Namespace
@@ -269,6 +270,7 @@ export default function JobDetailPage() {
         <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
         <span className="font-mono text-slate-700">{job.id}</span>
       </div>
+      )}
 
       {/* Job header */}
       <div className="flex items-start justify-between">

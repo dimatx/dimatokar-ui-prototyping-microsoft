@@ -854,7 +854,7 @@ export default function AdrNamespacePage() {
           onModelClick={(m) => navigateTo('devices', { deviceFilter: m })}
         />
       ) : activeMenuItem === 'jobs' && location.pathname.includes('/jobs/job-detail') ? (
-        <JobDetailPage key="job-detail" />
+        <JobDetailPage key="job-detail" hideBreadcrumb />
       ) : activeMenuItem === 'jobs' ? (
         <JobListEmbedded key="jobs" deviceUpdateEnabled={deviceUpdateEnabled} onNavigate={(path) => {
           if (path.startsWith('/job-detail')) {
@@ -3924,15 +3924,8 @@ function FirmwareDetailView({ version, onBack, onDevicesClick, onAssetsClick }: 
       transition={{ duration: 0.25 }}
       className="space-y-6"
     >
-      {/* Breadcrumb + header */}
+      {/* Header */}
       <div>
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-3"
-        >
-          <ChevronLeft className="h-3.5 w-3.5" />
-          Firmware Analysis
-        </button>
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">{fw.file}</h1>
           <span className="inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-medium text-slate-600">v{fw.version}</span>
@@ -4781,9 +4774,6 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, onUpdate
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-6">
       <div className="flex items-center gap-2">
-        <button onClick={onBack} className="rounded-lg p-1.5 hover:bg-slate-100 transition-colors text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="h-4 w-4" />
-        </button>
         <div>
           <h1 className="text-lg font-semibold">{asset.name}</h1>
           <p className="text-xs text-muted-foreground">{asset.id} · {asset.type}</p>
@@ -4974,9 +4964,6 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-6">
       <div className="flex items-center gap-2">
-        <button onClick={onBack} className="rounded-lg p-1.5 hover:bg-slate-100 transition-colors text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="h-4 w-4" />
-        </button>
         <div>
           <h1 className="text-lg font-semibold font-mono">{device.name}</h1>
           <p className="text-xs text-muted-foreground">{device.id} · {device.type}</p>
