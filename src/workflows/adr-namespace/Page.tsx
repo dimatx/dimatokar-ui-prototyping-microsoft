@@ -653,9 +653,36 @@ export default function AdrNamespacePage() {
         <PlaceholderView key="cert-mgmt" title="Certificate Management" description="Manage the certificate authority (CA) hierarchy for this namespace. Issue, renew, and revoke device certificates at scale." icon={Shield} />
       ) : activeMenuItem === 'groups' ? (
         <PlaceholderView key="groups" title="Groups" description="Organize devices and assets into groups for targeted operations such as firmware updates, configuration pushes, and policy assignments." icon={Users} />
-      ) : activeMenuItem === 'device-update' ? (
-        <PlaceholderView key="device-update" title="Device Update" description="Manage over-the-air (OTA) firmware and software update deployments across device groups. Powered by Azure Device Update for IoT Hub." icon={RefreshCw} />
-      ) : activeMenuItem === '3p' ? (
+      ) : activeMenuItem === 'device-update' ? (() => {
+        const svc = namespaceSvcs.find(s => s.name === 'Device Update')!
+        const isDisabled = svc.status === 'Disabled' || svc.status === 'Enabling'
+        return (
+          <PlaceholderView key="device-update" title="Device Update" description="Manage over-the-air (OTA) firmware and software update deployments across device groups. Powered by Azure Device Update for IoT Hub." icon={RefreshCw}
+            action={
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-6 py-3 shadow-sm">
+                  <span className="text-sm text-slate-600 font-medium">Status</span>
+                  <StatusBadge status={svc.status} />
+                  {svc.instanceName && <span className="font-mono text-xs text-slate-400">{svc.instanceName}</span>}
+                </div>
+                {svc.status === 'Enabling' ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />Enabling…
+                  </div>
+                ) : svc.status === 'Disabled' ? (
+                  <Button className="gap-2" onClick={() => { setSvcConfigTarget(svc); setDisableConfirmText(''); setEnableInstanceName(INSTANCE_NAME_OPTIONS[svc.name]?.[0] ?? '') }}>
+                    <Activity className="h-4 w-4" />Enable Device Update
+                  </Button>
+                ) : (
+                  <Button variant="outline" className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200" onClick={() => { setSvcConfigTarget(svc); setDisableConfirmText('') }}>
+                    Disable Device Update
+                  </Button>
+                )}
+              </div>
+            }
+          />
+        )
+      })() : activeMenuItem === '3p' ? (
         <PlaceholderView key="3p" title="3P Capability" description="Integrate third-party extensions and partner solutions into this namespace. Extend ADR with custom capabilities registered via the Azure Marketplace." icon={Puzzle} />
       ) : (
       <motion.div key="main" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="space-y-8">
@@ -708,26 +735,15 @@ export default function AdrNamespacePage() {
               onClick={() => { if (navId) navigateTo(navId) }}
             >
               <CardContent className="flex items-start gap-3 p-4">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted mt-0.5">
-                  <svc.icon className="h-3.5 w-3.5 text-foreground" />
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted mt-0.5">
+                  <svc.icon className="h-4 w-4 text-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold">{svc.name}</p>
-                    {svc.configurable && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setSvcConfigTarget(svc); setDisableConfirmText(''); setEnableInstanceName(INSTANCE_NAME_OPTIONS[svc.name]?.[0] ?? '') }}
-                        className="rounded-md p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                        title={`Configure ${svc.name}`}
-                      >
-                        <Settings className="h-3 w-3" />
-                      </button>
-                    )}
-                  </div>
+                  <p className="text-sm font-semibold">{svc.name}</p>
                   {svc.instanceName && (
-                    <p className="text-[10px] font-mono text-muted-foreground mt-0.5 truncate">{svc.instanceName}</p>
+                    <p className="text-[11px] font-mono text-muted-foreground mt-0.5 truncate">{svc.instanceName}</p>
                   )}
-                  <div className="mt-1.5">
+                  <div className="mt-2">
                     <StatusBadge status={svc.status} />
                   </div>
                 </div>
@@ -1515,7 +1531,7 @@ function SubViewHeader({ title, subtitle, count }: { title: React.ReactNode; sub
 
 /* ─── Placeholder View ───────────────────────────────────────── */
 
-function PlaceholderView({ title, description, icon: Icon }: { title: string; description: string; icon: React.ElementType }) {
+function PlaceholderView({ title, description, icon: Icon, action }: { title: string; description: string; icon: React.ElementType; action?: React.ReactNode }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
@@ -1529,9 +1545,11 @@ function PlaceholderView({ title, description, icon: Icon }: { title: string; de
       </div>
       <h2 className="text-xl font-semibold text-foreground mb-2">{title}</h2>
       <p className="max-w-md text-sm text-muted-foreground leading-relaxed mb-6">{description}</p>
-      <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
-        Coming soon
-      </span>
+      {action ?? (
+        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
+          Coming soon
+        </span>
+      )}
     </motion.div>
   )
 }
