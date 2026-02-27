@@ -619,8 +619,26 @@ export default function AdrNamespacePage() {
       />
       <div className="flex-1 min-w-0 pl-6">
       <AnimatePresence mode="wait">
-      {activeMenuItem === 'all-resources' ? (
-        <AllResourcesView key="all-resources" />
+      {activeMenuItem === 'all-resources' && assetDetailId ? (
+        <AssetDetailView
+          key={`ar-asset-detail-${assetDetailId}`}
+          assetId={assetDetailId}
+          onBack={() => setAssetDetailId(null)}
+          onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
+        />
+      ) : activeMenuItem === 'all-resources' && deviceDetailId ? (
+        <DeviceDetailView
+          key={`ar-device-detail-${deviceDetailId}`}
+          deviceId={deviceDetailId}
+          onBack={() => setDeviceDetailId(null)}
+          onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
+        />
+      ) : activeMenuItem === 'all-resources' ? (
+        <AllResourcesView
+          key="all-resources"
+          onAssetSelect={(id) => setAssetDetailId(id)}
+          onDeviceSelect={(id) => setDeviceDetailId(id)}
+        />
       ) : activeMenuItem === 'assets' && assetDetailId ? (
         <AssetDetailView
           key={`asset-detail-${assetDetailId}`}
@@ -646,6 +664,7 @@ export default function AdrNamespacePage() {
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
           onRunJob={(ids) => setRunJobTarget({ ids, source: 'Devices' })}
           onDeviceSelect={(id) => setDeviceDetailId(id)}
+          onClearGroupFilter={() => setDeviceGroupPrefilter('')}
         />
       ) : activeMenuItem === 'iot-hub' ? (
         <IotHubView key="iot-hub" hubs={linkedHubs} onAddHub={() => setShowHubPicker(true)} unlinkedCount={unlinkedHubs.length} />
@@ -1647,9 +1666,12 @@ const certRevokedL1D = [2, 1, 0, 3, 4, 2, 1, 2, 6, 8, 5, 4, 3, 7, 5, 4, 3, 4, 5,
 const certOpsL30D = [3200, 2980, 3410, 3250, 3870, 4120, 3960, 4380, 4210, 4050, 3880, 3990, 4100, 4420, 4190, 4340, 4510, 4380, 4190, 4260, 4320, 4480, 4290, 4130, 4200, 4350, 4410, 4180, 4050, 3980]
 
 // Provisioning: 24h (hourly registration attempts)
+// Registrations: broad mid-day hump, high amplitude
 const provRegistrationsL1D = [18, 12, 9, 14, 22, 31, 28, 24, 42, 67, 58, 54, 61, 72, 68, 54, 49, 62, 71, 58, 44, 38, 29, 21]
-const provAssignedL1D     = [16, 11, 8, 13, 20, 29, 26, 22, 39, 63, 54, 51, 57, 68, 64, 51, 46, 58, 67, 54, 41, 35, 27, 19]
-const provAttestL1D       = [17, 12, 9, 13, 21, 30, 27, 23, 41, 65, 56, 52, 59, 70, 66, 53, 48, 60, 69, 56, 43, 37, 28, 20]
+// Assigned: successful subset (~85% of registrations), smoother with slight lag
+const provAssignedL1D     = [14, 9,  7, 11, 17, 25, 22, 19, 36, 55, 49, 47, 52, 60, 57, 46, 39, 51, 59, 50, 37, 31, 23, 16]
+// Attestation attempts: spikier early morning + lunch surge, drops sharply at night
+const provAttestL1D       = [ 9, 5,  3,  7, 18, 44, 52, 38, 27, 41, 35, 29, 48, 63, 59, 45, 28, 19, 24, 32, 27, 18, 12,  7]
 
 
 
@@ -2284,7 +2306,7 @@ const ALL_RESOURCE_TYPE_STYLES: Record<string, string> = {
 
 /* ─── All Resources View ─────────────────────────────────────── */
 
-function AllResourcesView() {
+function AllResourcesView({ onAssetSelect, onDeviceSelect }: { onAssetSelect?: (id: string) => void; onDeviceSelect?: (id: string) => void }) {
   const [typeFilter, setTypeFilter] = useState<string>('All')
   const [search, setSearch] = useState('')
 
@@ -2447,8 +2469,17 @@ function AllResourcesView() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map(row => (
-              <TableRow key={row.id} className="hover:bg-slate-50/60 transition-colors">
+            {filtered.map(row => {
+              const isClickable = row.resourceType === 'Asset' || row.resourceType === 'Device'
+              return (
+              <TableRow
+                key={row.id}
+                className={`transition-colors ${isClickable ? 'cursor-pointer hover:bg-slate-50/80' : 'hover:bg-slate-50/60'}`}
+                onClick={() => {
+                  if (row.resourceType === 'Asset') onAssetSelect?.(row.id)
+                  else if (row.resourceType === 'Device') onDeviceSelect?.(row.id)
+                }}
+              >
                 <TableCell className="font-mono text-xs text-slate-500">{row.id}</TableCell>
                 <TableCell className="font-medium text-sm text-slate-900">{row.name}</TableCell>
                 <TableCell>
@@ -2461,8 +2492,14 @@ function AllResourcesView() {
                 </TableCell>
                 <TableCell className="text-sm text-slate-600">{row.site}</TableCell>
                 <TableCell className="text-xs text-slate-400">{row.lastSeen}</TableCell>
+                {isClickable && (
+                  <TableCell className="text-right pr-3 w-6">
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                  </TableCell>
+                )}
               </TableRow>
-            ))}
+              )
+            })}
           </TableBody>
         </Table>
       </div>
@@ -2756,7 +2793,7 @@ const DEVICE_ACTIONS = [
   { id: 'update-firmware', label: 'Update Firmware', icon: Upload, cls: 'text-blue-700' },
 ]
 
-function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGroupFilter = '', onFirmwareSelect, onRunJob, onDeviceSelect }: { initialSearch?: string; initialFirmwareFilter?: string; initialGroupFilter?: string; onFirmwareSelect?: (version: string) => void; onRunJob?: (ids: string[]) => void; onDeviceSelect?: (id: string) => void }) {
+function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGroupFilter = '', onFirmwareSelect, onRunJob, onDeviceSelect, onClearGroupFilter }: { initialSearch?: string; initialFirmwareFilter?: string; initialGroupFilter?: string; onFirmwareSelect?: (version: string) => void; onRunJob?: (ids: string[]) => void; onDeviceSelect?: (id: string) => void; onClearGroupFilter?: () => void }) {
   const [search, setSearch] = useState(initialSearch)
   // Status multi-select
   const [statusValues, setStatusValues] = useState<Set<string>>(new Set())
@@ -2913,6 +2950,12 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
           <Filter className="h-4 w-4 shrink-0 text-blue-500" />
           Filtered by group: <span className="font-semibold">{activeGroup.name}</span>
           <span className="text-blue-500 ml-1">· {filtered.length} matching devices</span>
+          <button
+            onClick={() => onClearGroupFilter?.()}
+            className="ml-auto flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-300 hover:bg-blue-100 transition-colors"
+          >
+            <X className="h-3 w-3" />Clear filter
+          </button>
         </div>
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
