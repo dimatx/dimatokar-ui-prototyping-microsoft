@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useNavigationType } from 'react-router-dom'
 import {
   Server,
   Cpu,
@@ -472,11 +472,25 @@ function parseFirmwareFromPath(pathname: string): string | null {
   return null
 }
 
+/* ─── Navigation State ──────────────────────────────────────── */
+
+type NavState = {
+  menuItem: string
+  firmwareTarget: string | null
+  devicePrefilter: string
+  deviceFirmwarePrefilter: string
+  assetPrefilter: string
+  deviceGroupPrefilter: string
+  assetDetailId: string | null
+  deviceDetailId: string | null
+}
+
 /* ─── Page ────────────────────────────────────────────────────── */
 
 export default function AdrNamespacePage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const navType = useNavigationType()
   const [hubsOpen, setHubsOpen] = useState(true)
   const [aioOpen, setAioOpen] = useState(true)
   const [linkedHubs, setLinkedHubs] = useState<Hub[]>(initialHubs)
@@ -508,17 +522,73 @@ export default function AdrNamespacePage() {
   const [deviceDetailId, setDeviceDetailId] = useState<string | null>(null)
 
   const navigateTo = (id: string, opts?: { firmware?: string; deviceFilter?: string; firmwareVersionFilter?: string; assetFilter?: string; groupFilter?: string }) => {
+    const newFirmware = opts?.firmware ?? null
+    const newDevicePre = opts?.deviceFilter ?? ''
+    const newFwPre = opts?.firmwareVersionFilter ?? ''
+    const newAssetPre = opts?.assetFilter ?? ''
+    const newGroupPre = opts?.groupFilter ?? ''
+    const state: NavState = {
+      menuItem: id,
+      firmwareTarget: newFirmware,
+      devicePrefilter: newDevicePre,
+      deviceFirmwarePrefilter: newFwPre,
+      assetPrefilter: newAssetPre,
+      deviceGroupPrefilter: newGroupPre,
+      assetDetailId: null,
+      deviceDetailId: null,
+    }
     setActiveMenuItem(id)
-    setFirmwareTarget(opts?.firmware ?? null)
-    setDevicePrefilter(opts?.deviceFilter ?? '')
-    setDeviceFirmwarePrefilter(opts?.firmwareVersionFilter ?? '')
-    setAssetPrefilter(opts?.assetFilter ?? '')
-    setDeviceGroupPrefilter(opts?.groupFilter ?? '')
+    setFirmwareTarget(newFirmware)
+    setDevicePrefilter(newDevicePre)
+    setDeviceFirmwarePrefilter(newFwPre)
+    setAssetPrefilter(newAssetPre)
+    setDeviceGroupPrefilter(newGroupPre)
     setAssetDetailId(null)
     setDeviceDetailId(null)
     const seg = ID_TO_SEGMENT[id] ?? id
-    navigate(`/adr-namespace${seg ? '/' + seg : ''}`)
+    navigate(`/adr-namespace${seg ? '/' + seg : ''}`, { state })
   }
+
+  const navigateToDetail = (kind: 'asset' | 'device', id: string) => {
+    const state: NavState = {
+      menuItem: activeMenuItem,
+      firmwareTarget,
+      devicePrefilter,
+      deviceFirmwarePrefilter,
+      assetPrefilter,
+      deviceGroupPrefilter,
+      assetDetailId: kind === 'asset' ? id : null,
+      deviceDetailId: kind === 'device' ? id : null,
+    }
+    if (kind === 'asset') setAssetDetailId(id)
+    else setDeviceDetailId(id)
+    navigate(location.pathname, { state })
+  }
+
+  // Restore full navigation state when user navigates back/forward
+  useEffect(() => {
+    if (navType !== 'POP') return
+    const st = location.state as NavState | null
+    if (!st) {
+      setActiveMenuItem(parseMenuFromPath(location.pathname))
+      setFirmwareTarget(parseFirmwareFromPath(location.pathname))
+      setDevicePrefilter('')
+      setDeviceFirmwarePrefilter('')
+      setAssetPrefilter('')
+      setDeviceGroupPrefilter('')
+      setAssetDetailId(null)
+      setDeviceDetailId(null)
+      return
+    }
+    setActiveMenuItem(st.menuItem)
+    setFirmwareTarget(st.firmwareTarget)
+    setDevicePrefilter(st.devicePrefilter)
+    setDeviceFirmwarePrefilter(st.deviceFirmwarePrefilter)
+    setAssetPrefilter(st.assetPrefilter)
+    setDeviceGroupPrefilter(st.deviceGroupPrefilter)
+    setAssetDetailId(st.assetDetailId)
+    setDeviceDetailId(st.deviceDetailId)
+  }, [location, navType])
 
   // Simulate per-hub progress ticking for running jobs
   useEffect(() => {
@@ -623,36 +693,36 @@ export default function AdrNamespacePage() {
         <AssetDetailView
           key={`ar-asset-detail-${assetDetailId}`}
           assetId={assetDetailId}
-          onBack={() => setAssetDetailId(null)}
+          onBack={() => navigate(-1)}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
         />
       ) : activeMenuItem === 'all-resources' && deviceDetailId ? (
         <DeviceDetailView
           key={`ar-device-detail-${deviceDetailId}`}
           deviceId={deviceDetailId}
-          onBack={() => setDeviceDetailId(null)}
+          onBack={() => navigate(-1)}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
         />
       ) : activeMenuItem === 'all-resources' ? (
         <AllResourcesView
           key="all-resources"
-          onAssetSelect={(id) => setAssetDetailId(id)}
-          onDeviceSelect={(id) => setDeviceDetailId(id)}
+          onAssetSelect={(id) => navigateToDetail('asset', id)}
+          onDeviceSelect={(id) => navigateToDetail('device', id)}
         />
       ) : activeMenuItem === 'assets' && assetDetailId ? (
         <AssetDetailView
           key={`asset-detail-${assetDetailId}`}
           assetId={assetDetailId}
-          onBack={() => setAssetDetailId(null)}
+          onBack={() => navigate(-1)}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
         />
       ) : activeMenuItem === 'assets' ? (
-        <AssetsView key={`assets-${assetPrefilter}`} initialSearch={assetPrefilter} onRunJob={(ids) => setRunJobTarget({ ids, source: 'Assets' })} onAssetSelect={(id) => setAssetDetailId(id)} />
+        <AssetsView key={`assets-${assetPrefilter}`} initialSearch={assetPrefilter} onRunJob={(ids) => setRunJobTarget({ ids, source: 'Assets' })} onAssetSelect={(id) => navigateToDetail('asset', id)} />
       ) : activeMenuItem === 'devices' && deviceDetailId ? (
         <DeviceDetailView
           key={`device-detail-${deviceDetailId}`}
           deviceId={deviceDetailId}
-          onBack={() => setDeviceDetailId(null)}
+          onBack={() => navigate(-1)}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
         />
       ) : activeMenuItem === 'devices' ? (
@@ -663,8 +733,8 @@ export default function AdrNamespacePage() {
           initialGroupFilter={deviceGroupPrefilter}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
           onRunJob={(ids) => setRunJobTarget({ ids, source: 'Devices' })}
-          onDeviceSelect={(id) => setDeviceDetailId(id)}
-          onClearGroupFilter={() => setDeviceGroupPrefilter('')}
+          onDeviceSelect={(id) => navigateToDetail('device', id)}
+          onClearGroupFilter={() => navigate(-1)}
         />
       ) : activeMenuItem === 'iot-hub' ? (
         <IotHubView key="iot-hub" hubs={linkedHubs} onAddHub={() => setShowHubPicker(true)} unlinkedCount={unlinkedHubs.length} />
@@ -674,7 +744,7 @@ export default function AdrNamespacePage() {
         <FirmwareDetailView
           key={`fw-${firmwareTarget}`}
           version={firmwareTarget}
-          onBack={() => { setFirmwareTarget(null); navigate('/adr-namespace/firmware') }}
+          onBack={() => navigate(-1)}
           onDevicesClick={(v, mfr) => navigateTo('devices', { firmwareVersionFilter: `v${v}`, deviceFilter: mfr })}
           onAssetsClick={(mfr) => navigateTo('assets', { assetFilter: mfr })}
         />
