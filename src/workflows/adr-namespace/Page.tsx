@@ -2847,80 +2847,6 @@ function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSe
             {filtered.length.toLocaleString()} of {namespace.totalAssets.toLocaleString()}
           </span>
         </div>
-        <AnimatePresence>
-          {selected.size > 0 && !pendingAction && !actionDone && (
-            <motion.div
-              key="action-bar"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.18 }}
-              className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
-            >
-              <span className="text-xs font-medium text-slate-700 mr-1">{selected.size} selected</span>
-              {DEVICE_ACTIONS.map(action => (
-                <button
-                  key={action.id}
-                  onClick={() => setPendingAction(action.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-white hover:border-slate-400 ${action.cls}`}
-                >
-                  <action.icon className="h-3 w-3" />
-                  {action.label}
-                </button>
-              ))}
-              {onRunJob && (
-                <button
-                  onClick={() => { const names = Object.fromEntries([...selected].map(id => [id, mockAssets.find(a => a.id === id)?.name ?? id])); onRunJob([...selected], names); setSelected(new Set()) }}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-white hover:border-slate-400"
-                >
-                  <Play className="h-3 w-3" />
-                  Run Job
-                </button>
-              )}
-              <button
-                onClick={() => setSelected(new Set())}
-                className="ml-auto rounded-md p-1 text-slate-400 hover:text-slate-700 transition-colors"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </motion.div>
-          )}
-          {pendingAction && (
-            <motion.div
-              key="confirm-bar"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.18 }}
-              className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2"
-            >
-              <span className="text-xs font-medium text-amber-900">
-                Apply <span className="font-semibold">{DEVICE_ACTIONS.find(a => a.id === pendingAction)?.label}</span> to {selected.size} asset{selected.size !== 1 ? 's' : ''}?
-              </span>
-              <button
-                onClick={confirmAction}
-                className="rounded-md bg-slate-900 px-3 py-1 text-xs font-semibold text-white hover:bg-slate-700 transition-colors"
-              >Confirm</button>
-              <button
-                onClick={() => setPendingAction(null)}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >Cancel</button>
-            </motion.div>
-          )}
-          {actionDone && (
-            <motion.div
-              key="success-bar"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              className="mb-3 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2"
-            >
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-              <span className="text-xs font-medium text-emerald-800">{actionDone}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
         <div className="rounded-lg border shadow-sm overflow-hidden">
           <Table>
             <TableHeader>
@@ -2982,6 +2908,65 @@ function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSe
           </Table>
         </div>
       </div>
+
+      {createPortal(
+        <AnimatePresence>
+          {selected.size > 0 && !pendingAction && !actionDone && (
+            <motion.div
+              key="float-action"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
+            >
+              <span className="text-xs font-semibold text-slate-700 pl-1 pr-3 border-r border-slate-200 mr-1">{selected.size} selected</span>
+              {DEVICE_ACTIONS.map(action => (
+                <button key={action.id} onClick={() => setPendingAction(action.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-slate-100 ${action.cls}`}>
+                  <action.icon className="h-3 w-3" />{action.label}
+                </button>
+              ))}
+              {onRunJob && (
+                <button onClick={() => { const names = Object.fromEntries([...selected].map(id => [id, mockAssets.find(a => a.id === id)?.name ?? id])); onRunJob([...selected], names); setSelected(new Set()); }}
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100">
+                  <Play className="h-3 w-3" />Run Job
+                </button>
+              )}
+              <div className="w-px h-4 bg-slate-200 mx-1" />
+              <button onClick={() => setSelected(new Set())} className="rounded-full p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </motion.div>
+          )}
+          {pendingAction && (
+            <motion.div
+              key="float-confirm"
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
+            >
+              <span className="text-xs font-medium text-amber-900">
+                Apply <span className="font-semibold">{DEVICE_ACTIONS.find(a => a.id === pendingAction)?.label}</span> to {selected.size} asset{selected.size !== 1 ? 's' : ''}?
+              </span>
+              <button onClick={confirmAction} className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 transition-colors">Confirm</button>
+              <button onClick={() => setPendingAction(null)} className="text-xs text-amber-700 hover:text-amber-900 transition-colors">Cancel</button>
+            </motion.div>
+          )}
+          {actionDone && (
+            <motion.div
+              key="float-success"
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+              <span className="text-xs font-medium text-emerald-800">{actionDone}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </motion.div>
   )
 }
@@ -3209,82 +3194,6 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
           </span>
         </div>
 
-        {/* Action / confirmation bars */}
-        <AnimatePresence>
-          {selectionCount > 0 && !pendingAction && !actionDone && (
-            <motion.div
-              key="action-bar"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.18 }}
-              className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
-            >
-              <span className="text-xs font-medium text-slate-700 mr-1">{selectionCount} selected</span>
-              {DEVICE_ACTIONS.map(action => (
-                <button
-                  key={action.id}
-                  onClick={() => setPendingAction(action.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-white hover:border-slate-400 ${action.cls}`}
-                >
-                  <action.icon className="h-3 w-3" />
-                  {action.label}
-                </button>
-              ))}
-              {onRunJob && (
-                <button
-                  onClick={() => { const names = Object.fromEntries([...selected].map(id => [id, mockDevices.find(d => d.id === id)?.name ?? id])); onRunJob([...selected], names); setSelected(new Set()) }}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-white hover:border-slate-400"
-                >
-                  <Play className="h-3 w-3" />
-                  Run Job
-                </button>
-              )}
-              <button
-                onClick={() => setSelected(new Set())}
-                className="ml-auto rounded-md p-1 text-slate-400 hover:text-slate-700 transition-colors"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </motion.div>
-          )}
-          {pendingAction && (
-            <motion.div
-              key="confirm-bar"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.18 }}
-              className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2"
-            >
-              <span className="text-xs font-medium text-amber-900">
-                Apply <span className="font-semibold">{DEVICE_ACTIONS.find(a => a.id === pendingAction)?.label}</span> to {selectionCount} device{selectionCount !== 1 ? 's' : ''}?
-              </span>
-              <button
-                onClick={confirmAction}
-                className="rounded-md bg-slate-900 px-3 py-1 text-xs font-semibold text-white hover:bg-slate-700 transition-colors"
-              >Confirm</button>
-              <button
-                onClick={() => setPendingAction(null)}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >Cancel</button>
-            </motion.div>
-          )}
-          {actionDone && (
-            <motion.div
-              key="success-bar"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              className="mb-3 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2"
-            >
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-              <span className="text-xs font-medium text-emerald-800">{actionDone}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Table */}
         <div className="rounded-lg border shadow-sm overflow-hidden">
           <Table>
@@ -3367,6 +3276,65 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
           </Table>
         </div>
       </div>
+
+      {createPortal(
+        <AnimatePresence>
+          {selected.size > 0 && !pendingAction && !actionDone && (
+            <motion.div
+              key="float-action"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
+            >
+              <span className="text-xs font-semibold text-slate-700 pl-1 pr-3 border-r border-slate-200 mr-1">{selected.size} selected</span>
+              {DEVICE_ACTIONS.map(action => (
+                <button key={action.id} onClick={() => setPendingAction(action.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-slate-100 ${action.cls}`}>
+                  <action.icon className="h-3 w-3" />{action.label}
+                </button>
+              ))}
+              {onRunJob && (
+                <button onClick={() => { const names = Object.fromEntries([...selected].map(id => [id, mockDevices.find(d => d.id === id)?.name ?? id])); onRunJob([...selected], names); setSelected(new Set()); }}
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100">
+                  <Play className="h-3 w-3" />Run Job
+                </button>
+              )}
+              <div className="w-px h-4 bg-slate-200 mx-1" />
+              <button onClick={() => setSelected(new Set())} className="rounded-full p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </motion.div>
+          )}
+          {pendingAction && (
+            <motion.div
+              key="float-confirm"
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
+            >
+              <span className="text-xs font-medium text-amber-900">
+                Apply <span className="font-semibold">{DEVICE_ACTIONS.find(a => a.id === pendingAction)?.label}</span> to {selected.size} device{selected.size !== 1 ? 's' : ''}?
+              </span>
+              <button onClick={confirmAction} className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 transition-colors">Confirm</button>
+              <button onClick={() => setPendingAction(null)} className="text-xs text-amber-700 hover:text-amber-900 transition-colors">Cancel</button>
+            </motion.div>
+          )}
+          {actionDone && (
+            <motion.div
+              key="float-success"
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+              <span className="text-xs font-medium text-emerald-800">{actionDone}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </motion.div>
   )
 }
