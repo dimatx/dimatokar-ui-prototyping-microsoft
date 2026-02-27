@@ -4217,12 +4217,11 @@ function OtaManagementView({ onFirmwareSelect, onDeploy }: {
                     <TableCell className="text-sm">{fw.manufacturer}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{fw.model}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex flex-col gap-0.5">
                         <span className="font-mono text-xs">v{fw.version}</span>
-                        {isLatest
-                          ? <span className="inline-flex items-center rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">Latest</span>
-                          : <span className="inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">Outdated</span>
-                        }
+                        {isLatest && (
+                          <span className="inline-flex w-fit items-center rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">Latest</span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -4374,27 +4373,56 @@ const SENSITIVITY_LABELS = [
 
 function SensitivitySelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const opt = SENSITIVITY_LABELS.find(s => s.label === value) ?? SENSITIVITY_LABELS[2]
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function close(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [open])
+
   return (
-    <div className="relative inline-flex items-center">
-      {opt.locked && (
-        <LockKeyhole className="pointer-events-none absolute left-2.5 h-3 w-3 z-10" style={{ color: opt.color }} />
-      )}
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="appearance-none rounded-full border py-1 pr-6 text-xs font-semibold cursor-pointer transition-colors focus:outline-none"
-        style={{
-          color: opt.color,
-          backgroundColor: opt.bg,
-          borderColor: opt.border,
-          paddingLeft: opt.locked ? '1.5rem' : '0.75rem',
-        }}
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors hover:opacity-90"
+        style={{ backgroundColor: opt.bg, borderColor: opt.border, color: opt.color }}
       >
-        {SENSITIVITY_LABELS.map(s => (
-          <option key={s.label} value={s.label}>{s.label}</option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-1.5 h-3 w-3" style={{ color: opt.color }} />
+        {opt.locked
+          ? <LockKeyhole className="h-3 w-3 shrink-0" />
+          : <Shield className="h-3 w-3 shrink-0" />
+        }
+        <span className="text-slate-500 font-normal">Data Sensitivity</span>
+        <span className="font-semibold">{opt.label}</span>
+        <ChevronDown className="h-3 w-3 opacity-60" />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.12 }}
+            className="absolute right-0 top-full mt-1 z-30 w-52 rounded-lg border bg-white shadow-lg py-1"
+          >
+            {SENSITIVITY_LABELS.map(s => (
+              <button
+                key={s.label}
+                onClick={() => { onChange(s.label); setOpen(false) }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-slate-50 transition-colors text-left"
+              >
+                {s.label === value
+                  ? <span className="h-3.5 w-3.5 shrink-0 flex items-center justify-center rounded-full" style={{ backgroundColor: s.color }}><span className="h-1.5 w-1.5 rounded-full bg-white" /></span>
+                  : <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2" style={{ borderColor: s.border }} />
+                }
+                <span className="font-medium" style={{ color: s.color }}>{s.label}</span>
+                {s.locked && <LockKeyhole className="h-3 w-3 ml-auto opacity-50" style={{ color: s.color }} />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
