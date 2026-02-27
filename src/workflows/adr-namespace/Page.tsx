@@ -2914,11 +2914,11 @@ function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSe
           {selected.size > 0 && !pendingAction && !actionDone && (
             <motion.div
               key="float-action"
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: -12 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 16 }}
+              exit={{ opacity: 0, y: -12 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
+              className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
             >
               <span className="text-xs font-semibold text-slate-700 pl-1 pr-3 border-r border-slate-200 mr-1">{selected.size} selected</span>
               {DEVICE_ACTIONS.map(action => (
@@ -2942,9 +2942,9 @@ function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSe
           {pendingAction && (
             <motion.div
               key="float-confirm"
-              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
+              className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
             >
               <span className="text-xs font-medium text-amber-900">
                 Apply <span className="font-semibold">{DEVICE_ACTIONS.find(a => a.id === pendingAction)?.label}</span> to {selected.size} asset{selected.size !== 1 ? 's' : ''}?
@@ -2956,9 +2956,9 @@ function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSe
           {actionDone && (
             <motion.div
               key="float-success"
-              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
+              className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
             >
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
               <span className="text-xs font-medium text-emerald-800">{actionDone}</span>
@@ -3282,11 +3282,11 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
           {selected.size > 0 && !pendingAction && !actionDone && (
             <motion.div
               key="float-action"
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: -12 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 16 }}
+              exit={{ opacity: 0, y: -12 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
+              className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
             >
               <span className="text-xs font-semibold text-slate-700 pl-1 pr-3 border-r border-slate-200 mr-1">{selected.size} selected</span>
               {DEVICE_ACTIONS.map(action => (
@@ -3310,9 +3310,9 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
           {pendingAction && (
             <motion.div
               key="float-confirm"
-              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
+              className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
             >
               <span className="text-xs font-medium text-amber-900">
                 Apply <span className="font-semibold">{DEVICE_ACTIONS.find(a => a.id === pendingAction)?.label}</span> to {selected.size} device{selected.size !== 1 ? 's' : ''}?
@@ -3324,9 +3324,9 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
           {actionDone && (
             <motion.div
               key="float-success"
-              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
+              className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
             >
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
               <span className="text-xs font-medium text-emerald-800">{actionDone}</span>
