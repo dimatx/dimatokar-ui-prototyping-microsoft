@@ -702,7 +702,11 @@ export default function AdrNamespacePage() {
             }
             const navId = SVC_NAV_ID[svc.name]
             return (
-            <Card key={svc.name} className="shadow-sm relative">
+            <Card
+              key={svc.name}
+              className={`shadow-sm relative ${navId ? 'cursor-pointer hover:border-slate-300 hover:shadow-md transition-all' : ''}`}
+              onClick={() => { if (navId) navigateTo(navId) }}
+            >
               <CardContent className="flex items-start gap-3 p-4">
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted mt-0.5">
                   <svc.icon className="h-3.5 w-3.5 text-foreground" />
@@ -712,7 +716,7 @@ export default function AdrNamespacePage() {
                     <p className="text-xs font-semibold">{svc.name}</p>
                     {svc.configurable && (
                       <button
-                        onClick={() => { setSvcConfigTarget(svc); setDisableConfirmText(''); setEnableInstanceName(INSTANCE_NAME_OPTIONS[svc.name]?.[0] ?? '') }}
+                        onClick={(e) => { e.stopPropagation(); setSvcConfigTarget(svc); setDisableConfirmText(''); setEnableInstanceName(INSTANCE_NAME_OPTIONS[svc.name]?.[0] ?? '') }}
                         className="rounded-md p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                         title={`Configure ${svc.name}`}
                       >
@@ -723,16 +727,8 @@ export default function AdrNamespacePage() {
                   {svc.instanceName && (
                     <p className="text-[10px] font-mono text-muted-foreground mt-0.5 truncate">{svc.instanceName}</p>
                   )}
-                  <div className="mt-1.5 flex items-center justify-between">
+                  <div className="mt-1.5">
                     <StatusBadge status={svc.status} />
-                    {navId && (
-                      <button
-                        onClick={() => navigateTo(navId)}
-                        className="text-[10px] font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                      >
-                        Manage →
-                      </button>
-                    )}
                   </div>
                 </div>
               </CardContent>
