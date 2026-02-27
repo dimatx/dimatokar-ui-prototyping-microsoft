@@ -32,6 +32,16 @@ import {
   ArrowUpDown,
   Layers,
   Play,
+  Tag,
+  AlertTriangle,
+  Pencil,
+  Globe,
+  Wifi,
+  Copy,
+  Filter,
+  BarChart2,
+  Network,
+  ClipboardList,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -493,13 +503,19 @@ export default function AdrNamespacePage() {
   const [devicePrefilter, setDevicePrefilter] = useState<string>('')
   const [deviceFirmwarePrefilter, setDeviceFirmwarePrefilter] = useState<string>('')
   const [assetPrefilter, setAssetPrefilter] = useState<string>('')
+  const [deviceGroupPrefilter, setDeviceGroupPrefilter] = useState<string>('')
+  const [assetDetailId, setAssetDetailId] = useState<string | null>(null)
+  const [deviceDetailId, setDeviceDetailId] = useState<string | null>(null)
 
-  const navigateTo = (id: string, opts?: { firmware?: string; deviceFilter?: string; firmwareVersionFilter?: string; assetFilter?: string }) => {
+  const navigateTo = (id: string, opts?: { firmware?: string; deviceFilter?: string; firmwareVersionFilter?: string; assetFilter?: string; groupFilter?: string }) => {
     setActiveMenuItem(id)
     setFirmwareTarget(opts?.firmware ?? null)
     setDevicePrefilter(opts?.deviceFilter ?? '')
     setDeviceFirmwarePrefilter(opts?.firmwareVersionFilter ?? '')
     setAssetPrefilter(opts?.assetFilter ?? '')
+    setDeviceGroupPrefilter(opts?.groupFilter ?? '')
+    setAssetDetailId(null)
+    setDeviceDetailId(null)
     const seg = ID_TO_SEGMENT[id] ?? id
     navigate(`/adr-namespace${seg ? '/' + seg : ''}`)
   }
@@ -605,15 +621,31 @@ export default function AdrNamespacePage() {
       <AnimatePresence mode="wait">
       {activeMenuItem === 'all-resources' ? (
         <AllResourcesView key="all-resources" />
+      ) : activeMenuItem === 'assets' && assetDetailId ? (
+        <AssetDetailView
+          key={`asset-detail-${assetDetailId}`}
+          assetId={assetDetailId}
+          onBack={() => setAssetDetailId(null)}
+          onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
+        />
       ) : activeMenuItem === 'assets' ? (
-        <AssetsView key={`assets-${assetPrefilter}`} initialSearch={assetPrefilter} onRunJob={(ids) => setRunJobTarget({ ids, source: 'Assets' })} />
+        <AssetsView key={`assets-${assetPrefilter}`} initialSearch={assetPrefilter} onRunJob={(ids) => setRunJobTarget({ ids, source: 'Assets' })} onAssetSelect={(id) => setAssetDetailId(id)} />
+      ) : activeMenuItem === 'devices' && deviceDetailId ? (
+        <DeviceDetailView
+          key={`device-detail-${deviceDetailId}`}
+          deviceId={deviceDetailId}
+          onBack={() => setDeviceDetailId(null)}
+          onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
+        />
       ) : activeMenuItem === 'devices' ? (
         <DevicesView
-          key={`devices-${devicePrefilter}-${deviceFirmwarePrefilter}`}
+          key={`devices-${devicePrefilter}-${deviceFirmwarePrefilter}-${deviceGroupPrefilter}`}
           initialSearch={devicePrefilter}
           initialFirmwareFilter={deviceFirmwarePrefilter}
+          initialGroupFilter={deviceGroupPrefilter}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
           onRunJob={(ids) => setRunJobTarget({ ids, source: 'Devices' })}
+          onDeviceSelect={(id) => setDeviceDetailId(id)}
         />
       ) : activeMenuItem === 'iot-hub' ? (
         <IotHubView key="iot-hub" hubs={linkedHubs} onAddHub={() => setShowHubPicker(true)} unlinkedCount={unlinkedHubs.length} />
@@ -654,9 +686,17 @@ export default function AdrNamespacePage() {
         return <ProvisioningView key="provisioning" svc={svc} onConfigure={() => { setSvcConfigTarget(svc); setDisableConfirmText(''); setEnableInstanceName(INSTANCE_NAME_OPTIONS[svc.name]?.[0] ?? '') }} />
       })() : activeMenuItem === 'cert-mgmt' ? (() => {
         const svc = namespaceSvcs.find(s => s.name === 'Certificate Management')!
-        return <CertMgmtView key="cert-mgmt" svc={svc} onConfigure={() => { setSvcConfigTarget(svc); setDisableConfirmText(''); setEnableInstanceName(INSTANCE_NAME_OPTIONS[svc.name]?.[0] ?? '') }} />
+        return <CertMgmtView key="cert-mgmt" svc={svc} onConfigure={() => { setSvcConfigTarget(svc); setDisableConfirmText(''); setEnableInstanceName(INSTANCE_NAME_OPTIONS[svc.name]?.[0] ?? '') }} onNavigate={(id) => navigateTo(id)} />
       })() : activeMenuItem === 'groups' ? (
-        <GroupsView key="groups" />
+        <GroupsView key="groups" onGroupSelect={(id) => {
+          const grp = mockGroups.find(g => g.id === id)
+          if (!grp) return
+          if (grp.memberKind === 'assets') {
+            navigateTo('assets', { assetFilter: grp.criteria?.manufacturer ?? grp.criteria?.type ?? '' })
+          } else {
+            navigateTo('devices', { groupFilter: id })
+          }
+        }} />
       ) : activeMenuItem === 'device-update' ? (() => {
         const svc = namespaceSvcs.find(s => s.name === 'Device Update')!
         const isDisabled = svc.status === 'Disabled' || svc.status === 'Enabling'
@@ -718,6 +758,24 @@ export default function AdrNamespacePage() {
         <HeroStat icon={Cpu} label="Assets" value={namespace.totalAssets.toLocaleString()} />
         <HeroStat icon={Server} label="IoT Hubs" value={linkedHubs.length.toString()} />
         <HeroStat icon={Activity} label={<><span className="whitespace-nowrap">IoT&nbsp;Operations</span> Instances</>} value={aioInstances.length.toString()} />
+      </div>
+
+      {/* ── Resource Health Charts ──────────────────────────── */}
+      <div className="grid grid-cols-3 gap-4">
+        <ChartCard title="Device Health">
+          <DonutChart segments={deviceHealthData} centerLabel="Healthy" />
+        </ChartCard>
+        <ChartCard title="Asset Health">
+          <DonutChart segments={assetHealthData} centerLabel="Available" />
+        </ChartCard>
+        <ChartCard title="Resources by Type">
+          <HBarChart data={[
+            { label: 'Devices',  value: namespace.totalDevices, color: '#3b82f6' },
+            { label: 'Assets',   value: namespace.totalAssets,  color: '#8b5cf6' },
+            { label: 'IoT Hubs', value: linkedHubs.length,      color: '#10b981' },
+            { label: 'IoT&nbsp;Ops Instances', value: aioInstances.length, color: '#f59e0b' },
+          ]} />
+        </ChartCard>
       </div>
 
       {/* ── Services Health ──────────────────────────────────── */}
@@ -842,6 +900,17 @@ export default function AdrNamespacePage() {
           open={aioOpen}
           onToggle={() => setAioOpen((v) => !v)}
           summaryStatus={<SummaryStatusDots statuses={aioInstances.map((i) => i.status)} />}
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs relative"
+              onClick={(e) => { e.stopPropagation(); navigateTo('iot-ops') }}
+            >
+              <Wind className="h-3.5 w-3.5" />
+              Manage <span className="whitespace-nowrap">IoT&nbsp;Operations</span> Instances
+            </Button>
+          }
         />
         <AnimatePresence initial={false}>
           {aioOpen && (
@@ -1537,6 +1606,53 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
   )
 }
 
+/** SVG line chart that fills the container width */
+function TinyLineChart({ data, color = '#3b82f6', label }: { data: number[]; color?: string; label?: string }) {
+  const h = 80
+  const pad = 6
+  const max = Math.max(...data, 1)
+  const min = Math.min(...data, 0)
+  const range = max - min || 1
+  const pts = data.map((v, i) => {
+    const x = pad + (i / (data.length - 1)) * (300 - pad * 2)
+    const y = h - pad - ((v - min) / range) * (h - pad * 2)
+    return `${x},${y}`
+  }).join(' ')
+  const lastPt = pts.split(' ').at(-1)!
+  const lastVal = data[data.length - 1]
+  return (
+    <div className="w-full">
+      <svg viewBox={`0 0 300 ${h}`} className="w-full" preserveAspectRatio="none" style={{ height: h }}>
+        <defs>
+          <linearGradient id={`tl-${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon points={`${pad},${h - pad} ${pts} ${300 - pad},${h - pad}`} fill={`url(#tl-${color.replace('#','')})`} />
+        <polyline points={pts} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        {lastPt && <circle cx={lastPt.split(',')[0]} cy={lastPt.split(',')[1]} r="3" fill={color} />}
+      </svg>
+      {label && <p className="text-xs text-muted-foreground mt-1">{label}: <span className="font-mono font-medium text-foreground">{lastVal.toLocaleString()}</span></p>}
+    </div>
+  )
+}
+
+/* ─── Time-Series Mock Data ──────────────────────────────────── */
+
+// Cert ops: 24h (hourly operations issued / revoked)
+const certOpsL1D = [124, 98, 87, 142, 201, 185, 167, 210, 340, 412, 389, 356, 398, 420, 411, 380, 392, 415, 440, 398, 360, 312, 278, 241]
+const certRevokedL1D = [2, 1, 0, 3, 4, 2, 1, 2, 6, 8, 5, 4, 3, 7, 5, 4, 3, 4, 5, 3, 2, 2, 1, 2]
+// Cert ops: 30d (daily)
+const certOpsL30D = [3200, 2980, 3410, 3250, 3870, 4120, 3960, 4380, 4210, 4050, 3880, 3990, 4100, 4420, 4190, 4340, 4510, 4380, 4190, 4260, 4320, 4480, 4290, 4130, 4200, 4350, 4410, 4180, 4050, 3980]
+
+// Provisioning: 24h (hourly registration attempts)
+const provRegistrationsL1D = [18, 12, 9, 14, 22, 31, 28, 24, 42, 67, 58, 54, 61, 72, 68, 54, 49, 62, 71, 58, 44, 38, 29, 21]
+const provAssignedL1D     = [16, 11, 8, 13, 20, 29, 26, 22, 39, 63, 54, 51, 57, 68, 64, 51, 46, 58, 67, 54, 41, 35, 27, 19]
+const provAttestL1D       = [17, 12, 9, 13, 21, 30, 27, 23, 41, 65, 56, 52, 59, 70, 66, 53, 48, 60, 69, 56, 43, 37, 28, 20]
+
+
+
 function SubViewHeader({ title, subtitle, count }: { title: React.ReactNode; subtitle?: string; count?: number }) {
   return (
     <div className="flex items-center justify-between">
@@ -1587,13 +1703,16 @@ const mockEnrollmentGroups = [
 ]
 
 const mockGroups = [
-  { id: 'GRP-001', name: 'All Turbine Controllers',    type: 'Device Group', devices: 6_100, assets: 0, status: 'Active'   },
-  { id: 'GRP-002', name: 'Abilene Wind Farm – All',    type: 'Device Group', devices: 2_430, assets: 434, status: 'Active' },
-  { id: 'GRP-003', name: 'Midland Wind Farm – All',    type: 'Device Group', devices: 2_180, assets: 318, status: 'Active' },
-  { id: 'GRP-004', name: 'Odessa Wind Farm – All',     type: 'Device Group', devices: 1_820, assets: 244, status: 'Active' },
-  { id: 'GRP-005', name: 'San Angelo Wind Farm – All', type: 'Device Group', devices: 1_100, assets: 187, status: 'Active' },
-  { id: 'GRP-006', name: 'Firmware v3.1.0 – Pending',  type: 'Device Group', devices: 6_203, assets: 0, status: 'Active'   },
-  { id: 'GRP-007', name: 'Degraded + Unhealthy',       type: 'Device Group', devices: 583,   assets: 0, status: 'Active'   },
+  { id: 'GRP-001', name: 'All Turbine Controllers',     memberKind: 'devices' as const, type: 'Device Group',  devices: 6_100, assets: 0,   status: 'Active',   criteria: { type: 'Turbine Controller' } },
+  { id: 'GRP-002', name: 'Abilene Wind Farm – All',      memberKind: 'devices' as const, type: 'Device Group',  devices: 2_430, assets: 434, status: 'Active',   criteria: { site: 'Abilene Wind Farm' } },
+  { id: 'GRP-003', name: 'Midland Wind Farm – All',      memberKind: 'devices' as const, type: 'Device Group',  devices: 2_180, assets: 318, status: 'Active',   criteria: { site: 'Midland Wind Farm' } },
+  { id: 'GRP-004', name: 'Odessa Wind Farm – All',       memberKind: 'devices' as const, type: 'Device Group',  devices: 1_820, assets: 244, status: 'Active',   criteria: { site: 'Odessa Wind Farm' } },
+  { id: 'GRP-005', name: 'San Angelo Wind Farm – All',   memberKind: 'devices' as const, type: 'Device Group',  devices: 1_100, assets: 187, status: 'Active',   criteria: { site: 'San Angelo Wind Farm' } },
+  { id: 'GRP-006', name: 'Firmware v3.1.0 – Pending Update', memberKind: 'devices' as const, type: 'Device Group', devices: 6_203, assets: 0, status: 'Active', criteria: { firmware: 'v3.1.0' } },
+  { id: 'GRP-007', name: 'Degraded + Unhealthy',         memberKind: 'devices' as const, type: 'Device Group',  devices: 583,   assets: 0,   status: 'Active',   criteria: { status: 'Degraded' } },
+  { id: 'GRP-008', name: 'Contoso Turbine Assets',       memberKind: 'assets'  as const, type: 'Asset Group',   devices: 0,     assets: 1_420, status: 'Active', criteria: { manufacturer: 'Contoso Wind Systems' } },
+  { id: 'GRP-009', name: 'All Anemometer Sensors',       memberKind: 'assets'  as const, type: 'Asset Group',   devices: 0,     assets: 782,  status: 'Active',   criteria: { type: 'Anemometer' } },
+  { id: 'GRP-010', name: 'Edge Gateways – All Sites',    memberKind: 'assets'  as const, type: 'Asset Group',   devices: 0,     assets: 541,  status: 'Active',   criteria: { type: 'Edge Gateway' } },
 ]
 
 const mockCertHierarchy = [
@@ -1661,13 +1780,24 @@ function ProvisioningView({ svc, onConfigure }: { svc: NamespaceService; onConfi
         {[
           { label: 'Enrollment Groups', value: mockEnrollmentGroups.length.toString() },
           { label: 'Registered Devices', value: totalDevices.toLocaleString() },
-          { label: 'Allocation Policy', value: 'Hashed' },
+          { label: 'Allocation Policy', value: 'Evenly Weighted Distribution' },
         ].map(c => (
           <div key={c.label} className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
             <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">{c.label}</p>
             <p className="text-xl font-semibold text-slate-900">{c.value}</p>
           </div>
         ))}
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <ChartCard title="Registration Attempts – 24h">
+          <TinyLineChart data={provRegistrationsL1D} color="#3b82f6" label="Current hour" />
+        </ChartCard>
+        <ChartCard title="Devices Assigned – 24h">
+          <TinyLineChart data={provAssignedL1D} color="#10b981" label="Current hour" />
+        </ChartCard>
+        <ChartCard title="Attestation Attempts – 24h">
+          <TinyLineChart data={provAttestL1D} color="#f59e0b" label="Current hour" />
+        </ChartCard>
       </div>
       <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
         <Table>
@@ -1701,15 +1831,16 @@ function ProvisioningView({ svc, onConfigure }: { svc: NamespaceService; onConfi
 
 /* ─── Certificate Management View ───────────────────────────── */
 
-function CertMgmtView({ svc, onConfigure }: { svc: NamespaceService; onConfigure: () => void }) {
+function CertMgmtView({ svc, onConfigure, onNavigate }: { svc: NamespaceService; onConfigure: () => void; onNavigate: (id: string) => void }) {
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
       <CapabilityPageHeader icon={Shield} title="Certificate Management" description="Manage the CA hierarchy and certificate lifecycle for devices in this namespace." svc={svc} onConfigure={onConfigure} />
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Root CAs', value: '1' },
-          { label: 'Intermediate CAs', value: '1' },
-          { label: 'Devices Covered', value: (8_421).toLocaleString() },
+          { label: 'CAs',                      value: '2'                    },
+          { label: 'Root CAs',                  value: '1'                    },
+          { label: 'Intermediate CAs',           value: '1'                    },
+          { label: 'Active Leaf Certificates',   value: (8_421).toLocaleString() },
         ].map(c => (
           <div key={c.label} className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
             <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">{c.label}</p>
@@ -1717,31 +1848,57 @@ function CertMgmtView({ svc, onConfigure }: { svc: NamespaceService; onConfigure
           </div>
         ))}
       </div>
+      <div className="grid grid-cols-2 gap-4">
+        <ChartCard title="Certificate Operations – Last 24h">
+          <TinyLineChart data={certOpsL1D} color="#3b82f6" label="Issued this hour" />
+          <p className="text-[11px] text-muted-foreground mt-2">Revocations: <span className="font-mono">{certRevokedL1D[certRevokedL1D.length - 1]}</span> in current hour</p>
+        </ChartCard>
+        <ChartCard title="Certificate Operations – Last 30 Days">
+          <TinyLineChart data={certOpsL30D} color="#8b5cf6" label="Issued today" />
+        </ChartCard>
+      </div>
       <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-slate-50 px-4 py-2 border-b border-slate-100">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">CA Hierarchy</p>
+        </div>
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50">
+            <TableRow className="bg-white">
               <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">ID</TableHead>
               <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</TableHead>
               <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Type</TableHead>
               <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Issuer</TableHead>
               <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Valid To</TableHead>
               <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</TableHead>
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockCertHierarchy.map(c => (
-              <TableRow key={c.id} className="hover:bg-slate-50/60">
-                <TableCell className="font-mono text-xs text-slate-400">{c.id}</TableCell>
-                <TableCell className="font-medium text-sm">{c.name}</TableCell>
-                <TableCell>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-slate-50 text-slate-600 border-slate-200">{c.type}</span>
-                </TableCell>
-                <TableCell className="text-sm text-slate-600">{c.issuer}</TableCell>
-                <TableCell className="text-xs text-slate-400">{c.validTo}</TableCell>
-                <TableCell><StatusBadge status={c.status === 'Valid' ? 'Healthy' : c.status} /></TableCell>
-              </TableRow>
-            ))}
+            {mockCertHierarchy.map(c => {
+              const destId = c.type === 'Root CA' ? 'credentials' : 'policies'
+              const destLabel = c.type === 'Root CA' ? 'View in Credentials' : 'View in Policies'
+              return (
+                <TableRow
+                  key={c.id}
+                  className="hover:bg-slate-50/80 cursor-pointer"
+                  onClick={() => onNavigate(destId)}
+                >
+                  <TableCell className="font-mono text-xs text-slate-400">{c.id}</TableCell>
+                  <TableCell className="font-medium text-sm">{c.name}</TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-slate-50 text-slate-600 border-slate-200">{c.type}</span>
+                  </TableCell>
+                  <TableCell className="text-sm text-slate-600">{c.issuer}</TableCell>
+                  <TableCell className="text-xs text-slate-400">{c.validTo}</TableCell>
+                  <TableCell><StatusBadge status={c.status === 'Valid' ? 'Healthy' : c.status} /></TableCell>
+                  <TableCell className="text-right">
+                    <span className="text-xs text-blue-600 hover:underline flex items-center gap-1 justify-end">
+                      {destLabel}<ChevronRight className="h-3 w-3" />
+                    </span>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </div>
@@ -1751,15 +1908,164 @@ function CertMgmtView({ svc, onConfigure }: { svc: NamespaceService; onConfigure
 
 /* ─── Groups View ────────────────────────────────────────────── */
 
-function GroupsView() {
+const GROUP_DEVICE_TYPES = ['Turbine Controller', 'Anemometer', 'Pitch Controller', 'Edge Gateway']
+const GROUP_ASSET_TYPES  = ['Turbine Controller', 'Anemometer', 'Pitch Controller', 'Edge Gateway']
+const GROUP_SITES        = ['Abilene Wind Farm', 'Midland Wind Farm', 'Odessa Wind Farm', 'San Angelo Wind Farm']
+const GROUP_MANUFACTURERS = ['Contoso Wind Systems', 'Zephyr Sensors Inc.', 'AeroLogix Systems', 'Meridian Edge Technologies']
+const GROUP_STATUSES     = ['Healthy', 'Degraded', 'Unhealthy']
+
+type GroupDraft = {
+  name: string; description: string; memberKind: 'devices' | 'assets'
+  criteriaManufacturer: string; criteriaSite: string; criteriaType: string; criteriaStatus: string; freeQuery: string
+}
+
+function CreateGroupWizard({ onClose, onCreate }: { onClose: () => void; onCreate: (draft: GroupDraft) => void }) {
+  const [step, setStep] = useState(1)
+  const [draft, setDraft] = useState<GroupDraft>({
+    name: '', description: '', memberKind: 'devices',
+    criteriaManufacturer: '', criteriaSite: '', criteriaType: '', criteriaStatus: '', freeQuery: '',
+  })
+  const canNext1 = draft.name.trim().length > 0
+  const canCreate = canNext1
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        className="w-full max-w-lg rounded-xl border bg-white shadow-xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b px-6 py-4">
+          <div>
+            <h3 className="text-base font-semibold">Create Group</h3>
+            <p className="text-xs text-muted-foreground">Step {step} of 2 — {step === 1 ? 'Basic Info' : 'Membership Criteria'}</p>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          {step === 1 && (
+            <>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium">Group Name *</label>
+                <Input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="e.g. San Angelo – TurbineCtrl Q2 Update" className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium">Description</label>
+                <textarea value={draft.description} onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}
+                  placeholder="Optional description…" rows={2}
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-ring" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium">Group Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['devices', 'assets'] as const).map(k => (
+                    <button key={k} onClick={() => setDraft(d => ({ ...d, memberKind: k }))}
+                      className={`flex items-center gap-2 rounded-lg border p-3 text-sm transition-all ${draft.memberKind === k ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 hover:border-slate-300'}`}>
+                      {k === 'devices' ? <Radio className="h-4 w-4" /> : <Cpu className="h-4 w-4" />}
+                      {k === 'devices' ? 'Device Group' : 'Asset Group'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+          {step === 2 && (
+            <>
+              <p className="text-xs text-muted-foreground">Define membership criteria. All matching {draft.memberKind} will be included automatically.</p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'Manufacturer', key: 'criteriaManufacturer' as const, opts: GROUP_MANUFACTURERS },
+                  { label: 'Site', key: 'criteriaSite' as const, opts: GROUP_SITES },
+                  { label: 'Type', key: 'criteriaType' as const, opts: draft.memberKind === 'devices' ? GROUP_DEVICE_TYPES : GROUP_ASSET_TYPES },
+                  { label: 'Health Status', key: 'criteriaStatus' as const, opts: GROUP_STATUSES },
+                ].map(({ label, key, opts }) => (
+                  <div key={key} className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">{label}</label>
+                    <select value={draft[key]} onChange={e => setDraft(d => ({ ...d, [key]: e.target.value }))}
+                      className="flex h-9 w-full rounded-md border border-input bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                      <option value="">Any</option>
+                      {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium">Additional Query (plain English)</label>
+                <textarea value={draft.freeQuery} onChange={e => setDraft(d => ({ ...d, freeQuery: e.target.value }))}
+                  placeholder="e.g. devices that have not reported telemetry in the last 24 hours"
+                  rows={2}
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-ring" />
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between border-t px-6 py-4">
+          <Button variant="outline" size="sm" onClick={step === 1 ? onClose : () => setStep(1)}>
+            {step === 1 ? 'Cancel' : 'Back'}
+          </Button>
+          {step < 2 ? (
+            <Button size="sm" disabled={!canNext1} onClick={() => setStep(2)}>Next</Button>
+          ) : (
+            <Button size="sm" disabled={!canCreate} onClick={() => onCreate(draft)}>Create Group</Button>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+function GroupsView({ onGroupSelect }: { onGroupSelect?: (id: string) => void }) {
+  const [groups, setGroups] = useState(mockGroups)
+  const [showWizard, setShowWizard] = useState(false)
+
+  const deviceGroups = groups.filter(g => g.memberKind === 'devices')
+  const assetGroups  = groups.filter(g => g.memberKind === 'assets')
+
+  function handleCreate(draft: GroupDraft) {
+    const newId = `GRP-${String(groups.length + 1).padStart(3, '0')}`
+    const newGroup = {
+      id: newId,
+      name: draft.name,
+      memberKind: draft.memberKind,
+      type: draft.memberKind === 'devices' ? 'Device Group' as const : 'Asset Group' as const,
+      devices: draft.memberKind === 'devices' ? Math.floor(Math.random() * 200 + 50) : 0,
+      assets:  draft.memberKind === 'assets'  ? Math.floor(Math.random() * 100 + 20) : 0,
+      status: 'Active' as const,
+      criteria: {
+        manufacturer: draft.criteriaManufacturer || undefined,
+        site: draft.criteriaSite || undefined,
+        type: draft.criteriaType || undefined,
+        status: draft.criteriaStatus || undefined,
+      },
+    }
+    setGroups(prev => [...prev, newGroup] as typeof mockGroups)
+    setShowWizard(false)
+  }
+
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
-      <CapabilityPageHeader icon={Users} title="Groups" description="Organize devices into groups for targeted jobs, policies, and firmware deployments." />
-      <div className="grid grid-cols-3 gap-4">
+      <div className="flex items-center justify-between">
+        <CapabilityPageHeader icon={Users} title="Groups" description="Organize devices and assets into groups for targeted jobs, policies, and firmware deployments." />
+        <Button size="sm" className="gap-1.5 text-xs shrink-0" onClick={() => setShowWizard(true)}>
+          <Plus className="h-3.5 w-3.5" />
+          Create Group
+        </Button>
+      </div>
+      <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Total Groups', value: mockGroups.length.toString() },
-          { label: 'Largest Group', value: mockGroups[0].devices.toLocaleString() + ' devices' },
-          { label: 'Active Groups', value: mockGroups.filter(g => g.status === 'Active').length.toString() },
+          { label: 'Total Groups',   value: groups.length.toString() },
+          { label: 'Device Groups',  value: deviceGroups.length.toString() },
+          { label: 'Asset Groups',   value: assetGroups.length.toString() },
+          { label: 'Active Groups',  value: groups.filter(g => g.status === 'Active').length.toString() },
         ].map(c => (
           <div key={c.label} className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
             <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">{c.label}</p>
@@ -1767,35 +2073,65 @@ function GroupsView() {
           </div>
         ))}
       </div>
+      <div className="grid grid-cols-2 gap-4">
+        <ChartCard title="Groups by Type">
+          <DonutChart segments={[
+            { label: 'Device Groups', value: deviceGroups.length, color: '#3b82f6' },
+            { label: 'Asset Groups',  value: assetGroups.length,  color: '#8b5cf6' },
+          ]} centerLabel="Groups" />
+        </ChartCard>
+        <ChartCard title="Member Count by Group">
+          <HBarChart data={groups.slice(0, 6).map(g => ({
+            label: g.name.length > 28 ? g.name.slice(0, 28) + '…' : g.name,
+            value: g.memberKind === 'devices' ? g.devices : g.assets,
+            color: g.memberKind === 'devices' ? '#3b82f6' : '#8b5cf6',
+          }))} />
+        </ChartCard>
+      </div>
       <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50">
               <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">ID</TableHead>
               <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Group Name</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Type</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">Devices</TableHead>
-              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">Assets</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Kind</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">Members</TableHead>
               <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</TableHead>
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockGroups.map(g => (
-              <TableRow key={g.id} className="hover:bg-slate-50/60">
+            {groups.map(g => (
+              <TableRow key={g.id} className="hover:bg-slate-50/80 cursor-pointer" onClick={() => onGroupSelect?.(g.id)}>
                 <TableCell className="font-mono text-xs text-slate-400">{g.id}</TableCell>
                 <TableCell className="font-medium text-sm">{g.name}</TableCell>
-                <TableCell className="text-sm text-slate-600">{g.type}</TableCell>
-                <TableCell className="text-right font-mono text-sm">{g.devices.toLocaleString()}</TableCell>
-                <TableCell className="text-right font-mono text-sm text-slate-400">{g.assets > 0 ? g.assets.toLocaleString() : '—'}</TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${g.memberKind === 'assets' ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                    {g.memberKind === 'assets' ? <Cpu className="h-3 w-3" /> : <Radio className="h-3 w-3" />}
+                    {g.type}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right font-mono text-sm">
+                  {g.memberKind === 'devices' ? g.devices.toLocaleString() : g.assets.toLocaleString()}
+                </TableCell>
                 <TableCell><StatusBadge status={g.status} /></TableCell>
+                <TableCell className="text-right pr-4">
+                  <span className="text-xs text-blue-600 flex items-center gap-1 justify-end">
+                    View {g.memberKind === 'assets' ? 'Assets' : 'Devices'}<ChevronRight className="h-3 w-3" />
+                  </span>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+      <AnimatePresence>
+        {showWizard && <CreateGroupWizard onClose={() => setShowWizard(false)} onCreate={handleCreate} />}
+      </AnimatePresence>
     </motion.div>
   )
 }
+
 
 /* ─── Credentials Page View ──────────────────────────────────── */
 
@@ -2205,7 +2541,7 @@ function mkDropdown<T extends string>(
   )
 }
 
-function AssetsView({ initialSearch = '', onRunJob }: { initialSearch?: string; onRunJob?: (ids: string[]) => void }) {
+function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSearch?: string; onRunJob?: (ids: string[]) => void; onAssetSelect?: (id: string) => void }) {
   const [search, setSearch] = useState(initialSearch)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   // Health multi-select
@@ -2368,7 +2704,7 @@ function AssetsView({ initialSearch = '', onRunJob }: { initialSearch?: string; 
                   </TableCell>
                 </TableRow>
               ) : filtered.map(a => (
-                <TableRow key={a.id} className={`cursor-pointer ${selected.has(a.id) ? 'bg-blue-50/50' : ''}`} onClick={() => setSelected(s => { const n = new Set(s); n.has(a.id) ? n.delete(a.id) : n.add(a.id); return n })}>
+                <TableRow key={a.id} className={`cursor-pointer hover:bg-slate-50/80 ${selected.has(a.id) ? 'bg-blue-50/50' : ''}`} onClick={() => onAssetSelect?.(a.id)}>
                   <TableCell className="pr-0" onClick={e => e.stopPropagation()}>
                     <input
                       type="checkbox"
@@ -2420,7 +2756,7 @@ const DEVICE_ACTIONS = [
   { id: 'update-firmware', label: 'Update Firmware', icon: Upload, cls: 'text-blue-700' },
 ]
 
-function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwareSelect, onRunJob }: { initialSearch?: string; initialFirmwareFilter?: string; onFirmwareSelect?: (version: string) => void; onRunJob?: (ids: string[]) => void }) {
+function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGroupFilter = '', onFirmwareSelect, onRunJob, onDeviceSelect }: { initialSearch?: string; initialFirmwareFilter?: string; initialGroupFilter?: string; onFirmwareSelect?: (version: string) => void; onRunJob?: (ids: string[]) => void; onDeviceSelect?: (id: string) => void }) {
   const [search, setSearch] = useState(initialSearch)
   // Status multi-select
   const [statusValues, setStatusValues] = useState<Set<string>>(new Set())
@@ -2476,8 +2812,20 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
   const filteredConnOptions = CONNECTIVITY_OPTIONS.filter(v => v.toLowerCase().includes(connSearch.toLowerCase()))
   const filteredFwOptions = DEVICE_FIRMWARE_VERSIONS.filter(v => v.toLowerCase().includes(fwSearch.toLowerCase()))
 
+  const activeGroup = initialGroupFilter ? mockGroups.find(g => g.id === initialGroupFilter) : undefined
+
   const filtered = useMemo(() => {
     let rows = mockDevices
+    // Group pre-filter
+    if (initialGroupFilter) {
+      const grp = mockGroups.find(g => g.id === initialGroupFilter)
+      if (grp?.criteria) {
+        if (grp.criteria.type) rows = rows.filter(d => d.type === grp.criteria.type)
+        if (grp.criteria.site) rows = rows.filter(d => d.site === grp.criteria.site)
+        if (grp.criteria.manufacturer) rows = rows.filter(d => d.manufacturer === grp.criteria.manufacturer)
+        if (grp.criteria.status) rows = rows.filter(d => d.status === grp.criteria.status)
+      }
+    }
     if (search.trim()) {
       const q = search.toLowerCase()
       rows = rows.filter(d =>
@@ -2560,6 +2908,13 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
       className="space-y-8"
     >
       <SubViewHeader title="Devices" count={namespace.totalDevices} subtitle="Texas-Wind-Namespace" />
+      {activeGroup && (
+        <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm text-blue-800">
+          <Filter className="h-4 w-4 shrink-0 text-blue-500" />
+          Filtered by group: <span className="font-semibold">{activeGroup.name}</span>
+          <span className="text-blue-500 ml-1">· {filtered.length} matching devices</span>
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <ChartCard title="Device Health">
           <DonutChart segments={deviceHealthData} centerLabel="Healthy" />
@@ -2709,8 +3064,8 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
                 return (
                   <TableRow
                     key={d.id}
-                    className={`cursor-pointer ${isSelected ? 'bg-blue-50/50' : ''}`}
-                    onClick={() => toggleDevice(d.id)}
+                    className={`cursor-pointer hover:bg-slate-50/80 ${isSelected ? 'bg-blue-50/50' : ''}`}
+                    onClick={() => onDeviceSelect?.(d.id)}
                   >
                     <TableCell className="pr-0" onClick={e => e.stopPropagation()}>
                       <input
@@ -2889,9 +3244,9 @@ function IotOpsView() {
         <Button
           size="sm"
           className="gap-1.5 text-xs"
-          onClick={() => window.open('https://portal.azure.com', '_blank')}
+          onClick={() => {}}
         >
-          <ExternalLink className="h-3.5 w-3.5" />
+          <Plus className="h-3.5 w-3.5" />
           Deploy new IoT Operations instance
         </Button>
       </div>
@@ -3469,6 +3824,292 @@ function FirmwareAnalysisView({ onFirmwareSelect, onVersionClick, onManufacturer
           </Table>
         </div>
       </div>
+    </motion.div>
+  )
+}
+/* ─── Asset Detail View ──────────────────────────────────────── */
+
+const ASSET_MODEL_MAP: Record<string, string> = {
+  'Turbine Controller': 'TurbineController-X700',
+  'Anemometer': 'AnemometerPro-2400',
+  'Pitch Controller': 'PitchController-5000',
+  'Edge Gateway': 'EdgeGateway-1900',
+}
+
+function AssetDetailView({ assetId, onBack, onFirmwareSelect }: { assetId: string; onBack: () => void; onFirmwareSelect: (v: string) => void }) {
+  const asset = mockAssets.find(a => a.id === assetId)
+  if (!asset) return <div className="p-8 text-muted-foreground text-sm">Asset not found.</div>
+
+  const fwVersion = asset.firmware.startsWith('v') ? asset.firmware.slice(1) : asset.firmware
+  const fwData = firmwareDetailData[fwVersion]
+  const model = ASSET_MODEL_MAP[asset.type] ?? asset.type
+  const sevColor: Record<string, string> = { Critical: '#ef4444', High: '#f97316', Medium: '#f59e0b', Low: '#94a3b8' }
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-6">
+      <div className="flex items-center gap-2">
+        <button onClick={onBack} className="rounded-lg p-1.5 hover:bg-slate-100 transition-colors text-muted-foreground hover:text-foreground">
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <div>
+          <h1 className="text-lg font-semibold">{asset.name}</h1>
+          <p className="text-xs text-muted-foreground">{asset.id} · {asset.type}</p>
+        </div>
+        <div className="ml-auto"><StatusBadge status={asset.status === 'Available' ? 'Healthy' : asset.status} /></div>
+      </div>
+
+      <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex items-center gap-2">
+          <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Azure Resource Properties</p>
+        </div>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3 px-4 py-4">
+          {[
+            { label: 'Resource Group',   value: 'rg-zava-southcentralus' },
+            { label: 'Location',          value: 'South Central US' },
+            { label: 'Subscription',      value: 'Zava Energy – Production' },
+            { label: 'Subscription ID',   value: '47b2c901-9f3a-4d81-b628-3e51a0c74f22' },
+            { label: 'Namespace',         value: 'Texas-Wind-Namespace' },
+            { label: 'Site',              value: asset.site },
+          ].map(p => (
+            <div key={p.label} className="flex flex-col gap-0.5">
+              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{p.label}</span>
+              <span className="text-sm font-mono text-slate-700">{p.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex items-center gap-2">
+          <Cpu className="h-3.5 w-3.5 text-muted-foreground" />
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Asset Properties</p>
+        </div>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3 px-4 py-4">
+          {[
+            { label: 'Manufacturer', value: asset.manufacturer },
+            { label: 'Model',         value: model },
+            { label: 'Type',          value: asset.type },
+          ].map(p => (
+            <div key={p.label} className="flex flex-col gap-0.5">
+              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{p.label}</span>
+              <span className="text-sm font-mono text-slate-700">{p.value}</span>
+            </div>
+          ))}
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Software Version</span>
+            {asset.firmware === '—' ? (
+              <span className="text-sm font-mono text-slate-400">—</span>
+            ) : (
+              <button onClick={() => onFirmwareSelect(fwVersion)} className="text-sm font-mono text-blue-600 hover:underline text-left flex items-center gap-1">
+                {asset.firmware}<ChevronRight className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Last Seen</span>
+            <span className="text-sm text-slate-700">{asset.lastSeen}</span>
+          </div>
+        </div>
+      </div>
+
+      {fwData && (
+        <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
+          <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">CVE Summary</p>
+            </div>
+            <button onClick={() => onFirmwareSelect(fwVersion)} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+              View full firmware analysis<ChevronRight className="h-3 w-3" />
+            </button>
+          </div>
+          <div className="px-4 py-4">
+            <div className="grid grid-cols-4 gap-3 mb-4">
+              {(['Critical', 'High', 'Medium', 'Low'] as const).map(s => {
+                const sk = s.toLowerCase() as keyof typeof fwData.cvesBySeverity
+                return (
+                  <div key={s} className="rounded-lg border border-slate-100 p-3 text-center">
+                    <p className="text-lg font-bold" style={{ color: sevColor[s] }}>{fwData.cvesBySeverity[sk]}</p>
+                    <p className="text-xs text-muted-foreground">{s}</p>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="space-y-1.5">
+              {fwData.cves.slice(0, 3).map(c => (
+                <div key={c.id} className="flex items-start gap-2 text-sm">
+                  <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: `${sevColor[c.severity]}20`, color: sevColor[c.severity] }}>{c.severity[0]}</span>
+                  <span className="font-mono text-xs text-slate-500 shrink-0 pt-0.5">{c.id}</span>
+                  <span className="text-xs text-muted-foreground">{c.description}</span>
+                </div>
+              ))}
+              {fwData.cves.length > 3 && (
+                <button onClick={() => onFirmwareSelect(fwVersion)} className="text-xs text-blue-600 hover:underline mt-1">
+                  +{fwData.cves.length - 3} more CVEs → view firmware analysis
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
+/* ─── Device Detail View ─────────────────────────────────────── */
+
+function DeviceDetailView({ deviceId, onBack, onFirmwareSelect }: { deviceId: string; onBack: () => void; onFirmwareSelect: (v: string) => void }) {
+  const device = mockDevices.find(d => d.id === deviceId)
+  if (!device) return <div className="p-8 text-muted-foreground text-sm">Device not found.</div>
+
+  const fwVersion = device.firmware.startsWith('v') ? device.firmware.slice(1) : device.firmware
+  const fwData = fwVersion !== '—' ? firmwareDetailData[fwVersion] : undefined
+  const sevColor: Record<string, string> = { Critical: '#ef4444', High: '#f97316', Medium: '#f59e0b', Low: '#94a3b8' }
+  const isEdge = device.type === 'Edge Gateway'
+  const outboundEndpoint = isEdge ? 'None' : `${device.hub}.azure-devices.net`
+  const inboundEndpoint = isEdge ? `mqtts://${device.name}.westus2.azure-devices.net:8883` : 'None'
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-6">
+      <div className="flex items-center gap-2">
+        <button onClick={onBack} className="rounded-lg p-1.5 hover:bg-slate-100 transition-colors text-muted-foreground hover:text-foreground">
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <div>
+          <h1 className="text-lg font-semibold font-mono">{device.name}</h1>
+          <p className="text-xs text-muted-foreground">{device.id} · {device.type}</p>
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <StatusBadge status={device.status} />
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${device.connectivity === 'Connected' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+            <Wifi className="h-3 w-3" />{device.connectivity}
+          </span>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex items-center gap-2">
+          <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Azure Resource Properties</p>
+        </div>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3 px-4 py-4">
+          {[
+            { label: 'Resource Group',   value: 'rg-zava-southcentralus' },
+            { label: 'Location',          value: 'South Central US' },
+            { label: 'Subscription',      value: 'Zava Energy – Production' },
+            { label: 'Subscription ID',   value: '47b2c901-9f3a-4d81-b628-3e51a0c74f22' },
+            { label: 'Namespace',         value: 'Texas-Wind-Namespace' },
+            { label: 'IoT Hub',           value: device.hub },
+            { label: 'Site',              value: device.site },
+            { label: 'Last Seen',         value: device.lastSeen },
+          ].map(p => (
+            <div key={p.label} className="flex flex-col gap-0.5">
+              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{p.label}</span>
+              <span className="text-sm font-mono text-slate-700">{p.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex items-center gap-2">
+          <Radio className="h-3.5 w-3.5 text-muted-foreground" />
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Device Properties</p>
+        </div>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3 px-4 py-4">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Manufacturer</span>
+            <span className="text-sm font-mono text-slate-700">{device.manufacturer}</span>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Model</span>
+            <span className="text-sm font-mono text-slate-700">{device.model}</span>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Firmware Version</span>
+            {device.firmware === '—' ? (
+              <span className="text-sm font-mono text-slate-400">—</span>
+            ) : (
+              <button onClick={() => onFirmwareSelect(fwVersion)} className="text-sm font-mono text-blue-600 hover:underline text-left flex items-center gap-1">
+                {device.firmware}<ChevronRight className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Type</span>
+            <span className="text-sm font-mono text-slate-700">{device.type}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex items-center gap-2">
+          <Network className="h-3.5 w-3.5 text-muted-foreground" />
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Endpoints</p>
+        </div>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3 px-4 py-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Outbound Endpoint</span>
+            {outboundEndpoint === 'None' ? (
+              <span className="text-xs text-slate-400 italic">None</span>
+            ) : (
+              <span className="text-xs font-mono text-slate-700 break-all">{outboundEndpoint}</span>
+            )}
+            <span className="text-[10px] text-slate-400">{isEdge ? 'Edge gateways route outbound via local broker' : 'AMQP/MQTT to IoT Hub'}</span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Inbound Endpoint</span>
+            {inboundEndpoint === 'None' ? (
+              <span className="text-xs text-slate-400 italic">None</span>
+            ) : (
+              <span className="text-xs font-mono text-slate-700 break-all">{inboundEndpoint}</span>
+            )}
+            <span className="text-[10px] text-slate-400">{isEdge ? 'Accepts MQTT connections from leaf devices' : 'Leaf devices connect upstream to edge gateway'}</span>
+          </div>
+        </div>
+      </div>
+
+      {fwData && (
+        <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
+          <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">CVE Summary</p>
+            </div>
+            <button onClick={() => onFirmwareSelect(fwVersion)} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+              View full firmware analysis<ChevronRight className="h-3 w-3" />
+            </button>
+          </div>
+          <div className="px-4 py-4">
+            <div className="grid grid-cols-4 gap-3 mb-4">
+              {(['Critical', 'High', 'Medium', 'Low'] as const).map(s => {
+                const sk = s.toLowerCase() as keyof typeof fwData.cvesBySeverity
+                return (
+                  <div key={s} className="rounded-lg border border-slate-100 p-3 text-center">
+                    <p className="text-lg font-bold" style={{ color: sevColor[s] }}>{fwData.cvesBySeverity[sk]}</p>
+                    <p className="text-xs text-muted-foreground">{s}</p>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="space-y-1.5">
+              {fwData.cves.slice(0, 3).map(c => (
+                <div key={c.id} className="flex items-start gap-2 text-sm">
+                  <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: `${sevColor[c.severity]}20`, color: sevColor[c.severity] }}>{c.severity[0]}</span>
+                  <span className="font-mono text-xs text-slate-500 shrink-0 pt-0.5">{c.id}</span>
+                  <span className="text-xs text-muted-foreground">{c.description}</span>
+                </div>
+              ))}
+              {fwData.cves.length > 3 && (
+                <button onClick={() => onFirmwareSelect(fwVersion)} className="text-xs text-blue-600 hover:underline mt-1">
+                  +{fwData.cves.length - 3} more CVEs → view firmware analysis
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   )
 }
