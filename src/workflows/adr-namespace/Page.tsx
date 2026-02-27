@@ -2051,18 +2051,18 @@ function CreateGroupWizard({ onClose, onCreate }: { onClose: () => void; onCreat
             <>
               <div className="space-y-1.5">
                 <label
-                  className="text-xs font-medium cursor-pointer select-none hover:text-blue-600 transition-colors"
-                  title="Click to autofill"
+                  className="text-xs font-medium cursor-pointer select-none hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
+                  title="Click to fill"
                   onClick={() => setDraft(d => ({ ...d, name: 'San Angelo – TurbineCtrl Q2 Update' }))}
-                >Group Name *</label>
+                >Group Name *<span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span></label>
                 <Input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="e.g. San Angelo – TurbineCtrl Q2 Update" className="h-9 text-sm" />
               </div>
               <div className="space-y-1.5">
                 <label
-                  className="text-xs font-medium cursor-pointer select-none hover:text-blue-600 transition-colors"
-                  title="Click to autofill"
+                  className="text-xs font-medium cursor-pointer select-none hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
+                  title="Click to fill"
                   onClick={() => setDraft(d => ({ ...d, description: 'Targets Contoso Wind Systems turbine controllers at the San Angelo Wind Farm scheduled for Q2 firmware rollout.' }))}
-                >Description</label>
+                >Description<span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span></label>
                 <textarea value={draft.description} onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}
                   placeholder="Optional description…" rows={2}
                   className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-ring" />
@@ -2093,10 +2093,10 @@ function CreateGroupWizard({ onClose, onCreate }: { onClose: () => void; onCreat
                 ].map(({ label, key, opts, demo }) => (
                   <div key={key} className="space-y-1">
                     <label
-                      className="text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-blue-600 transition-colors"
-                      title="Click to autofill"
+                      className="text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
+                      title="Click to fill"
                       onClick={() => setDraft(d => ({ ...d, [key]: demo }))}
-                    >{label}</label>
+                    >{label}<span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span></label>
                     <select value={draft[key]} onChange={e => setDraft(d => ({ ...d, [key]: e.target.value }))}
                       className="flex h-9 w-full rounded-md border border-input bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
                       <option value="">Any</option>
@@ -2107,10 +2107,10 @@ function CreateGroupWizard({ onClose, onCreate }: { onClose: () => void; onCreat
               </div>
               <div className="space-y-1.5">
                 <label
-                  className="text-xs font-medium cursor-pointer select-none hover:text-blue-600 transition-colors"
-                  title="Click to autofill"
+                  className="text-xs font-medium cursor-pointer select-none hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
+                  title="Click to fill"
                   onClick={() => setDraft(d => ({ ...d, freeQuery: 'devices that have not reported telemetry in the last 24 hours' }))}
-                >Additional Query</label>
+                >Additional Query<span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span></label>
                 <textarea value={draft.freeQuery} onChange={e => setDraft(d => ({ ...d, freeQuery: e.target.value }))}
                   placeholder="e.g. devices that have not reported telemetry in the last 24 hours"
                   rows={2}

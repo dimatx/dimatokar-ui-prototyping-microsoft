@@ -81,6 +81,22 @@ Mock interactions are welcome (modals, state transitions, timers). They make dem
 - Say **"Provisioning"**, **"Certificate Management"**, **"Device Update"** — not DPS, ADU
 - These are **namespace-scoped services** — don't imply shared/cross-namespace unless specifically asked
 
+### Wizard field labels — click to fill
+Every `<label>` in a wizard that has a demo/sample value **must** use the click-to-fill pattern so presenters can populate forms in one click:
+
+```tsx
+<label
+  className="text-xs font-medium cursor-pointer select-none hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
+  title="Click to fill"
+  onClick={() => setValue('demo value')}
+>
+  Field Name
+  <span className="opacity-0 group-hover:opacity-100 text-[10px] text-blue-500 transition-opacity">← click to fill</span>
+</label>
+```
+
+Apply this to **all** editable fields in every wizard (text inputs, textareas, selects). Fields without a meaningful demo value (e.g. toggle groups) are exempt.
+
 ## Reusable Components Available
 
 | Component | Path | Use For |
