@@ -548,6 +548,7 @@ export default function AdrNamespacePage() {
   const [jobs, setJobs] = useState<CreatedJob[]>(initialJobs)
   const [runJobTarget, setRunJobTarget] = useState<{ ids: string[]; names: Record<string, string>; source: 'Devices' | 'Assets' } | null>(null)
   const [jobPrefill, setJobPrefill] = useState<JobPrefill | null>(null)
+  const [cveDismissed, setCveDismissed] = useState(false)
 
   // Services state
   const [namespaceSvcs, setNamespaceSvcs] = useState<NamespaceService[]>(initialServices)
@@ -937,6 +938,69 @@ export default function AdrNamespacePage() {
           {namespace.subscription}
         </div>
       </div>
+
+      {/* ── CVE Alert Banner ─────────────────────────────────── */}
+      <AnimatePresence>
+        {location.pathname.includes('new-cve') && !cveDismissed && (
+          <motion.div
+            key="cve-alert"
+            initial={{ opacity: 0, y: -6, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -4, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3.5 flex items-start gap-3">
+              <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-red-100">
+                <Shield className="h-4 w-4 text-red-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-semibold text-red-900">New vulnerability detected</span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-200 text-red-800 border border-red-300">HIGH</span>
+                  <a
+                    href="https://nvd.nist.gov/vuln/detail/CVE-2014-0160"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-red-700 hover:text-red-900 hover:underline transition-colors"
+                  >
+                    CVE-2014-0160
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+                <p className="mt-1 text-sm text-red-800">
+                  <span className="font-semibold">OpenSSL Information Disclosure Vulnerability</span> (Heartbleed) was identified in firmware&nbsp;
+                  <span className="font-mono font-semibold">v3.1.0</span>.
+                  &nbsp;<span className="font-semibold">6,203 devices</span> are affected. Deploy updated firmware to mitigate.
+                </p>
+                <div className="mt-2.5 flex items-center gap-2">
+                  <button
+                    onClick={() => { navigateTo('firmware', { firmware: '3.1.0' }) }}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-red-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-800 transition-colors"
+                  >
+                    <Shield className="h-3.5 w-3.5" />
+                    More details
+                  </button>
+                  <button
+                    onClick={() => setJobPrefill({ jobType: 'software-update', jobName: 'CVE-2014-0160 Mitigation – v3.1.0 → v3.2.1', jobDescription: 'Deploy firmware v3.2.1 to all devices running v3.1.0 to mitigate CVE-2014-0160 (OpenSSL Heartbleed).', targetMode: 'namespace' })}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 transition-colors"
+                  >
+                    <Play className="h-3.5 w-3.5" />
+                    Deploy OTA
+                  </button>
+                </div>
+              </div>
+              <button
+                onClick={() => setCveDismissed(true)}
+                className="mt-0.5 shrink-0 rounded p-1 text-red-400 hover:text-red-700 hover:bg-red-100 transition-colors"
+                title="Dismiss"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Hero Metrics ─────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
