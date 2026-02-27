@@ -1453,9 +1453,9 @@ const LEFT_MENU_SECTIONS = [
     items: [
       { id: 'provisioning', label: 'Provisioning', icon: Upload },
       { id: 'cert-mgmt', label: 'Certificate Mgmt.', icon: KeyRound },
+      { id: 'ota-management', label: 'OTA Management', icon: Zap },
       { id: 'groups', label: 'Groups', icon: Users },
       { id: 'jobs', label: 'Jobs', icon: Activity },
-      { id: 'ota-management', label: 'OTA Management', icon: Zap },
       { id: '3p', label: '3P Capability', icon: Puzzle, disabled: true },
     ],
   },
