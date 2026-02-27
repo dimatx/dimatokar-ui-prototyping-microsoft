@@ -4908,10 +4908,10 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, onUpdate
             Run Job
           </button>
         )}
-        <span className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-400 shadow-sm cursor-default select-none">
+        <button onClick={() => {}} className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50">
           <ExternalLink className="h-3.5 w-3.5" />
           View in Azure Monitor
-        </span>
+        </button>
       </div>
 
       <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
@@ -5103,10 +5103,10 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
             Run Job
           </button>
         )}
-        <span className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-400 shadow-sm cursor-default select-none">
+        <button onClick={() => {}} className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50">
           <ExternalLink className="h-3.5 w-3.5" />
           View in Azure Monitor
-        </span>
+        </button>
       </div>
 
       <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
