@@ -2970,6 +2970,14 @@ function AllResourcesView({ onAssetSelect, onDeviceSelect }: { onAssetSelect?: (
 const ASSET_STATUSES = ['Available', 'Degraded', 'Unhealthy', 'Unknown']
 const ASSET_MANUFACTURERS = [...new Set(mockAssets.map(a => a.manufacturer))].sort()
 const ASSET_FIRMWARE_VERSIONS = [...new Set(mockAssets.map(a => a.firmware).filter(f => f !== '—'))].sort()
+const LATEST_ASSET_FW_BY_TYPE: Record<string, string> = mockAssets.reduce((acc, a) => {
+  if (a.firmware !== '—' && (!acc[a.type] || a.firmware > acc[a.type])) acc[a.type] = a.firmware
+  return acc
+}, {} as Record<string, string>)
+const LATEST_DEVICE_FW_BY_MODEL: Record<string, string> = mockDevices.reduce((acc, d) => {
+  if (d.firmware !== '—' && (!acc[d.model] || d.firmware > acc[d.model])) acc[d.model] = d.firmware
+  return acc
+}, {} as Record<string, string>)
 const ASSET_SORT_FIELDS = [
   { field: 'id', label: 'Asset ID', cls: 'w-[90px]' },
   { field: 'name', label: 'Name' },
@@ -3245,7 +3253,14 @@ function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSe
                   <TableCell className="text-sm text-muted-foreground">{a.type}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{a.manufacturer}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{a.site}</TableCell>
-                  <TableCell className="font-mono text-xs">{a.firmware}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-xs">{a.firmware}</span>
+                      {a.firmware !== '—' && LATEST_ASSET_FW_BY_TYPE[a.type] === a.firmware && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 leading-none">LATEST</span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell><StatusBadge status={a.status} /></TableCell>
                   <TableCell className="text-xs text-muted-foreground">{a.lastSeen}</TableCell>
                 </TableRow>
@@ -3596,14 +3611,19 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
                     <TableCell className="font-mono text-xs text-muted-foreground">{d.hub}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{d.site}</TableCell>
                     <TableCell>
-                      {d.firmware && d.firmware !== '\u2014' && onFirmwareSelect ? (
-                        <button
-                          onClick={e => { e.stopPropagation(); onFirmwareSelect(d.firmware.startsWith('v') ? d.firmware.slice(1) : d.firmware) }}
-                          className="font-mono text-xs text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 transition-colors"
-                        >{d.firmware}</button>
-                      ) : (
-                        <span className="font-mono text-xs">{d.firmware}</span>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {d.firmware && d.firmware !== '\u2014' && onFirmwareSelect ? (
+                          <button
+                            onClick={e => { e.stopPropagation(); onFirmwareSelect(d.firmware.startsWith('v') ? d.firmware.slice(1) : d.firmware) }}
+                            className="font-mono text-xs text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 transition-colors"
+                          >{d.firmware}</button>
+                        ) : (
+                          <span className="font-mono text-xs">{d.firmware}</span>
+                        )}
+                        {d.firmware && d.firmware !== '\u2014' && LATEST_DEVICE_FW_BY_MODEL[d.model] === d.firmware && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 leading-none">LATEST</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <span className={`text-xs font-medium ${
@@ -4878,9 +4898,16 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, onUpdate
             {asset.firmware === '—' ? (
               <span className="text-sm font-mono text-slate-400">—</span>
             ) : (
-              <button onClick={() => onFirmwareSelect(fwVersion)} className="text-sm font-mono text-blue-600 hover:underline text-left flex items-center gap-1">
-                {asset.firmware}<ChevronRight className="h-3 w-3" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => onFirmwareSelect(fwVersion)} className="text-sm font-mono text-blue-600 hover:underline text-left flex items-center gap-1">
+                  {asset.firmware}<ChevronRight className="h-3 w-3" />
+                </button>
+                {LATEST_ASSET_FW_BY_TYPE[asset.type] === asset.firmware ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 leading-none">LATEST</span>
+                ) : LATEST_ASSET_FW_BY_TYPE[asset.type] ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 leading-none">Update available</span>
+                ) : null}
+              </div>
             )}
           </div>
           <div className="flex flex-col gap-0.5">
@@ -5071,9 +5098,16 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
             {device.firmware === '—' ? (
               <span className="text-sm font-mono text-slate-400">—</span>
             ) : (
-              <button onClick={() => onFirmwareSelect(fwVersion)} className="text-sm font-mono text-blue-600 hover:underline text-left flex items-center gap-1">
-                {device.firmware}<ChevronRight className="h-3 w-3" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => onFirmwareSelect(fwVersion)} className="text-sm font-mono text-blue-600 hover:underline text-left flex items-center gap-1">
+                  {device.firmware}<ChevronRight className="h-3 w-3" />
+                </button>
+                {LATEST_DEVICE_FW_BY_MODEL[device.model] === device.firmware ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 leading-none">LATEST</span>
+                ) : LATEST_DEVICE_FW_BY_MODEL[device.model] ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 leading-none">Update available</span>
+                ) : null}
+              </div>
             )}
           </div>
           <div className="flex flex-col gap-0.5">
