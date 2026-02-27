@@ -5,7 +5,7 @@ import { useNavigate, useLocation, useNavigationType } from 'react-router-dom'
 import {
   Server,
   Cpu,
-  Radio,
+  Drill,
   RefreshCw,
   KeyRound,
   Upload,
@@ -847,8 +847,8 @@ export default function AdrNamespacePage() {
 
       {/* ── Hero Metrics ─────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-        <HeroStat icon={Radio} label="Devices" value={namespace.totalDevices.toLocaleString()} />
-        <HeroStat icon={Cpu} label="Assets" value={namespace.totalAssets.toLocaleString()} />
+        <HeroStat icon={Cpu} label="Devices" value={namespace.totalDevices.toLocaleString()} />
+        <HeroStat icon={Drill} label="Assets" value={namespace.totalAssets.toLocaleString()} />
         <HeroStat icon={Server} label="IoT Hubs" value={linkedHubs.length.toString()} />
         <HeroStat icon={Activity} label={<><span className="whitespace-nowrap">IoT&nbsp;Operations</span> Instances</>} value={aioInstances.length.toString()} />
       </div>
@@ -1402,8 +1402,8 @@ const LEFT_MENU_SECTIONS = [
     title: 'Resources',
     items: [
       { id: 'all-resources', label: 'All', icon: Layers },
-      { id: 'assets', label: 'Assets', icon: Cpu },
-      { id: 'devices', label: 'Devices', icon: Radio },
+      { id: 'assets', label: 'Assets', icon: Drill },
+      { id: 'devices', label: 'Devices', icon: Cpu },
       { id: 'credentials', label: 'Credentials', icon: KeyRound },
       { id: 'policies', label: 'Policies', icon: FileText },
     ],
@@ -1502,7 +1502,7 @@ function LeftMenu({
 
 /* ─── Sub-components ────────────────────────────────────────── */
 
-function HeroStat({ icon: Icon, label, value }: { icon: typeof Radio; label: React.ReactNode; value: string }) {
+function HeroStat({ icon: Icon, label, value }: { icon: typeof Cpu; label: React.ReactNode; value: string }) {
   return (
     <Card className="shadow-sm">
       <CardContent className="flex items-center gap-4 p-5">
@@ -2073,7 +2073,7 @@ function CreateGroupWizard({ onClose, onCreate }: { onClose: () => void; onCreat
                   {(['devices', 'assets'] as const).map(k => (
                     <button key={k} onClick={() => setDraft(d => ({ ...d, memberKind: k }))}
                       className={`flex items-center gap-2 rounded-lg border p-3 text-sm transition-all ${draft.memberKind === k ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 hover:border-slate-300'}`}>
-                      {k === 'devices' ? <Radio className="h-4 w-4" /> : <Cpu className="h-4 w-4" />}
+                      {k === 'devices' ? <Cpu className="h-4 w-4" /> : <Drill className="h-4 w-4" />}
                       {k === 'devices' ? 'Device Group' : 'Asset Group'}
                     </button>
                   ))}
@@ -2219,7 +2219,7 @@ function GroupsView({ onGroupSelect }: { onGroupSelect?: (id: string) => void })
                 <TableCell className="font-medium text-sm">{g.name}</TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${g.memberKind === 'assets' ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
-                    {g.memberKind === 'assets' ? <Cpu className="h-3 w-3" /> : <Radio className="h-3 w-3" />}
+                    {g.memberKind === 'assets' ? <Drill className="h-3 w-3" /> : <Cpu className="h-3 w-3" />}
                     {g.type}
                   </span>
                 </TableCell>
@@ -4098,7 +4098,7 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob }: { asse
 
       <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
         <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex items-center gap-2">
-          <Cpu className="h-3.5 w-3.5 text-muted-foreground" />
+          <Drill className="h-3.5 w-3.5 text-muted-foreground" />
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Asset Properties</p>
         </div>
         <div className="grid grid-cols-2 gap-x-6 gap-y-3 px-4 py-4">
@@ -4251,7 +4251,7 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob }: { de
 
       <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
         <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex items-center gap-2">
-          <Radio className="h-3.5 w-3.5 text-muted-foreground" />
+          <Cpu className="h-3.5 w-3.5 text-muted-foreground" />
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Device Properties</p>
         </div>
         <div className="grid grid-cols-2 gap-x-6 gap-y-3 px-4 py-4">
