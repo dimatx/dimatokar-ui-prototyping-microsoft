@@ -1452,7 +1452,7 @@ const LEFT_MENU_SECTIONS = [
     title: 'Capabilities',
     items: [
       { id: 'provisioning', label: 'Provisioning', icon: Upload },
-      { id: 'cert-mgmt', label: 'Certificate Management', icon: KeyRound },
+      { id: 'cert-mgmt', label: 'Certificate Mgmt.', icon: KeyRound },
       { id: 'groups', label: 'Groups', icon: Users },
       { id: 'jobs', label: 'Jobs', icon: Activity },
       { id: 'ota-management', label: 'OTA Management', icon: Zap },
