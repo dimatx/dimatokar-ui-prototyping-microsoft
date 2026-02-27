@@ -1535,18 +1535,11 @@ function SortIcon({ field, sort }: { field: string; sort: { field: string; dir: 
 /* ─── All Resources Mock Data ───────────────────────────────── */
 
 const mockCredentials = [
-  { id: 'CRT-0001', name: 'X.509 Cert – tx-wind-a001-ctrl',    site: 'Abilene Wind Farm',    status: 'Valid',         lastSeen: '2 hrs ago' },
-  { id: 'CRT-0002', name: 'X.509 Cert – tx-wind-m007-ctrl',    site: 'Midland Wind Farm',    status: 'Valid',         lastSeen: '3 hrs ago' },
-  { id: 'CRT-0003', name: 'X.509 Cert – tx-wind-o003-ctrl',    site: 'Odessa Wind Farm',     status: 'Expiring Soon', lastSeen: '1 day ago' },
-  { id: 'CRT-0004', name: 'X.509 Cert – tx-wind-s002-ctrl',    site: 'San Angelo Wind Farm', status: 'Valid',         lastSeen: '5 hrs ago' },
-  { id: 'CRT-0005', name: 'CA Root – Texas-Wind-Namespace',     site: 'Namespace',            status: 'Valid',         lastSeen: '6 hrs ago' },
+  { id: 'CRT-0001', name: 'Zava Energy Root CA', site: 'N/A', status: 'Valid', lastSeen: '1 day ago' },
 ]
 
 const mockPolicies = [
-  { id: 'POL-0001', name: 'Firmware Compliance – v3.2.1',         site: 'Namespace', status: 'Active',   lastSeen: '2 days ago' },
-  { id: 'POL-0002', name: 'Device Connectivity Alert Policy',     site: 'Namespace', status: 'Active',   lastSeen: '1 day ago' },
-  { id: 'POL-0003', name: 'Certificate Renewal Policy',           site: 'Namespace', status: 'Active',   lastSeen: '3 days ago' },
-  { id: 'POL-0004', name: 'Non-conformance Quarantine Policy',    site: 'Namespace', status: 'Inactive', lastSeen: '5 days ago' },
+  { id: 'ICA-0001', name: 'Zava Energy CA', site: 'N/A', status: 'Active', lastSeen: '12 hrs ago' },
 ]
 
 function statusBadgeLabel(resourceType: string, rawStatus: string): string {
@@ -1578,6 +1571,7 @@ const ALL_RESOURCE_TYPE_STYLES: Record<string, string> = {
 
 function AllResourcesView() {
   const [typeFilter, setTypeFilter] = useState<string>('All')
+  const [search, setSearch] = useState('')
 
   const allRows = useMemo(() => [
     ...mockAssets.map(a => ({ id: a.id, name: a.name, resourceType: 'Asset' as const, rawStatus: a.status, site: a.site, lastSeen: a.lastSeen })),
@@ -1586,10 +1580,14 @@ function AllResourcesView() {
     ...mockPolicies.map(p => ({ id: p.id, name: p.name, resourceType: 'Policy' as const, rawStatus: p.status, site: p.site, lastSeen: p.lastSeen })),
   ], [])
 
-  const filtered = useMemo(
-    () => typeFilter === 'All' ? allRows : allRows.filter(r => r.resourceType === typeFilter),
-    [allRows, typeFilter]
-  )
+  const filtered = useMemo(() => {
+    let rows = typeFilter === 'All' ? allRows : allRows.filter(r => r.resourceType === typeFilter)
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      rows = rows.filter(r => r.id.toLowerCase().includes(q) || r.name.toLowerCase().includes(q))
+    }
+    return rows
+  }, [allRows, typeFilter, search])
 
   const byType = [
     { label: 'Assets',      count: mockAssets.length,      color: '#0ea5e9' },
@@ -1606,12 +1604,13 @@ function AllResourcesView() {
 
   const bySite = useMemo(() => {
     const map: Record<string, number> = {}
-    allRows.forEach(r => { map[r.site] = (map[r.site] ?? 0) + 1 })
+    allRows.filter(r => r.site !== 'N/A').forEach(r => { map[r.site] = (map[r.site] ?? 0) + 1 })
     return Object.entries(map).sort((a, b) => b[1] - a[1])
   }, [allRows])
   const maxSite = bySite[0]?.[1] ?? 1
 
   const FILTER_TYPES = ['All', 'Asset', 'Device', 'Credential', 'Policy'] as const
+  const PLURAL_LABELS: Record<string, string> = { Asset: 'Assets', Device: 'Devices', Credential: 'Credentials', Policy: 'Policies' }
 
   return (
     <motion.div
@@ -1689,8 +1688,18 @@ function AllResourcesView() {
         </div>
       </div>
 
-      {/* ── Filter Buttons ───────────────────────────────────── */}
+      {/* ── Filter Buttons + Search ───────────────────────── */}
       <div className="flex items-center gap-2">
+        <div className="relative mr-2">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name or ID…"
+            className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-300 w-52"
+          />
+        </div>
         {FILTER_TYPES.map(t => {
           const count = t === 'All' ? allRows.length : allRows.filter(r => r.resourceType === t).length
           return (
@@ -1703,7 +1712,7 @@ function AllResourcesView() {
                   : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:text-slate-900'
               }`}
             >
-              {t === 'All' ? `All (${count})` : `${t}s (${count})`}
+              {t === 'All' ? `All (${count})` : `${PLURAL_LABELS[t]} (${count})`}
             </button>
           )
         })}
