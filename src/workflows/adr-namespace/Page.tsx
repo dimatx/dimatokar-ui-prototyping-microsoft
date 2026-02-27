@@ -2843,7 +2843,7 @@ function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSe
       </div>
       <div>
         {/* Toolbar */}
-        <div className="mb-3 relative flex flex-wrap items-center gap-2">
+        <div className="mb-3 relative flex flex-wrap items-center gap-2 py-2">
           <div className="relative min-w-[200px] max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
@@ -3186,7 +3186,7 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
       </div>
       <div>
         {/* Toolbar */}
-        <div className="mb-3 relative flex flex-wrap items-center gap-2">
+        <div className="mb-3 relative flex flex-wrap items-center gap-2 py-2">
           <div className="relative min-w-[200px] max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
