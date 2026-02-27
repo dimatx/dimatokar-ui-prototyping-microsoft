@@ -342,6 +342,27 @@ const assetHealthData = [
   { label: 'Unknown', value: 79, color: '#94a3b8' },
 ]
 
+const dashJobStatusData = [
+  { label: 'Completed', value: 14, color: '#10b981' },
+  { label: 'Running',   value: 1,  color: '#3b82f6' },
+  { label: 'Scheduled', value: 3,  color: '#94a3b8' },
+  { label: 'Failed',    value: 2,  color: '#ef4444' },
+]
+
+const dashJobTypeData = [
+  { label: 'Software Update',      value: 8, color: '#3b82f6' },
+  { label: 'Certificate Rotation', value: 4, color: '#f59e0b' },
+  { label: 'Reboot',               value: 3, color: '#8b5cf6' },
+  { label: 'Diagnostics',          value: 2, color: '#10b981' },
+  { label: 'Custom Script',        value: 3, color: '#94a3b8' },
+]
+
+const dashGroupsData = [
+  { label: 'Device Groups',  value: 7, color: '#3b82f6' },
+  { label: 'Asset Groups',   value: 3, color: '#8b5cf6' },
+  { label: 'ADU (classic)',  value: 3, color: '#f59e0b' },
+]
+
 const assetsByManufacturer = [
   { label: 'Contoso Wind Systems', value: 1_420, color: '#3b82f6' },
   { label: 'Zephyr Sensors Inc.', value: 782, color: '#3b82f6' },
@@ -477,6 +498,25 @@ function parseFirmwareFromPath(pathname: string): string | null {
 }
 
 /* ─── Navigation State ──────────────────────────────────────── */
+
+const SECTION_LABELS: Record<string, string> = {
+  '':               'Dashboard',
+  'all-resources':  'All Resources',
+  'assets':         'Assets',
+  'devices':        'Devices',
+  'credentials':    'Credentials',
+  'policies':       'Policies',
+  'provisioning':   'Provisioning',
+  'cert-mgmt':      'Certificate Management',
+  'ota-management': 'OTA Management',
+  'groups':         'Groups',
+  'jobs':           'Jobs',
+  'iot-hub':        'IoT Hubs',
+  'iot-ops':        'IoT Operations',
+  'firmware':       'Firmware Analysis',
+  'device-update':  'Device Update',
+  '3p':             '3P Capability',
+}
 
 type NavState = {
   menuItem: string
@@ -705,6 +745,32 @@ export default function AdrNamespacePage() {
         onItemClick={(id) => navigateTo(id)}
       />
       <div className="flex-1 min-w-0 pl-6">
+      {/* ── Breadcrumb ─────────────────────────────────────── */}
+      {(() => {
+        const isJobDetail = activeMenuItem === 'jobs' && location.pathname.includes('/jobs/job-detail')
+        const isFwDetail  = activeMenuItem === 'firmware' && !!firmwareTarget
+        const childLabel =
+          assetDetailId  ? (mockAssets.find(a => a.id === assetDetailId)?.name  ?? assetDetailId)
+          : deviceDetailId ? (mockDevices.find(d => d.id === deviceDetailId)?.name ?? deviceDetailId)
+          : isFwDetail   ? `v${firmwareTarget}`
+          : isJobDetail  ? 'Job Detail'
+          : null
+        if (!childLabel) return null
+        const parentLabel = SECTION_LABELS[activeMenuItem] ?? activeMenuItem
+        return (
+          <nav className="flex items-center gap-1.5 text-xs text-muted-foreground mb-5 mt-0.5">
+            <button
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-slate-100 hover:text-foreground transition-colors"
+            >
+              <ChevronLeft className="h-3 w-3" />
+              {parentLabel}
+            </button>
+            <ChevronRight className="h-3 w-3 text-slate-300" />
+            <span className="text-slate-700 font-medium truncate max-w-xs">{childLabel}</span>
+          </nav>
+        )
+      })()}
       <AnimatePresence mode="wait">
       {activeMenuItem === 'all-resources' && assetDetailId ? (
         <AssetDetailView
@@ -880,7 +946,7 @@ export default function AdrNamespacePage() {
         <HeroStat icon={Activity} label={<><span className="whitespace-nowrap">IoT&nbsp;Operations</span> Instances</>} value={aioInstances.length.toString()} />
       </div>
 
-      {/* ── Resource Health Charts ──────────────────────────── */}
+      {/* ── Health + Activity Charts ───────────────────────── */}
       <div className="grid grid-cols-3 gap-4">
         <ChartCard title="Device Health">
           <DonutChart segments={deviceHealthData} centerLabel="Healthy" />
@@ -888,65 +954,20 @@ export default function AdrNamespacePage() {
         <ChartCard title="Asset Health">
           <DonutChart segments={assetHealthData} centerLabel="Available" />
         </ChartCard>
-        <ChartCard title="Resources by Type">
-          <HBarChart data={[
-            { label: 'Devices',  value: namespace.totalDevices, color: '#3b82f6' },
-            { label: 'Assets',   value: namespace.totalAssets,  color: '#8b5cf6' },
-            { label: 'IoT Hubs', value: linkedHubs.length,      color: '#10b981' },
-            { label: 'IoT&nbsp;Ops Instances', value: aioInstances.length, color: '#f59e0b' },
-          ]} />
+        <ChartCard title="Jobs by Status">
+          <DonutChart segments={dashJobStatusData} centerLabel="Jobs" legendBelow />
         </ChartCard>
       </div>
-
-      {/* ── Services Health ──────────────────────────────────── */}
-      <div>
-        <SectionHeading title="Capabilities" />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {namespaceSvcs.map((svc) => {
-            const SVC_NAV_ID: Record<string, string> = {
-              'Provisioning': 'provisioning',
-              'Certificate Management': 'cert-mgmt',
-              'Device Update': 'device-update',
-              'IoT Operations': 'iot-ops',
-              'Firmware Analysis': 'firmware',
-            }
-            const navId = SVC_NAV_ID[svc.name]
-            return (
-            <Card
-              key={svc.name}
-              className={`shadow-sm relative ${navId ? 'cursor-pointer hover:border-slate-300 hover:shadow-md transition-all' : ''}`}
-              onClick={() => { if (navId) navigateTo(navId) }}
-            >
-              <CardContent className="flex items-start gap-3 p-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted mt-0.5">
-                  <svc.icon className="h-4 w-4 text-foreground" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold">{svc.name}</p>
-                  {svc.instanceName && (
-                    <p className="text-[11px] font-mono text-muted-foreground mt-0.5 truncate">{svc.instanceName}</p>
-                  )}
-                  <div className="mt-2">
-                    <StatusBadge status={svc.status} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            )
-          })}
-          {/* Add Service card */}
-          {addableServices.filter(as => !namespaceSvcs.some(s => s.name === as.name)).length > 0 && (
-            <Card
-              className="shadow-sm border-dashed cursor-pointer hover:bg-muted/20 transition-colors relative"
-              onClick={() => setShowAddService(true)}
-            >
-              <CardContent className="flex items-center justify-center gap-2 p-4 h-full">
-                <Plus className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">Add Service</span>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+      <div className="grid grid-cols-3 gap-4">
+        <ChartCard title="Firmware Versions – Devices">
+          <HBarChart data={deviceFirmwareVersions} />
+        </ChartCard>
+        <ChartCard title="Groups by Type">
+          <HBarChart data={dashGroupsData} />
+        </ChartCard>
+        <ChartCard title="Jobs by Type">
+          <HBarChart data={dashJobTypeData} />
+        </ChartCard>
       </div>
 
       {/* ── IoT Hubs (collapsible) ───────────────────────────── */}
@@ -1068,7 +1089,56 @@ export default function AdrNamespacePage() {
         </AnimatePresence>
       </div>
 
-      {/* Jobs + Firmware Analysis moved to dedicated menu sub-views */}
+      {/* ── Capabilities ─────────────────────────────────────── */}
+      <div>
+        <SectionHeading title="Capabilities" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {namespaceSvcs.map((svc) => {
+            const SVC_NAV_ID: Record<string, string> = {
+              'Provisioning': 'provisioning',
+              'Certificate Management': 'cert-mgmt',
+              'Device Update': 'device-update',
+              'IoT Operations': 'iot-ops',
+              'Firmware Analysis': 'firmware',
+            }
+            const navId = SVC_NAV_ID[svc.name]
+            return (
+            <Card
+              key={svc.name}
+              className={`shadow-sm relative ${navId ? 'cursor-pointer hover:border-slate-300 hover:shadow-md transition-all' : ''}`}
+              onClick={() => { if (navId) navigateTo(navId) }}
+            >
+              <CardContent className="flex items-start gap-3 p-4">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted mt-0.5">
+                  <svc.icon className="h-4 w-4 text-foreground" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">{svc.name}</p>
+                  {svc.instanceName && (
+                    <p className="text-[11px] font-mono text-muted-foreground mt-0.5 truncate">{svc.instanceName}</p>
+                  )}
+                  <div className="mt-2">
+                    <StatusBadge status={svc.status} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            )
+          })}
+          {/* Add Service card */}
+          {addableServices.filter(as => !namespaceSvcs.some(s => s.name === as.name)).length > 0 && (
+            <Card
+              className="shadow-sm border-dashed cursor-pointer hover:bg-muted/20 transition-colors relative"
+              onClick={() => setShowAddService(true)}
+            >
+              <CardContent className="flex items-center justify-center gap-2 p-4 h-full">
+                <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium text-muted-foreground">Add Service</span>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
 
       {/* ── Add Service Dialog ───────────────────────────────── */}
       {showAddService && createPortal(
