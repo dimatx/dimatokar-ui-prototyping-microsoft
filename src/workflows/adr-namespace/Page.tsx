@@ -4151,7 +4151,15 @@ function OtaManagementView({ onFirmwareSelect, onDeploy }: {
     >
       {/* Header */}
       <div className="flex items-start justify-between">
-        <SubViewHeader title="OTA Management" subtitle="Texas-Wind-Namespace" />
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+            <Zap className="h-5 w-5 text-slate-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">OTA Management</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Texas-Wind-Namespace</p>
+          </div>
+        </div>
         <button
           onClick={() => onDeploy?.({ jobType: 'software-update' })}
           className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-slate-700"
