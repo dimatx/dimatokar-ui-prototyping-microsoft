@@ -691,48 +691,63 @@ export default function AdrNamespacePage() {
       {/* ── Services Health ──────────────────────────────────── */}
       <div>
         <SectionHeading title="Capabilities" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {namespaceSvcs.map((svc) => (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {namespaceSvcs.map((svc) => {
+            const SVC_NAV_ID: Record<string, string> = {
+              'Provisioning': 'provisioning',
+              'Certificate Management': 'cert-mgmt',
+              'Device Update': 'device-update',
+              'IoT Operations': 'iot-ops',
+              'Firmware Analysis': 'firmware',
+            }
+            const navId = SVC_NAV_ID[svc.name]
+            return (
             <Card key={svc.name} className="shadow-sm relative">
-              {svc.name === 'Device Update' && svc.status === 'Disabled' && (
-                <></>
-              )}
-              <CardContent className="flex items-start gap-4 p-5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
-                  <svc.icon className="h-4 w-4 text-foreground" />
+              <CardContent className="flex items-start gap-3 p-4">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted mt-0.5">
+                  <svc.icon className="h-3.5 w-3.5 text-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">{svc.name}</p>
+                    <p className="text-xs font-semibold">{svc.name}</p>
                     {svc.configurable && (
                       <button
                         onClick={() => { setSvcConfigTarget(svc); setDisableConfirmText(''); setEnableInstanceName(INSTANCE_NAME_OPTIONS[svc.name]?.[0] ?? '') }}
-                        className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                        className="rounded-md p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                         title={`Configure ${svc.name}`}
                       >
-                        <Settings className="h-3.5 w-3.5" />
+                        <Settings className="h-3 w-3" />
                       </button>
                     )}
                   </div>
                   {svc.instanceName && (
-                    <p className="text-xs font-mono text-muted-foreground mt-0.5 truncate">{svc.instanceName}</p>
+                    <p className="text-[10px] font-mono text-muted-foreground mt-0.5 truncate">{svc.instanceName}</p>
                   )}
-                  <div className="mt-2">
+                  <div className="mt-1.5 flex items-center justify-between">
                     <StatusBadge status={svc.status} />
+                    {navId && (
+                      <button
+                        onClick={() => navigateTo(navId)}
+                        className="text-[10px] font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                      >
+                        Manage →
+                      </button>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
+            )
+          })}
           {/* Add Service card */}
           {addableServices.filter(as => !namespaceSvcs.some(s => s.name === as.name)).length > 0 && (
             <Card
               className="shadow-sm border-dashed cursor-pointer hover:bg-muted/20 transition-colors relative"
               onClick={() => setShowAddService(true)}
             >
-              <CardContent className="flex items-center justify-center gap-2 p-5 h-full">
-                <Plus className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">Add Service</span>
+              <CardContent className="flex items-center justify-center gap-2 p-4 h-full">
+                <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium text-muted-foreground">Add Service</span>
               </CardContent>
             </Card>
           )}
