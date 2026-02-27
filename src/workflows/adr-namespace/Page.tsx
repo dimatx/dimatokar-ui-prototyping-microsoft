@@ -44,6 +44,7 @@ import {
   ClipboardList,
   Zap,
   Trash2,
+  LockKeyhole,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -522,8 +523,14 @@ export default function AdrNamespacePage() {
   const [deviceFirmwarePrefilter, setDeviceFirmwarePrefilter] = useState<string>('')
   const [assetPrefilter, setAssetPrefilter] = useState<string>('')
   const [deviceGroupPrefilter, setDeviceGroupPrefilter] = useState<string>('')
-  const [assetDetailId, setAssetDetailId] = useState<string | null>(null)
-  const [deviceDetailId, setDeviceDetailId] = useState<string | null>(null)
+  const [assetDetailId, setAssetDetailId] = useState<string | null>(() => {
+    const p = new URLSearchParams(location.search)
+    return p.get('asset')
+  })
+  const [deviceDetailId, setDeviceDetailId] = useState<string | null>(() => {
+    const p = new URLSearchParams(location.search)
+    return p.get('device')
+  })
 
   const navigateTo = (id: string, opts?: { firmware?: string; deviceFilter?: string; firmwareVersionFilter?: string; assetFilter?: string; groupFilter?: string }) => {
     const newFirmware = opts?.firmware ?? null
@@ -566,13 +573,19 @@ export default function AdrNamespacePage() {
     }
     if (kind === 'asset') setAssetDetailId(id)
     else setDeviceDetailId(id)
-    navigate(location.pathname, { state })
+    const seg = ID_TO_SEGMENT[activeMenuItem] ?? activeMenuItem
+    const base = `/adr-namespace${seg ? '/' + seg : ''}`
+    const param = kind === 'asset' ? `asset=${encodeURIComponent(id)}` : `device=${encodeURIComponent(id)}`
+    navigate(`${base}?${param}`, { state })
   }
 
   // Restore full navigation state when user navigates back/forward
   useEffect(() => {
     if (navType !== 'POP') return
     const st = location.state as NavState | null
+    const p = new URLSearchParams(location.search)
+    const urlAsset = p.get('asset')
+    const urlDevice = p.get('device')
     if (!st) {
       setActiveMenuItem(parseMenuFromPath(location.pathname))
       setFirmwareTarget(parseFirmwareFromPath(location.pathname))
@@ -580,8 +593,8 @@ export default function AdrNamespacePage() {
       setDeviceFirmwarePrefilter('')
       setAssetPrefilter('')
       setDeviceGroupPrefilter('')
-      setAssetDetailId(null)
-      setDeviceDetailId(null)
+      setAssetDetailId(urlAsset)
+      setDeviceDetailId(urlDevice)
       return
     }
     setActiveMenuItem(st.menuItem)
@@ -590,8 +603,8 @@ export default function AdrNamespacePage() {
     setDeviceFirmwarePrefilter(st.deviceFirmwarePrefilter)
     setAssetPrefilter(st.assetPrefilter)
     setDeviceGroupPrefilter(st.deviceGroupPrefilter)
-    setAssetDetailId(st.assetDetailId)
-    setDeviceDetailId(st.deviceDetailId)
+    setAssetDetailId(st.assetDetailId ?? urlAsset)
+    setDeviceDetailId(st.deviceDetailId ?? urlDevice)
   }, [location, navType])
 
   // Simulate per-hub progress ticking for running jobs
@@ -1439,6 +1452,7 @@ const LEFT_MENU_SECTIONS = [
       { id: 'groups', label: 'Groups', icon: Users },
       { id: 'jobs', label: 'Jobs', icon: Activity },
       { id: 'ota-management', label: 'OTA Management', icon: Zap },
+      { id: '3p', label: '3P Capability', icon: Puzzle, disabled: true },
     ],
   },
   {
@@ -1455,7 +1469,6 @@ const LEFT_MENU_SECTIONS = [
     items: [
       { id: 'firmware', label: 'Firmware Analysis', icon: Shield },
       { id: 'device-update', label: 'Device Update', icon: RefreshCw },
-      { id: '3p', label: '3P Capability', icon: Puzzle, disabled: true },
     ],
   },
 ]
@@ -4345,6 +4358,43 @@ function OtaManagementView({ onFirmwareSelect, onDeploy }: {
   )
 }
 
+/* ─── Sensitivity Labels ─────────────────────────────────────── */
+
+const SENSITIVITY_LABELS = [
+  { label: 'Non-Business',        color: '#475569', bg: '#f8fafc', border: '#cbd5e1', locked: false },
+  { label: 'Public',              color: '#166534', bg: '#f0fdf4', border: '#86efac', locked: false },
+  { label: 'General',             color: '#1d4ed8', bg: '#eff6ff', border: '#93c5fd', locked: false },
+  { label: 'Confidential',        color: '#c2410c', bg: '#fff7ed', border: '#fdba74', locked: true  },
+  { label: 'Highly Confidential', color: '#991b1b', bg: '#fef2f2', border: '#fca5a5', locked: true  },
+]
+
+function SensitivitySelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const opt = SENSITIVITY_LABELS.find(s => s.label === value) ?? SENSITIVITY_LABELS[2]
+  return (
+    <div className="relative inline-flex items-center">
+      {opt.locked && (
+        <LockKeyhole className="pointer-events-none absolute left-2.5 h-3 w-3 z-10" style={{ color: opt.color }} />
+      )}
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="appearance-none rounded-full border py-1 pr-6 text-xs font-semibold cursor-pointer transition-colors focus:outline-none"
+        style={{
+          color: opt.color,
+          backgroundColor: opt.bg,
+          borderColor: opt.border,
+          paddingLeft: opt.locked ? '1.5rem' : '0.75rem',
+        }}
+      >
+        {SENSITIVITY_LABELS.map(s => (
+          <option key={s.label} value={s.label}>{s.label}</option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-1.5 h-3 w-3" style={{ color: opt.color }} />
+    </div>
+  )
+}
+
 /* ─── Asset Detail View ──────────────────────────────────────── */
 
 const ASSET_MODEL_MAP: Record<string, string> = {
@@ -4356,6 +4406,7 @@ const ASSET_MODEL_MAP: Record<string, string> = {
 
 function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob }: { assetId: string; onBack: () => void; onFirmwareSelect: (v: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void }) {
   const asset = mockAssets.find(a => a.id === assetId)
+  const [sensitivity, setSensitivity] = useState('General')
   if (!asset) return <div className="p-8 text-muted-foreground text-sm">Asset not found.</div>
 
   const fwVersion = asset.firmware.startsWith('v') ? asset.firmware.slice(1) : asset.firmware
@@ -4373,7 +4424,10 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob }: { asse
           <h1 className="text-lg font-semibold">{asset.name}</h1>
           <p className="text-xs text-muted-foreground">{asset.id} · {asset.type}</p>
         </div>
-        <div className="ml-auto"><StatusBadge status={asset.status === 'Available' ? 'Healthy' : asset.status} /></div>
+        <div className="ml-auto flex items-center gap-2">
+          <SensitivitySelect value={sensitivity} onChange={setSensitivity} />
+          <StatusBadge status={asset.status === 'Available' ? 'Healthy' : asset.status} />
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -4500,6 +4554,7 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob }: { asse
 
 function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob }: { deviceId: string; onBack: () => void; onFirmwareSelect: (v: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void }) {
   const device = mockDevices.find(d => d.id === deviceId)
+  const [sensitivity, setSensitivity] = useState('General')
   if (!device) return <div className="p-8 text-muted-foreground text-sm">Device not found.</div>
 
   const fwVersion = device.firmware.startsWith('v') ? device.firmware.slice(1) : device.firmware
@@ -4520,6 +4575,7 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob }: { de
           <p className="text-xs text-muted-foreground">{device.id} · {device.type}</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          <SensitivitySelect value={sensitivity} onChange={setSensitivity} />
           <StatusBadge status={device.status} />
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${device.connectivity === 'Connected' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
             <Wifi className="h-3 w-3" />{device.connectivity}

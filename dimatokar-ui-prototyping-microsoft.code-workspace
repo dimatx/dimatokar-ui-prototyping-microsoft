@@ -13,7 +13,11 @@
 	"settings": {
 		"chat.tools.terminal.autoApprove": {
 			"npx tsc": true,
-			"npx vite": true
+			"npx vite": true,
+			"/^node -e \"const l = require\\('\\./node_modules/lucide-react'\\); console\\.log\\(typeof l\\.LockKeyhole, typeof l\\.Lock, typeof l\\.ShieldCheck\\)\"$/": {
+				"approve": true,
+				"matchCommandLine": true
+			}
 		}
 	}
 }
