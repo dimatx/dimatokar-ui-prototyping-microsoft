@@ -1256,7 +1256,7 @@ const LEFT_MENU_SECTIONS = [
       { id: 'jobs', label: 'Jobs', icon: Activity },
       { id: 'device-update', label: 'Device Update', icon: RefreshCw },
       { id: 'firmware', label: 'Firmware Analysis', icon: Shield },
-      { id: '3p', label: '3P Capability', icon: Puzzle },
+      { id: '3p', label: '3P Capability', icon: Puzzle, disabled: true },
     ],
   },
   {
@@ -1315,9 +1315,13 @@ function LeftMenu({
                 {section.items.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => onItemClick(item.id)}
+                    onClick={() => !('disabled' in item && item.disabled) && onItemClick(item.id)}
+                    disabled={'disabled' in item && item.disabled}
+                    title={'disabled' in item && item.disabled ? 'Coming soon' : undefined}
                     className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors whitespace-nowrap ${
-                      activeItem === item.id
+                      'disabled' in item && item.disabled
+                        ? 'text-slate-300 cursor-not-allowed'
+                        : activeItem === item.id
                         ? 'bg-blue-50 text-blue-700 font-medium'
                         : 'text-slate-600 hover:bg-muted/50 hover:text-foreground'
                     }`}
