@@ -4170,12 +4170,35 @@ function OtaManagementView({ onFirmwareSelect, onDeploy }: {
       </div>
 
       {/* Distribution charts */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <ChartCard title="Devices by Firmware Version">
           <HBarChart data={deviceBarData} />
         </ChartCard>
         <ChartCard title="Assets by Firmware Version">
           <HBarChart data={assetBarData} />
+        </ChartCard>
+        <ChartCard title="Top CVEs by Affected Devices">
+          <div className="space-y-3">
+            {cveByName.slice(0, 5).map((c) => (
+              <div key={c.cve}>
+                <div className="flex items-center justify-between mb-0.5">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ${severityBg[c.severity]}`}>
+                      {c.severity[0]}
+                    </span>
+                    <span className="font-mono text-[11px] truncate text-foreground">{c.cve}</span>
+                  </div>
+                  <span className="font-mono text-xs tabular-nums ml-2 shrink-0">{c.devices.toLocaleString()}</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${(c.devices / 12_847) * 100}%`, backgroundColor: severityColor[c.severity] }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </ChartCard>
       </div>
 
