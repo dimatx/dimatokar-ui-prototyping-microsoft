@@ -312,7 +312,7 @@ function JobListContent({ navigate, showBackNav, deviceUpdateEnabled = false }: 
 
       {/* Page title */}
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Job History</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">Jobs</h1>
         <p className="text-sm text-slate-500 mt-1">
           All jobs in <span className="font-medium text-slate-700">Texas-Wind-Namespace</span> — sorted by most recent
         </p>
