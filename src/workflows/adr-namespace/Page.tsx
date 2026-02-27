@@ -3151,12 +3151,26 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
           <Filter className="h-4 w-4 shrink-0 text-blue-500" />
           Filtered by group: <span className="font-semibold">{activeGroup.name}</span>
           <span className="text-blue-500 ml-1">· {filtered.length} matching devices</span>
-          <button
-            onClick={() => onClearGroupFilter?.()}
-            className="ml-auto flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-300 hover:bg-blue-100 transition-colors"
-          >
-            <X className="h-3 w-3" />Clear filter
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            {onRunJob && filtered.length > 0 && (
+              <button
+                onClick={() => {
+                  const names = Object.fromEntries(filtered.map(d => [d.id, d.name]))
+                  onRunJob(filtered.map(d => d.id), names)
+                }}
+                className="flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700 transition-colors shadow-sm"
+              >
+                <Play className="h-3 w-3" />
+                Run job on group
+              </button>
+            )}
+            <button
+              onClick={() => onClearGroupFilter?.()}
+              className="flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-300 hover:bg-blue-100 transition-colors"
+            >
+              <X className="h-3 w-3" />Clear filter
+            </button>
+          </div>
         </div>
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
