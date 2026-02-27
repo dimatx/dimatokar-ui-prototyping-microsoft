@@ -713,6 +713,7 @@ export default function AdrNamespacePage() {
           onBack={() => navigate(-1)}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
           onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Assets' })}
+          onUpdateFirmware={(pf) => setJobPrefill(pf)}
         />
       ) : activeMenuItem === 'all-resources' && deviceDetailId ? (
         <DeviceDetailView
@@ -721,6 +722,7 @@ export default function AdrNamespacePage() {
           onBack={() => navigate(-1)}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
           onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Devices' })}
+          onUpdateFirmware={(pf) => setJobPrefill(pf)}
         />
       ) : activeMenuItem === 'all-resources' ? (
         <AllResourcesView
@@ -735,6 +737,7 @@ export default function AdrNamespacePage() {
           onBack={() => navigate(-1)}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
           onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Assets' })}
+          onUpdateFirmware={(pf) => setJobPrefill(pf)}
         />
       ) : activeMenuItem === 'assets' ? (
         <AssetsView key={`assets-${assetPrefilter}`} initialSearch={assetPrefilter} onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Assets' })} onAssetSelect={(id) => navigateToDetail('asset', id)} />
@@ -745,6 +748,7 @@ export default function AdrNamespacePage() {
           onBack={() => navigate(-1)}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
           onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Devices' })}
+          onUpdateFirmware={(pf) => setJobPrefill(pf)}
         />
       ) : activeMenuItem === 'devices' ? (
         <DevicesView
@@ -4404,7 +4408,7 @@ const ASSET_MODEL_MAP: Record<string, string> = {
   'Edge Gateway': 'EdgeGateway-1900',
 }
 
-function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob }: { assetId: string; onBack: () => void; onFirmwareSelect: (v: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void }) {
+function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, onUpdateFirmware }: { assetId: string; onBack: () => void; onFirmwareSelect: (v: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void; onUpdateFirmware?: (prefill: JobPrefill) => void }) {
   const asset = mockAssets.find(a => a.id === assetId)
   const [sensitivity, setSensitivity] = useState('General')
   if (!asset) return <div className="p-8 text-muted-foreground text-sm">Asset not found.</div>
@@ -4434,6 +4438,16 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob }: { asse
         {DEVICE_ACTIONS.map(action => (
           <button
             key={action.id}
+            onClick={action.id === 'update-firmware' && onUpdateFirmware
+              ? () => onUpdateFirmware({
+                  jobType: 'software-update',
+                  jobName: `Firmware Update – ${asset.name}`,
+                  startAtStep: 3,
+                  preselectedIds: [asset.id],
+                  preselectedSource: 'Assets',
+                  preselectedNames: { [asset.id]: asset.name },
+                })
+              : undefined}
             className={`inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-slate-50 ${action.cls}`}
           >
             <action.icon className="h-3.5 w-3.5" />
@@ -4552,7 +4566,7 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob }: { asse
 
 /* ─── Device Detail View ─────────────────────────────────────── */
 
-function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob }: { deviceId: string; onBack: () => void; onFirmwareSelect: (v: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void }) {
+function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpdateFirmware }: { deviceId: string; onBack: () => void; onFirmwareSelect: (v: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void; onUpdateFirmware?: (prefill: JobPrefill) => void }) {
   const device = mockDevices.find(d => d.id === deviceId)
   const [sensitivity, setSensitivity] = useState('General')
   if (!device) return <div className="p-8 text-muted-foreground text-sm">Device not found.</div>
@@ -4587,6 +4601,16 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob }: { de
         {DEVICE_ACTIONS.map(action => (
           <button
             key={action.id}
+            onClick={action.id === 'update-firmware' && onUpdateFirmware
+              ? () => onUpdateFirmware({
+                  jobType: 'software-update',
+                  jobName: `Firmware Update – ${device.name}`,
+                  startAtStep: 3,
+                  preselectedIds: [device.id],
+                  preselectedSource: 'Devices',
+                  preselectedNames: { [device.id]: device.name },
+                })
+              : undefined}
             className={`inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-slate-50 ${action.cls}`}
           >
             <action.icon className="h-3.5 w-3.5" />

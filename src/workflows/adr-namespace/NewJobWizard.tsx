@@ -76,6 +76,12 @@ export interface JobPrefill {
   scheduleDate?: string
   priority?: string
   copiedFrom?: string
+  /** Jump straight to this step index (preceding steps are pre-filled) */
+  startAtStep?: number
+  /** Pre-selected targets embedded in the prefill (used by Update Firmware from detail views) */
+  preselectedIds?: string[]
+  preselectedSource?: 'Devices' | 'Assets'
+  preselectedNames?: Record<string, string>
 }
 
 interface NewJobWizardProps {
@@ -171,8 +177,14 @@ const SAMPLE_SAVED_GROUPS: SavedGroup[] = [
 
 /* ─── Wizard ────────────────────────────────────────────────── */
 
-export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJobs, prefill, onClose, onCreate, deviceUpdateEnabled = false, preselectedDevices }: NewJobWizardProps) {
-  const [step, setStep] = useState(0)
+export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJobs, prefill, onClose, onCreate, deviceUpdateEnabled = false, preselectedDevices: _preselectedDevicesProp }: NewJobWizardProps) {
+  // Merge prop-level preselected with any embedded in the prefill (e.g. from Update Firmware button)
+  const preselectedDevices = _preselectedDevicesProp ?? (
+    prefill?.preselectedIds
+      ? { ids: prefill.preselectedIds, source: (prefill.preselectedSource ?? 'Devices') as 'Devices' | 'Assets', names: prefill.preselectedNames }
+      : undefined
+  )
+  const [step, setStep] = useState(prefill?.startAtStep ?? 0)
   const [aduState, setAduState] = useState<AduWizardState>(initialAduState)
 
   // Step 0: Job type
