@@ -2050,11 +2050,19 @@ function CreateGroupWizard({ onClose, onCreate }: { onClose: () => void; onCreat
           {step === 1 && (
             <>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium">Group Name *</label>
+                <label
+                  className="text-xs font-medium cursor-pointer select-none hover:text-blue-600 transition-colors"
+                  title="Click to autofill"
+                  onClick={() => setDraft(d => ({ ...d, name: 'San Angelo – TurbineCtrl Q2 Update' }))}
+                >Group Name *</label>
                 <Input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="e.g. San Angelo – TurbineCtrl Q2 Update" className="h-9 text-sm" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium">Description</label>
+                <label
+                  className="text-xs font-medium cursor-pointer select-none hover:text-blue-600 transition-colors"
+                  title="Click to autofill"
+                  onClick={() => setDraft(d => ({ ...d, description: 'Targets Contoso Wind Systems turbine controllers at the San Angelo Wind Farm scheduled for Q2 firmware rollout.' }))}
+                >Description</label>
                 <textarea value={draft.description} onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}
                   placeholder="Optional description…" rows={2}
                   className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-ring" />
@@ -2078,13 +2086,17 @@ function CreateGroupWizard({ onClose, onCreate }: { onClose: () => void; onCreat
               <p className="text-xs text-muted-foreground">Define membership criteria. All matching {draft.memberKind} will be included automatically.</p>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: 'Manufacturer', key: 'criteriaManufacturer' as const, opts: GROUP_MANUFACTURERS },
-                  { label: 'Site', key: 'criteriaSite' as const, opts: GROUP_SITES },
-                  { label: 'Type', key: 'criteriaType' as const, opts: draft.memberKind === 'devices' ? GROUP_DEVICE_TYPES : GROUP_ASSET_TYPES },
-                  { label: 'Health Status', key: 'criteriaStatus' as const, opts: GROUP_STATUSES },
-                ].map(({ label, key, opts }) => (
+                  { label: 'Manufacturer', key: 'criteriaManufacturer' as const, opts: GROUP_MANUFACTURERS, demo: 'Contoso Wind Systems' },
+                  { label: 'Site', key: 'criteriaSite' as const, opts: GROUP_SITES, demo: 'San Angelo Wind Farm' },
+                  { label: 'Type', key: 'criteriaType' as const, opts: draft.memberKind === 'devices' ? GROUP_DEVICE_TYPES : GROUP_ASSET_TYPES, demo: 'Turbine Controller' },
+                  { label: 'Health Status', key: 'criteriaStatus' as const, opts: GROUP_STATUSES, demo: 'Degraded' },
+                ].map(({ label, key, opts, demo }) => (
                   <div key={key} className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">{label}</label>
+                    <label
+                      className="text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-blue-600 transition-colors"
+                      title="Click to autofill"
+                      onClick={() => setDraft(d => ({ ...d, [key]: demo }))}
+                    >{label}</label>
                     <select value={draft[key]} onChange={e => setDraft(d => ({ ...d, [key]: e.target.value }))}
                       className="flex h-9 w-full rounded-md border border-input bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring">
                       <option value="">Any</option>
@@ -2094,7 +2106,11 @@ function CreateGroupWizard({ onClose, onCreate }: { onClose: () => void; onCreat
                 ))}
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium">Additional Query (plain English)</label>
+                <label
+                  className="text-xs font-medium cursor-pointer select-none hover:text-blue-600 transition-colors"
+                  title="Click to autofill"
+                  onClick={() => setDraft(d => ({ ...d, freeQuery: 'devices that have not reported telemetry in the last 24 hours' }))}
+                >Additional Query (plain English)</label>
                 <textarea value={draft.freeQuery} onChange={e => setDraft(d => ({ ...d, freeQuery: e.target.value }))}
                   placeholder="e.g. devices that have not reported telemetry in the last 24 hours"
                   rows={2}
