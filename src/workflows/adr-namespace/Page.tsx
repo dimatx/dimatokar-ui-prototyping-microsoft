@@ -4473,7 +4473,20 @@ const ASSET_MODEL_MAP: Record<string, string> = {
 function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, onUpdateFirmware }: { assetId: string; onBack: () => void; onFirmwareSelect: (v: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void; onUpdateFirmware?: (prefill: JobPrefill) => void }) {
   const asset = mockAssets.find(a => a.id === assetId)
   const [sensitivity, setSensitivity] = useState('General')
+  const [itemStatus, setItemStatus] = useState(() => asset?.status ?? 'Available')
+  const [toggling, setToggling] = useState<null | 'enabling' | 'disabling'>(null)
   if (!asset) return <div className="p-8 text-muted-foreground text-sm">Asset not found.</div>
+  const isItemDisabled = itemStatus === 'Disabled' || itemStatus === 'Inactive'
+  const handleToggle = () => {
+    if (toggling) return
+    if (isItemDisabled) {
+      setToggling('enabling')
+      setTimeout(() => { setItemStatus('Available'); setToggling(null) }, 1500)
+    } else {
+      setToggling('disabling')
+      setTimeout(() => { setItemStatus('Disabled'); setToggling(null) }, 1500)
+    }
+  }
 
   const fwVersion = asset.firmware.startsWith('v') ? asset.firmware.slice(1) : asset.firmware
   const fwData = firmwareDetailData[fwVersion]
@@ -4492,28 +4505,39 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, onUpdate
         </div>
         <div className="ml-auto flex items-center gap-2">
           <SensitivitySelect value={sensitivity} onChange={setSensitivity} />
-          <StatusBadge status={asset.status === 'Available' ? 'Healthy' : asset.status} />
+          <StatusBadge status={itemStatus === 'Available' ? 'Healthy' : itemStatus} />
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {DEVICE_ACTIONS.map(action => (
+        {DEVICE_ACTIONS.filter(a => {
+          if (a.id === 'enable') return isItemDisabled
+          if (a.id === 'disable') return !isItemDisabled
+          return true
+        }).map(action => (
           <button
             key={action.id}
-            onClick={action.id === 'update-firmware' && onUpdateFirmware
-              ? () => onUpdateFirmware({
-                  jobType: 'software-update',
-                  jobName: `Firmware Update – ${asset.name}`,
-                  startAtStep: 3,
-                  preselectedIds: [asset.id],
-                  preselectedSource: 'Assets',
-                  preselectedNames: { [asset.id]: asset.name },
-                })
-              : undefined}
-            className={`inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-slate-50 ${action.cls}`}
+            onClick={
+              (action.id === 'enable' || action.id === 'disable')
+                ? handleToggle
+                : action.id === 'update-firmware' && onUpdateFirmware
+                  ? () => onUpdateFirmware({
+                      jobType: 'software-update',
+                      jobName: `Firmware Update – ${asset.name}`,
+                      startAtStep: 3,
+                      preselectedIds: [asset.id],
+                      preselectedSource: 'Assets',
+                      preselectedNames: { [asset.id]: asset.name },
+                    })
+                  : undefined
+            }
+            disabled={toggling !== null && (action.id === 'enable' || action.id === 'disable')}
+            className={`inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-60 ${action.cls}`}
           >
-            <action.icon className="h-3.5 w-3.5" />
-            {action.label}
+            {toggling !== null && (action.id === 'enable' || action.id === 'disable')
+              ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />{toggling === 'enabling' ? 'Enabling…' : 'Disabling…'}</>
+              : <><action.icon className="h-3.5 w-3.5" />{action.label}</>
+            }
           </button>
         ))}
         {onRunJob && (
@@ -4525,6 +4549,15 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, onUpdate
             Run Job
           </button>
         )}
+        <a
+          href="https://portal.azure.com/#view/Microsoft_Azure_Monitoring/AzureMonitoringBrowseBlade"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          View in Azure Monitor
+        </a>
       </div>
 
       <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
@@ -4631,7 +4664,20 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, onUpdate
 function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpdateFirmware }: { deviceId: string; onBack: () => void; onFirmwareSelect: (v: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void; onUpdateFirmware?: (prefill: JobPrefill) => void }) {
   const device = mockDevices.find(d => d.id === deviceId)
   const [sensitivity, setSensitivity] = useState('General')
+  const [itemStatus, setItemStatus] = useState(() => device?.status ?? 'Healthy')
+  const [toggling, setToggling] = useState<null | 'enabling' | 'disabling'>(null)
   if (!device) return <div className="p-8 text-muted-foreground text-sm">Device not found.</div>
+  const isItemDisabled = itemStatus === 'Disabled' || itemStatus === 'Inactive'
+  const handleToggle = () => {
+    if (toggling) return
+    if (isItemDisabled) {
+      setToggling('enabling')
+      setTimeout(() => { setItemStatus('Healthy'); setToggling(null) }, 1500)
+    } else {
+      setToggling('disabling')
+      setTimeout(() => { setItemStatus('Disabled'); setToggling(null) }, 1500)
+    }
+  }
 
   const fwVersion = device.firmware.startsWith('v') ? device.firmware.slice(1) : device.firmware
   const fwData = fwVersion !== '—' ? firmwareDetailData[fwVersion] : undefined
@@ -4652,7 +4698,7 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
         </div>
         <div className="ml-auto flex items-center gap-2">
           <SensitivitySelect value={sensitivity} onChange={setSensitivity} />
-          <StatusBadge status={device.status} />
+          <StatusBadge status={itemStatus} />
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${device.connectivity === 'Connected' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
             <Wifi className="h-3 w-3" />{device.connectivity}
           </span>
@@ -4660,23 +4706,34 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {DEVICE_ACTIONS.map(action => (
+        {DEVICE_ACTIONS.filter(a => {
+          if (a.id === 'enable') return isItemDisabled
+          if (a.id === 'disable') return !isItemDisabled
+          return true
+        }).map(action => (
           <button
             key={action.id}
-            onClick={action.id === 'update-firmware' && onUpdateFirmware
-              ? () => onUpdateFirmware({
-                  jobType: 'software-update',
-                  jobName: `Firmware Update – ${device.name}`,
-                  startAtStep: 3,
-                  preselectedIds: [device.id],
-                  preselectedSource: 'Devices',
-                  preselectedNames: { [device.id]: device.name },
-                })
-              : undefined}
-            className={`inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-slate-50 ${action.cls}`}
+            onClick={
+              (action.id === 'enable' || action.id === 'disable')
+                ? handleToggle
+                : action.id === 'update-firmware' && onUpdateFirmware
+                  ? () => onUpdateFirmware({
+                      jobType: 'software-update',
+                      jobName: `Firmware Update – ${device.name}`,
+                      startAtStep: 3,
+                      preselectedIds: [device.id],
+                      preselectedSource: 'Devices',
+                      preselectedNames: { [device.id]: device.name },
+                    })
+                  : undefined
+            }
+            disabled={toggling !== null && (action.id === 'enable' || action.id === 'disable')}
+            className={`inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-60 ${action.cls}`}
           >
-            <action.icon className="h-3.5 w-3.5" />
-            {action.label}
+            {toggling !== null && (action.id === 'enable' || action.id === 'disable')
+              ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />{toggling === 'enabling' ? 'Enabling…' : 'Disabling…'}</>
+              : <><action.icon className="h-3.5 w-3.5" />{action.label}</>
+            }
           </button>
         ))}
         {onRunJob && (
@@ -4688,6 +4745,15 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
             Run Job
           </button>
         )}
+        <a
+          href="https://portal.azure.com/#view/Microsoft_Azure_Monitoring/AzureMonitoringBrowseBlade"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          View in Azure Monitor
+        </a>
       </div>
 
       <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
