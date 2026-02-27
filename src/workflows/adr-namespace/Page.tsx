@@ -4576,7 +4576,7 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, onUpdate
           <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">CVE Summary</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Security summary</p>
             </div>
             <button onClick={() => onFirmwareSelect(fwVersion)} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
               View vulnerability report<ChevronRight className="h-3 w-3" />
@@ -4766,7 +4766,7 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
           <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">CVE Summary</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Security summary</p>
             </div>
             <button onClick={() => onFirmwareSelect(fwVersion)} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
               View vulnerability report<ChevronRight className="h-3 w-3" />
