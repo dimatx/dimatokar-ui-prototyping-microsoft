@@ -19,6 +19,7 @@ import {
   Activity,
   Loader2,
   Zap,
+  Radio,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -88,6 +89,8 @@ interface NewJobWizardProps {
   onCreate: (job: CreatedJob) => void
   /** Gate: Software Update job type is only available when Device Update service is Healthy */
   deviceUpdateEnabled?: boolean
+  /** Pre-selected device/asset IDs from the Devices or Assets page — replaces the Target step */
+  preselectedDevices?: { ids: string[]; source: 'Devices' | 'Assets' }
 }
 
 const JOB_TYPES_MAIN = [
@@ -169,7 +172,7 @@ const SAMPLE_SAVED_GROUPS: SavedGroup[] = [
 
 /* ─── Wizard ────────────────────────────────────────────────── */
 
-export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJobs, prefill, onClose, onCreate, deviceUpdateEnabled = false }: NewJobWizardProps) {
+export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJobs, prefill, onClose, onCreate, deviceUpdateEnabled = false, preselectedDevices }: NewJobWizardProps) {
   const [step, setStep] = useState(0)
   const [aduState, setAduState] = useState<AduWizardState>(initialAduState)
 
@@ -239,6 +242,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
         return armActionName.trim().length > 0 && armActionPayload.trim().length > 0
       }
       case 'Target': {
+        if (preselectedDevices) return true
         if (targetMode === 'namespace') return true
         if (targetMode === 'group') return selectedGroup !== null
         if (targetMode === 'custom') return targetCondition.trim().length > 0 && priority.trim().length > 0
@@ -394,28 +398,62 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                 />
               )}
               {currentStepName() === 'Target' && (
-                <StepTarget
-                  hubs={scopedHubs}
-                  aioInstances={aioInstances}
-                  jobType={jobType}
-                  targetMode={targetMode}
-                  onTargetModeChange={(m) => { setTargetMode(m); setSelectedGroup(null); setTargetCondition('') }}
-                  selectedGroup={selectedGroup}
-                  onSelectGroup={(g) => { setSelectedGroup(g); setTargetCondition(g.condition) }}
-                  savedGroups={savedGroups}
-                  targetCondition={targetCondition}
-                  onTargetConditionChange={setTargetCondition}
-                  priority={priority}
-                  onPriorityChange={setPriority}
-                  showSaveGroupInput={showSaveGroupInput}
-                  onToggleSaveGroup={() => setShowSaveGroupInput(!showSaveGroupInput)}
-                  newGroupName={newGroupName}
-                  onNewGroupNameChange={setNewGroupName}
-                  onSaveGroup={saveCurrentAsGroup}
-                  justSaved={justSavedGroup}
-                  selectedNamespace={selectedNamespace}
-                  onNamespaceChange={setSelectedNamespace}
-                />
+                preselectedDevices ? (
+                  <div className="space-y-4">
+                    <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 flex items-start gap-3">
+                      <Radio className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-blue-900">
+                          {preselectedDevices.ids.length.toLocaleString()} {preselectedDevices.source} selected
+                        </p>
+                        <p className="text-xs text-blue-700 mt-0.5">
+                          Target pre-populated from the {preselectedDevices.source} page. All selected items will be targeted by this job.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-slate-100 overflow-hidden" style={{ maxHeight: 192, overflowY: 'auto' }}>
+                      <div className="divide-y divide-slate-50">
+                        {preselectedDevices.ids.map(id => (
+                          <div key={id} className="flex items-center gap-2 px-3 py-1.5">
+                            <div className="h-1.5 w-1.5 rounded-full bg-blue-400 shrink-0" />
+                            <span className="font-mono text-xs text-slate-700">{id}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground font-medium">Priority</span>
+                      <input
+                        type="number" min={1} max={20} value={priority}
+                        onChange={e => setPriority(e.target.value)}
+                        className="w-16 rounded-md border border-slate-200 px-2 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-slate-300"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <StepTarget
+                    hubs={scopedHubs}
+                    aioInstances={aioInstances}
+                    jobType={jobType}
+                    targetMode={targetMode}
+                    onTargetModeChange={(m) => { setTargetMode(m); setSelectedGroup(null); setTargetCondition('') }}
+                    selectedGroup={selectedGroup}
+                    onSelectGroup={(g) => { setSelectedGroup(g); setTargetCondition(g.condition) }}
+                    savedGroups={savedGroups}
+                    targetCondition={targetCondition}
+                    onTargetConditionChange={setTargetCondition}
+                    priority={priority}
+                    onPriorityChange={setPriority}
+                    showSaveGroupInput={showSaveGroupInput}
+                    onToggleSaveGroup={() => setShowSaveGroupInput(!showSaveGroupInput)}
+                    newGroupName={newGroupName}
+                    onNewGroupNameChange={setNewGroupName}
+                    onSaveGroup={saveCurrentAsGroup}
+                    justSaved={justSavedGroup}
+                    selectedNamespace={selectedNamespace}
+                    onNamespaceChange={setSelectedNamespace}
+                  />
+                )
               )}
               {currentStepName() === 'Select Update' && (
                 <StepSelectUpdate

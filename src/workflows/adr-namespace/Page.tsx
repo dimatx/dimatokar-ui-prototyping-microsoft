@@ -31,6 +31,7 @@ import {
   ArrowDown,
   ArrowUpDown,
   Layers,
+  Play,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -479,6 +480,7 @@ export default function AdrNamespacePage() {
   const [jobs, setJobs] = useState<CreatedJob[]>(initialJobs)
   const [showNewJobWizard, setShowNewJobWizard] = useState(false)
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null)
+  const [runJobTarget, setRunJobTarget] = useState<{ ids: string[]; source: 'Devices' | 'Assets' } | null>(null)
 
   // Services state
   const [namespaceSvcs, setNamespaceSvcs] = useState<NamespaceService[]>(initialServices)
@@ -605,13 +607,14 @@ export default function AdrNamespacePage() {
       {activeMenuItem === 'all-resources' ? (
         <AllResourcesView key="all-resources" />
       ) : activeMenuItem === 'assets' ? (
-        <AssetsView key="assets" />
+        <AssetsView key="assets" onRunJob={(ids) => setRunJobTarget({ ids, source: 'Assets' })} />
       ) : activeMenuItem === 'devices' ? (
         <DevicesView
           key={`devices-${devicePrefilter}-${deviceFirmwarePrefilter}`}
           initialSearch={devicePrefilter}
           initialFirmwareFilter={deviceFirmwarePrefilter}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
+          onRunJob={(ids) => setRunJobTarget({ ids, source: 'Devices' })}
         />
       ) : activeMenuItem === 'iot-hub' ? (
         <IotHubView key="iot-hub" hubs={linkedHubs} onAddHub={() => setShowHubPicker(true)} unlinkedCount={unlinkedHubs.length} />
@@ -644,15 +647,17 @@ export default function AdrNamespacePage() {
           }
         }} />
       ) : activeMenuItem === 'credentials' ? (
-        <PlaceholderView key="credentials" title="Credentials" description="Manage device certificates and credentials stored in this namespace. Assign credentials to devices, rotate keys, and set expiry policies." icon={KeyRound} />
+        <CredentialsPageView key="credentials" />
       ) : activeMenuItem === 'policies' ? (
-        <PlaceholderView key="policies" title="Policies" description="Define access control and compliance policies for devices and assets in this namespace. Control what operations are allowed and under which conditions." icon={FileText} />
-      ) : activeMenuItem === 'provisioning' ? (
-        <PlaceholderView key="provisioning" title="Provisioning" description="Configure device provisioning rules and enrollment groups. Connect to IoT Hub Device Provisioning Service instances linked to this namespace." icon={Upload} />
-      ) : activeMenuItem === 'cert-mgmt' ? (
-        <PlaceholderView key="cert-mgmt" title="Certificate Management" description="Manage the certificate authority (CA) hierarchy for this namespace. Issue, renew, and revoke device certificates at scale." icon={Shield} />
-      ) : activeMenuItem === 'groups' ? (
-        <PlaceholderView key="groups" title="Groups" description="Organize devices and assets into groups for targeted operations such as firmware updates, configuration pushes, and policy assignments." icon={Users} />
+        <PoliciesPageView key="policies" />
+      ) : activeMenuItem === 'provisioning' ? (() => {
+        const svc = namespaceSvcs.find(s => s.name === 'Provisioning')!
+        return <ProvisioningView key="provisioning" svc={svc} onConfigure={() => { setSvcConfigTarget(svc); setDisableConfirmText(''); setEnableInstanceName(INSTANCE_NAME_OPTIONS[svc.name]?.[0] ?? '') }} />
+      })() : activeMenuItem === 'cert-mgmt' ? (() => {
+        const svc = namespaceSvcs.find(s => s.name === 'Certificate Management')!
+        return <CertMgmtView key="cert-mgmt" svc={svc} onConfigure={() => { setSvcConfigTarget(svc); setDisableConfirmText(''); setEnableInstanceName(INSTANCE_NAME_OPTIONS[svc.name]?.[0] ?? '') }} />
+      })() : activeMenuItem === 'groups' ? (
+        <GroupsView key="groups" />
       ) : activeMenuItem === 'device-update' ? (() => {
         const svc = namespaceSvcs.find(s => s.name === 'Device Update')!
         const isDisabled = svc.status === 'Disabled' || svc.status === 'Enabling'
@@ -682,9 +687,10 @@ export default function AdrNamespacePage() {
             }
           />
         )
-      })() : activeMenuItem === '3p' ? (
-        <PlaceholderView key="3p" title="3P Capability" description="Integrate third-party extensions and partner solutions into this namespace. Extend ADR with custom capabilities registered via the Azure Marketplace." icon={Puzzle} />
-      ) : (
+      })() : activeMenuItem === '3p' ? (() => {
+        const svc = [...namespaceSvcs, ...addableServices].find(s => s.name === 'Future 3P Integration')
+        return <ThirdPartyView key="3p" svc={svc} onConfigure={() => { if (svc) { setSvcConfigTarget(svc); setDisableConfirmText(''); setEnableInstanceName(INSTANCE_NAME_OPTIONS[svc.name]?.[0] ?? '') } }} />
+      })() : (
       <motion.div key="main" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="space-y-8">
       {/* ── Header / Hero ────────────────────────────────────── */}
       <div className="flex items-start justify-between">
@@ -1204,6 +1210,19 @@ export default function AdrNamespacePage() {
         </AnimatePresence>,
         document.body
       )}
+      {runJobTarget && createPortal(
+        <NewJobWizard
+          linkedHubs={linkedHubs}
+          aioInstances={[]}
+          totalAssets={namespace.totalAssets}
+          existingJobs={jobs}
+          preselectedDevices={runJobTarget}
+          onClose={() => setRunJobTarget(null)}
+          onCreate={(job) => { setJobs(prev => [job, ...prev]); setRunJobTarget(null) }}
+          deviceUpdateEnabled={deviceUpdateEnabled}
+        />,
+        document.body
+      )}
       </div>
     </motion.div>
   )
@@ -1554,6 +1573,334 @@ function PlaceholderView({ title, description, icon: Icon, action }: { title: st
   )
 }
 
+/* ─── Capability Page Mock Data ─────────────────────────────── */
+
+const mockEnrollmentGroups = [
+  { id: 'EG-001', name: 'Contoso Turbine Controllers', attestation: 'X.509 Intermediate CA', devices: 4_820, status: 'Active',   created: '2025-11-14' },
+  { id: 'EG-002', name: 'AeroLogix Pitch Controllers',  attestation: 'X.509 Intermediate CA', devices: 2_617, status: 'Active',   created: '2025-11-14' },
+  { id: 'EG-003', name: 'Zephyr Anemometers',           attestation: 'Symmetric Key',         devices: 1_840, status: 'Active',   created: '2025-12-01' },
+  { id: 'EG-004', name: 'Meridian Edge Gateways',       attestation: 'X.509 Intermediate CA', devices: 984,   status: 'Active',   created: '2026-01-08' },
+  { id: 'EG-005', name: 'Legacy Sensors – Batch A',     attestation: 'TPM 2.0',               devices: 312,   status: 'Inactive', created: '2025-09-20' },
+]
+
+const mockGroups = [
+  { id: 'GRP-001', name: 'All Turbine Controllers',    type: 'Device Group', devices: 6_100, assets: 0, status: 'Active'   },
+  { id: 'GRP-002', name: 'Abilene Wind Farm – All',    type: 'Device Group', devices: 2_430, assets: 434, status: 'Active' },
+  { id: 'GRP-003', name: 'Midland Wind Farm – All',    type: 'Device Group', devices: 2_180, assets: 318, status: 'Active' },
+  { id: 'GRP-004', name: 'Odessa Wind Farm – All',     type: 'Device Group', devices: 1_820, assets: 244, status: 'Active' },
+  { id: 'GRP-005', name: 'San Angelo Wind Farm – All', type: 'Device Group', devices: 1_100, assets: 187, status: 'Active' },
+  { id: 'GRP-006', name: 'Firmware v3.1.0 – Pending',  type: 'Device Group', devices: 6_203, assets: 0, status: 'Active'   },
+  { id: 'GRP-007', name: 'Degraded + Unhealthy',       type: 'Device Group', devices: 583,   assets: 0, status: 'Active'   },
+]
+
+const mockCertHierarchy = [
+  { id: 'CA-001', name: 'Zava Energy Root CA',       type: 'Root CA',          issuer: 'Self-signed',         validTo: '2035-01-01', status: 'Valid' },
+  { id: 'CA-002', name: 'Zava Energy ICA',           type: 'Intermediate CA',  issuer: 'Zava Energy Root CA', validTo: '2030-06-01', status: 'Valid' },
+]
+
+const mockThirdPartyIntegrations = [
+  { id: '3P-001', name: 'RealWear Deployment Manager', vendor: 'RealWear',    category: 'Field Service',     status: 'Available' },
+  { id: '3P-002', name: 'Sight Machine IoT Analytics', vendor: 'Sight Machine', category: 'Analytics',      status: 'Available' },
+  { id: '3P-003', name: 'PTC ThingWorx Connector',    vendor: 'PTC',          category: 'Industrial IoT',   status: 'Available' },
+  { id: '3P-004', name: 'Claroty Edge Security',      vendor: 'Claroty',      category: 'Security',         status: 'Available' },
+]
+
+/* ─── Shared Capability Page Header ─────────────────────────── */
+
+function CapabilityPageHeader({ icon: Icon, title, description, svc, onConfigure }: {
+  icon: React.ElementType
+  title: string
+  description: string
+  svc?: NamespaceService | null
+  onConfigure?: () => void
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start gap-4">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-500 shrink-0 mt-0.5">
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+            {svc && onConfigure && (
+              <button
+                onClick={onConfigure}
+                className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                title={`Configure ${svc.name}`}
+              >
+                <Settings className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+        </div>
+      </div>
+      {svc && (
+        <div className="flex items-center gap-3 rounded-lg border border-slate-100 bg-white px-4 py-2.5 shadow-sm shrink-0">
+          <span className="text-xs text-slate-500 font-medium">Status</span>
+          <StatusBadge status={svc.status} />
+          {svc.instanceName && <span className="font-mono text-xs text-slate-400">{svc.instanceName}</span>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─── Provisioning View ──────────────────────────────────────── */
+
+function ProvisioningView({ svc, onConfigure }: { svc: NamespaceService; onConfigure: () => void }) {
+  const totalDevices = mockEnrollmentGroups.reduce((s, g) => s + g.devices, 0)
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
+      <CapabilityPageHeader icon={Upload} title="Provisioning" description="Manage device enrollment groups and provisioning rules for this namespace." svc={svc} onConfigure={onConfigure} />
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'Enrollment Groups', value: mockEnrollmentGroups.length.toString() },
+          { label: 'Registered Devices', value: totalDevices.toLocaleString() },
+          { label: 'Allocation Policy', value: 'Hashed' },
+        ].map(c => (
+          <div key={c.label} className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
+            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">{c.label}</p>
+            <p className="text-xl font-semibold text-slate-900">{c.value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-slate-50">
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">ID</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Enrollment Group</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Attestation</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">Devices</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Created</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {mockEnrollmentGroups.map(g => (
+              <TableRow key={g.id} className="hover:bg-slate-50/60">
+                <TableCell className="font-mono text-xs text-slate-400">{g.id}</TableCell>
+                <TableCell className="font-medium text-sm">{g.name}</TableCell>
+                <TableCell className="text-sm text-slate-600">{g.attestation}</TableCell>
+                <TableCell className="text-right font-mono text-sm">{g.devices.toLocaleString()}</TableCell>
+                <TableCell className="text-xs text-slate-400">{g.created}</TableCell>
+                <TableCell><StatusBadge status={g.status} /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </motion.div>
+  )
+}
+
+/* ─── Certificate Management View ───────────────────────────── */
+
+function CertMgmtView({ svc, onConfigure }: { svc: NamespaceService; onConfigure: () => void }) {
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
+      <CapabilityPageHeader icon={Shield} title="Certificate Management" description="Manage the CA hierarchy and certificate lifecycle for devices in this namespace." svc={svc} onConfigure={onConfigure} />
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'Root CAs', value: '1' },
+          { label: 'Intermediate CAs', value: '1' },
+          { label: 'Devices Covered', value: (8_421).toLocaleString() },
+        ].map(c => (
+          <div key={c.label} className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
+            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">{c.label}</p>
+            <p className="text-xl font-semibold text-slate-900">{c.value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-slate-50">
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">ID</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Type</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Issuer</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Valid To</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {mockCertHierarchy.map(c => (
+              <TableRow key={c.id} className="hover:bg-slate-50/60">
+                <TableCell className="font-mono text-xs text-slate-400">{c.id}</TableCell>
+                <TableCell className="font-medium text-sm">{c.name}</TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-slate-50 text-slate-600 border-slate-200">{c.type}</span>
+                </TableCell>
+                <TableCell className="text-sm text-slate-600">{c.issuer}</TableCell>
+                <TableCell className="text-xs text-slate-400">{c.validTo}</TableCell>
+                <TableCell><StatusBadge status={c.status === 'Valid' ? 'Healthy' : c.status} /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </motion.div>
+  )
+}
+
+/* ─── Groups View ────────────────────────────────────────────── */
+
+function GroupsView() {
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
+      <CapabilityPageHeader icon={Users} title="Groups" description="Organize devices into groups for targeted jobs, policies, and firmware deployments." />
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'Total Groups', value: mockGroups.length.toString() },
+          { label: 'Largest Group', value: mockGroups[0].devices.toLocaleString() + ' devices' },
+          { label: 'Active Groups', value: mockGroups.filter(g => g.status === 'Active').length.toString() },
+        ].map(c => (
+          <div key={c.label} className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
+            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">{c.label}</p>
+            <p className="text-xl font-semibold text-slate-900">{c.value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-slate-50">
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">ID</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Group Name</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Type</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">Devices</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">Assets</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {mockGroups.map(g => (
+              <TableRow key={g.id} className="hover:bg-slate-50/60">
+                <TableCell className="font-mono text-xs text-slate-400">{g.id}</TableCell>
+                <TableCell className="font-medium text-sm">{g.name}</TableCell>
+                <TableCell className="text-sm text-slate-600">{g.type}</TableCell>
+                <TableCell className="text-right font-mono text-sm">{g.devices.toLocaleString()}</TableCell>
+                <TableCell className="text-right font-mono text-sm text-slate-400">{g.assets > 0 ? g.assets.toLocaleString() : '—'}</TableCell>
+                <TableCell><StatusBadge status={g.status} /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </motion.div>
+  )
+}
+
+/* ─── Credentials Page View ──────────────────────────────────── */
+
+function CredentialsPageView() {
+  const ca = mockCertHierarchy.find(c => c.type === 'Root CA')!
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
+      <CapabilityPageHeader icon={KeyRound} title="Credentials" description="Root certificate authority anchoring device identity for this namespace." />
+      <div className="rounded-lg border border-slate-100 bg-white shadow-sm p-6 max-w-lg space-y-4">
+        <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-50 text-amber-600">
+            <Shield className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">{ca.name}</p>
+            <p className="text-xs text-slate-400">{ca.type}</p>
+          </div>
+          <div className="ml-auto"><StatusBadge status="Healthy" /></div>
+        </div>
+        {[
+          { label: 'Issuer',        value: ca.issuer },
+          { label: 'Valid To',      value: ca.validTo },
+          { label: 'Algorithm',     value: 'RSA 4096 / SHA-256' },
+          { label: 'Fingerprint',   value: 'E4:2B:C1:9A:…:7F:03' },
+          { label: 'Namespace',     value: 'Texas-Wind-Namespace' },
+        ].map(r => (
+          <div key={r.label} className="flex justify-between text-sm">
+            <span className="text-slate-500">{r.label}</span>
+            <span className="font-medium text-slate-800 font-mono text-xs">{r.value}</span>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  )
+}
+
+/* ─── Policies Page View ─────────────────────────────────────── */
+
+function PoliciesPageView() {
+  const ica = mockCertHierarchy.find(c => c.type === 'Intermediate CA')!
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
+      <CapabilityPageHeader icon={FileText} title="Policies" description="Intermediate certificate authority (ICA) issuing device certificates for this namespace." />
+      <div className="rounded-lg border border-slate-100 bg-white shadow-sm p-6 max-w-lg space-y-4">
+        <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-violet-50 text-violet-600">
+            <FileText className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">{ica.name}</p>
+            <p className="text-xs text-slate-400">{ica.type}</p>
+          </div>
+          <div className="ml-auto"><StatusBadge status="Healthy" /></div>
+        </div>
+        {[
+          { label: 'Issuer',          value: ica.issuer },
+          { label: 'Valid To',        value: ica.validTo },
+          { label: 'Algorithm',       value: 'RSA 2048 / SHA-256' },
+          { label: 'Fingerprint',     value: 'A1:9D:B4:22:…:FC:88' },
+          { label: 'Scope',           value: 'Texas-Wind-Namespace' },
+          { label: 'Max Path Length', value: '0 (leaf certs only)' },
+        ].map(r => (
+          <div key={r.label} className="flex justify-between text-sm">
+            <span className="text-slate-500">{r.label}</span>
+            <span className="font-medium text-slate-800 font-mono text-xs">{r.value}</span>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  )
+}
+
+/* ─── Third Party View ───────────────────────────────────────── */
+
+function ThirdPartyView({ svc, onConfigure }: { svc: NamespaceService | undefined; onConfigure: () => void }) {
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
+      <CapabilityPageHeader icon={Puzzle} title="3P Capability" description="Connect third-party partner services and marketplace integrations to this namespace." svc={svc ?? null} onConfigure={svc ? onConfigure : undefined} />
+      <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-slate-50">
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Integration</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Vendor</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Category</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {mockThirdPartyIntegrations.map(t => (
+              <TableRow key={t.id} className="hover:bg-slate-50/60">
+                <TableCell className="font-medium text-sm">{t.name}</TableCell>
+                <TableCell className="text-sm text-slate-600">{t.vendor}</TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-slate-50 text-slate-600 border-slate-200">{t.category}</span>
+                </TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-50 text-sky-700 border-sky-200">{t.status}</span>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </motion.div>
+  )
+}
+
 /* ─── Sort Icon ─────────────────────────────────────────────── */
 
 function SortIcon({ field, sort }: { field: string; sort: { field: string; dir: string } }) {
@@ -1800,8 +2147,9 @@ const ASSET_SORT_FIELDS = [
   { field: 'lastSeen', label: 'Last Seen' },
 ]
 
-function AssetsView({ initialSearch = '' }: { initialSearch?: string }) {
+function AssetsView({ initialSearch = '', onRunJob }: { initialSearch?: string; onRunJob?: (ids: string[]) => void }) {
   const [search, setSearch] = useState(initialSearch)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   // Health multi-select
   const [statusValues, setStatusValues] = useState<Set<string>>(new Set())
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false)
@@ -1956,10 +2304,44 @@ function AssetsView({ initialSearch = '' }: { initialSearch?: string }) {
             {filtered.length.toLocaleString()} of {namespace.totalAssets.toLocaleString()}
           </span>
         </div>
+        {selected.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="mb-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+          >
+            <span className="text-xs font-medium text-slate-700 mr-1">{selected.size} selected</span>
+            {onRunJob && (
+              <button
+                onClick={() => { onRunJob([...selected]); setSelected(new Set()) }}
+                className="inline-flex items-center gap-1.5 rounded-md border border-blue-300 bg-blue-50 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-blue-100 hover:border-blue-400 text-blue-700"
+              >
+                <Play className="h-3 w-3" />
+                Run Job
+              </button>
+            )}
+            <button onClick={() => setSelected(new Set())} className="ml-auto text-muted-foreground hover:text-foreground transition-colors">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </motion.div>
+        )}
         <div className="rounded-lg border shadow-sm overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
+                <TableHead className="w-10 pr-0">
+                  <input
+                    type="checkbox"
+                    checked={filtered.length > 0 && filtered.every(a => selected.has(a.id))}
+                    ref={el => { if (el) el.indeterminate = !filtered.every(a => selected.has(a.id)) && filtered.some(a => selected.has(a.id)) }}
+                    onChange={() => {
+                      const allSel = filtered.every(a => selected.has(a.id))
+                      setSelected(s => { const n = new Set(s); filtered.forEach(a => allSel ? n.delete(a.id) : n.add(a.id)); return n })
+                    }}
+                    className="h-4 w-4 rounded border-slate-300 cursor-pointer"
+                  />
+                </TableHead>
                 {ASSET_SORT_FIELDS.map(col => (
                   <TableHead
                     key={col.field}
@@ -1977,12 +2359,20 @@ function AssetsView({ initialSearch = '' }: { initialSearch?: string }) {
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={9} className="py-10 text-center text-sm text-muted-foreground">
                     No assets match your filters.
                   </TableCell>
                 </TableRow>
               ) : filtered.map(a => (
-                <TableRow key={a.id}>
+                <TableRow key={a.id} className={`cursor-pointer ${selected.has(a.id) ? 'bg-blue-50/50' : ''}`} onClick={() => setSelected(s => { const n = new Set(s); n.has(a.id) ? n.delete(a.id) : n.add(a.id); return n })}>
+                  <TableCell className="pr-0" onClick={e => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(a.id)}
+                      onChange={() => setSelected(s => { const n = new Set(s); n.has(a.id) ? n.delete(a.id) : n.add(a.id); return n })}
+                      className="h-4 w-4 rounded border-slate-300 cursor-pointer"
+                    />
+                  </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">{a.id}</TableCell>
                   <TableCell className="font-medium text-sm">{a.name}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{a.type}</TableCell>
@@ -2026,7 +2416,7 @@ const DEVICE_ACTIONS = [
   { id: 'update-firmware', label: 'Update Firmware', icon: Upload, cls: 'text-blue-700' },
 ]
 
-function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwareSelect }: { initialSearch?: string; initialFirmwareFilter?: string; onFirmwareSelect?: (version: string) => void }) {
+function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwareSelect, onRunJob }: { initialSearch?: string; initialFirmwareFilter?: string; onFirmwareSelect?: (version: string) => void; onRunJob?: (ids: string[]) => void }) {
   const [search, setSearch] = useState(initialSearch)
   // Status multi-select
   const [statusValues, setStatusValues] = useState<Set<string>>(new Set())
@@ -2467,6 +2857,15 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
                   {action.label}
                 </button>
               ))}
+              {onRunJob && (
+                <button
+                  onClick={() => { onRunJob([...selected]); setSelected(new Set()) }}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-blue-300 bg-blue-50 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-blue-100 hover:border-blue-400 text-blue-700"
+                >
+                  <Play className="h-3 w-3" />
+                  Run Job
+                </button>
+              )}
               <button
                 onClick={() => setSelected(new Set())}
                 className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
