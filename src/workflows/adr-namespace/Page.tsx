@@ -502,7 +502,7 @@ export default function AdrNamespacePage() {
   const [hubToConfirm, setHubToConfirm] = useState<Hub | null>(null)
   const [hubConfirmText, setHubConfirmText] = useState('')
   const [jobs, setJobs] = useState<CreatedJob[]>(initialJobs)
-  const [runJobTarget, setRunJobTarget] = useState<{ ids: string[]; source: 'Devices' | 'Assets' } | null>(null)
+  const [runJobTarget, setRunJobTarget] = useState<{ ids: string[]; names: Record<string, string>; source: 'Devices' | 'Assets' } | null>(null)
 
   // Services state
   const [namespaceSvcs, setNamespaceSvcs] = useState<NamespaceService[]>(initialServices)
@@ -695,6 +695,7 @@ export default function AdrNamespacePage() {
           assetId={assetDetailId}
           onBack={() => navigate(-1)}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
+          onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Assets' })}
         />
       ) : activeMenuItem === 'all-resources' && deviceDetailId ? (
         <DeviceDetailView
@@ -702,6 +703,7 @@ export default function AdrNamespacePage() {
           deviceId={deviceDetailId}
           onBack={() => navigate(-1)}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
+          onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Devices' })}
         />
       ) : activeMenuItem === 'all-resources' ? (
         <AllResourcesView
@@ -715,15 +717,17 @@ export default function AdrNamespacePage() {
           assetId={assetDetailId}
           onBack={() => navigate(-1)}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
+          onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Assets' })}
         />
       ) : activeMenuItem === 'assets' ? (
-        <AssetsView key={`assets-${assetPrefilter}`} initialSearch={assetPrefilter} onRunJob={(ids) => setRunJobTarget({ ids, source: 'Assets' })} onAssetSelect={(id) => navigateToDetail('asset', id)} />
+        <AssetsView key={`assets-${assetPrefilter}`} initialSearch={assetPrefilter} onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Assets' })} onAssetSelect={(id) => navigateToDetail('asset', id)} />
       ) : activeMenuItem === 'devices' && deviceDetailId ? (
         <DeviceDetailView
           key={`device-detail-${deviceDetailId}`}
           deviceId={deviceDetailId}
           onBack={() => navigate(-1)}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
+          onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Devices' })}
         />
       ) : activeMenuItem === 'devices' ? (
         <DevicesView
@@ -732,7 +736,7 @@ export default function AdrNamespacePage() {
           initialFirmwareFilter={deviceFirmwarePrefilter}
           initialGroupFilter={deviceGroupPrefilter}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
-          onRunJob={(ids) => setRunJobTarget({ ids, source: 'Devices' })}
+          onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Devices' })}
           onDeviceSelect={(id) => navigateToDetail('device', id)}
           onClearGroupFilter={() => navigate(-1)}
         />
@@ -2648,7 +2652,7 @@ function mkDropdown<T extends string>(
   )
 }
 
-function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSearch?: string; onRunJob?: (ids: string[]) => void; onAssetSelect?: (id: string) => void }) {
+function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSearch?: string; onRunJob?: (ids: string[], names: Record<string, string>) => void; onAssetSelect?: (id: string) => void }) {
   const [search, setSearch] = useState(initialSearch)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   // Health multi-select
@@ -2668,6 +2672,16 @@ function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSe
   const fwDropdownRef = useRef<HTMLDivElement>(null)
 
   const [sort, setSort] = useState({ field: 'id', dir: 'asc' })
+  const [pendingAction, setPendingAction] = useState<string | null>(null)
+  const [actionDone, setActionDone] = useState<string | null>(null)
+  function confirmAction() {
+    const n = selected.size
+    const label = DEVICE_ACTIONS.find(a => a.id === pendingAction)?.label ?? pendingAction ?? ''
+    setPendingAction(null)
+    setSelected(new Set())
+    setActionDone(`${label} applied to ${n} asset${n !== 1 ? 's' : ''}.`)
+    setTimeout(() => setActionDone(null), 3000)
+  }
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -2751,28 +2765,80 @@ function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSe
             {filtered.length.toLocaleString()} of {namespace.totalAssets.toLocaleString()}
           </span>
         </div>
-        {selected.size > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="mb-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
-          >
-            <span className="text-xs font-medium text-slate-700 mr-1">{selected.size} selected</span>
-            {onRunJob && (
+        <AnimatePresence>
+          {selected.size > 0 && !pendingAction && !actionDone && (
+            <motion.div
+              key="action-bar"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.18 }}
+              className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+            >
+              <span className="text-xs font-medium text-slate-700 mr-1">{selected.size} selected</span>
+              {DEVICE_ACTIONS.map(action => (
+                <button
+                  key={action.id}
+                  onClick={() => setPendingAction(action.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-white hover:border-slate-400 ${action.cls}`}
+                >
+                  <action.icon className="h-3 w-3" />
+                  {action.label}
+                </button>
+              ))}
+              {onRunJob && (
+                <button
+                  onClick={() => { const names = Object.fromEntries([...selected].map(id => [id, mockAssets.find(a => a.id === id)?.name ?? id])); onRunJob([...selected], names); setSelected(new Set()) }}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-white hover:border-slate-400"
+                >
+                  <Play className="h-3 w-3" />
+                  Run Job
+                </button>
+              )}
               <button
-                onClick={() => { onRunJob([...selected]); setSelected(new Set()) }}
-                className="inline-flex items-center gap-1.5 rounded-md border border-blue-300 bg-blue-50 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-blue-100 hover:border-blue-400 text-blue-700"
+                onClick={() => setSelected(new Set())}
+                className="ml-auto rounded-md p-1 text-slate-400 hover:text-slate-700 transition-colors"
               >
-                <Play className="h-3 w-3" />
-                Run Job
+                <X className="h-3.5 w-3.5" />
               </button>
-            )}
-            <button onClick={() => setSelected(new Set())} className="ml-auto text-muted-foreground hover:text-foreground transition-colors">
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </motion.div>
-        )}
+            </motion.div>
+          )}
+          {pendingAction && (
+            <motion.div
+              key="confirm-bar"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.18 }}
+              className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2"
+            >
+              <span className="text-xs font-medium text-amber-900">
+                Apply <span className="font-semibold">{DEVICE_ACTIONS.find(a => a.id === pendingAction)?.label}</span> to {selected.size} asset{selected.size !== 1 ? 's' : ''}?
+              </span>
+              <button
+                onClick={confirmAction}
+                className="rounded-md bg-slate-900 px-3 py-1 text-xs font-semibold text-white hover:bg-slate-700 transition-colors"
+              >Confirm</button>
+              <button
+                onClick={() => setPendingAction(null)}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >Cancel</button>
+            </motion.div>
+          )}
+          {actionDone && (
+            <motion.div
+              key="success-bar"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="mb-3 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+              <span className="text-xs font-medium text-emerald-800">{actionDone}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="rounded-lg border shadow-sm overflow-hidden">
           <Table>
             <TableHeader>
@@ -2863,7 +2929,7 @@ const DEVICE_ACTIONS = [
   { id: 'update-firmware', label: 'Update Firmware', icon: Upload, cls: 'text-blue-700' },
 ]
 
-function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGroupFilter = '', onFirmwareSelect, onRunJob, onDeviceSelect, onClearGroupFilter }: { initialSearch?: string; initialFirmwareFilter?: string; initialGroupFilter?: string; onFirmwareSelect?: (version: string) => void; onRunJob?: (ids: string[]) => void; onDeviceSelect?: (id: string) => void; onClearGroupFilter?: () => void }) {
+function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGroupFilter = '', onFirmwareSelect, onRunJob, onDeviceSelect, onClearGroupFilter }: { initialSearch?: string; initialFirmwareFilter?: string; initialGroupFilter?: string; onFirmwareSelect?: (version: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void; onDeviceSelect?: (id: string) => void; onClearGroupFilter?: () => void }) {
   const [search, setSearch] = useState(initialSearch)
   // Status multi-select
   const [statusValues, setStatusValues] = useState<Set<string>>(new Set())
@@ -3085,8 +3151,8 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
               ))}
               {onRunJob && (
                 <button
-                  onClick={() => { onRunJob([...selected]); setSelected(new Set()) }}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-blue-300 bg-blue-50 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-blue-100 hover:border-blue-400 text-blue-700"
+                  onClick={() => { const names = Object.fromEntries([...selected].map(id => [id, mockDevices.find(d => d.id === id)?.name ?? id])); onRunJob([...selected], names); setSelected(new Set()) }}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-white hover:border-slate-400"
                 >
                   <Play className="h-3 w-3" />
                   Run Job
@@ -3094,7 +3160,7 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
               )}
               <button
                 onClick={() => setSelected(new Set())}
-                className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
+                className="ml-auto rounded-md p-1 text-slate-400 hover:text-slate-700 transition-colors"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -3949,7 +4015,7 @@ const ASSET_MODEL_MAP: Record<string, string> = {
   'Edge Gateway': 'EdgeGateway-1900',
 }
 
-function AssetDetailView({ assetId, onBack, onFirmwareSelect }: { assetId: string; onBack: () => void; onFirmwareSelect: (v: string) => void }) {
+function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob }: { assetId: string; onBack: () => void; onFirmwareSelect: (v: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void }) {
   const asset = mockAssets.find(a => a.id === assetId)
   if (!asset) return <div className="p-8 text-muted-foreground text-sm">Asset not found.</div>
 
@@ -3969,6 +4035,27 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect }: { assetId: strin
           <p className="text-xs text-muted-foreground">{asset.id} · {asset.type}</p>
         </div>
         <div className="ml-auto"><StatusBadge status={asset.status === 'Available' ? 'Healthy' : asset.status} /></div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {DEVICE_ACTIONS.map(action => (
+          <button
+            key={action.id}
+            className={`inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-slate-50 ${action.cls}`}
+          >
+            <action.icon className="h-3.5 w-3.5" />
+            {action.label}
+          </button>
+        ))}
+        {onRunJob && (
+          <button
+            onClick={() => onRunJob([asset.id], { [asset.id]: asset.name })}
+            className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+          >
+            <Play className="h-3.5 w-3.5" />
+            Run Job
+          </button>
+        )}
       </div>
 
       <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
@@ -4072,7 +4159,7 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect }: { assetId: strin
 
 /* ─── Device Detail View ─────────────────────────────────────── */
 
-function DeviceDetailView({ deviceId, onBack, onFirmwareSelect }: { deviceId: string; onBack: () => void; onFirmwareSelect: (v: string) => void }) {
+function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob }: { deviceId: string; onBack: () => void; onFirmwareSelect: (v: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void }) {
   const device = mockDevices.find(d => d.id === deviceId)
   if (!device) return <div className="p-8 text-muted-foreground text-sm">Device not found.</div>
 
@@ -4099,6 +4186,27 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect }: { deviceId: st
             <Wifi className="h-3 w-3" />{device.connectivity}
           </span>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {DEVICE_ACTIONS.map(action => (
+          <button
+            key={action.id}
+            className={`inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-slate-50 ${action.cls}`}
+          >
+            <action.icon className="h-3.5 w-3.5" />
+            {action.label}
+          </button>
+        ))}
+        {onRunJob && (
+          <button
+            onClick={() => onRunJob([device.id], { [device.id]: device.name })}
+            className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+          >
+            <Play className="h-3.5 w-3.5" />
+            Run Job
+          </button>
+        )}
       </div>
 
       <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">

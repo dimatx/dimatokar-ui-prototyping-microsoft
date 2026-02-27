@@ -89,7 +89,7 @@ interface NewJobWizardProps {
   /** Gate: Software Update job type is only available when Device Update service is Healthy */
   deviceUpdateEnabled?: boolean
   /** Pre-selected device/asset IDs from the Devices or Assets page — replaces the Target step */
-  preselectedDevices?: { ids: string[]; source: 'Devices' | 'Assets' }
+  preselectedDevices?: { ids: string[]; source: 'Devices' | 'Assets'; names?: Record<string, string> }
 }
 
 const JOB_TYPES_MAIN = [
@@ -412,12 +412,18 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                     </div>
                     <div className="rounded-lg border border-slate-100 overflow-hidden" style={{ maxHeight: 192, overflowY: 'auto' }}>
                       <div className="divide-y divide-slate-50">
-                        {preselectedDevices.ids.map(id => (
-                          <div key={id} className="flex items-center gap-2 px-3 py-1.5">
+                        {preselectedDevices.ids.map(id => {
+                          const name = preselectedDevices.names?.[id]
+                          return (
+                          <div key={id} className="flex items-center gap-2 px-3 py-2">
                             <div className="h-1.5 w-1.5 rounded-full bg-blue-400 shrink-0" />
-                            <span className="font-mono text-xs text-slate-700">{id}</span>
+                            <span className="font-mono text-xs text-slate-400 shrink-0">{id}</span>
+                            {name && name !== id && (
+                              <span className="text-xs text-slate-700 truncate">{name}</span>
+                            )}
                           </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
