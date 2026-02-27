@@ -2148,6 +2148,61 @@ const ASSET_SORT_FIELDS = [
   { field: 'lastSeen', label: 'Last Seen' },
 ]
 
+/** Reusable multi-select filter dropdown used by AssetsView & DevicesView. */
+function mkDropdown<T extends string>(
+  label: string, open: boolean, setOpen: (v: boolean) => void,
+  ref: React.RefObject<HTMLDivElement>, searchVal: string, setSearch: (v: string) => void,
+  options: T[], values: Set<T>, toggle: (v: T) => void, clear: () => void,
+  mono = false
+) {
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+          values.size > 0 ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
+        }`}
+      >
+        {label}
+        {values.size > 0 && (
+          <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none"
+            onClick={e => { e.stopPropagation(); clear() }} title="Clear">×</span>
+        )}
+        <ChevronDown className="h-3 w-3 opacity-60" />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.12 }}
+            className="absolute left-0 top-full mt-1 z-30 w-56 rounded-lg border bg-white shadow-lg">
+            <div className="p-2 border-b">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                <input autoFocus placeholder="Search…" value={searchVal} onChange={e => setSearch(e.target.value)}
+                  className="w-full pl-6 pr-2 py-1 text-xs rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300" />
+              </div>
+            </div>
+            <div className="py-1 max-h-52 overflow-y-auto">
+              {options.length === 0
+                ? <p className="px-3 py-2 text-xs text-muted-foreground">No matches.</p>
+                : options.map(v => (
+                  <label key={v} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-muted/50 cursor-pointer">
+                    <input type="checkbox" checked={values.has(v)} onChange={() => toggle(v)} className="h-3.5 w-3.5 rounded border-slate-300 cursor-pointer" />
+                    <span className={`text-xs${mono ? ' font-mono' : ''}`}>{v}</span>
+                  </label>
+                ))}
+            </div>
+            {values.size > 0 && (
+              <div className="border-t p-2">
+                <button onClick={clear} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center">Clear selection</button>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 function AssetsView({ initialSearch = '', onRunJob }: { initialSearch?: string; onRunJob?: (ids: string[]) => void }) {
   const [search, setSearch] = useState(initialSearch)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -2211,60 +2266,6 @@ function AssetsView({ initialSearch = '', onRunJob }: { initialSearch?: string; 
   const statusLabel = statusValues.size === 0 ? 'Health' : statusValues.size === 1 ? [...statusValues][0] : `${statusValues.size} statuses`
   const mfrLabel = mfrValues.size === 0 ? 'Manufacturer' : mfrValues.size === 1 ? [...mfrValues][0] : `${mfrValues.size} selected`
   const fwLabel = fwValues.size === 0 ? 'Firmware version' : fwValues.size === 1 ? [...fwValues][0] : `${fwValues.size} versions`
-
-  function mkDropdown<T extends string>(
-    label: string, open: boolean, setOpen: (v: boolean) => void,
-    ref: React.RefObject<HTMLDivElement>, searchVal: string, setSearch: (v: string) => void,
-    options: T[], values: Set<T>, toggle: (v: T) => void, clear: () => void,
-    mono = false
-  ) {
-    return (
-      <div className="relative" ref={ref}>
-        <button
-          onClick={() => setOpen(!open)}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-            values.size > 0 ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
-          }`}
-        >
-          {label}
-          {values.size > 0 && (
-            <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none"
-              onClick={e => { e.stopPropagation(); clear() }} title="Clear">×</span>
-          )}
-          <ChevronDown className="h-3 w-3 opacity-60" />
-        </button>
-        <AnimatePresence>
-          {open && (
-            <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.12 }}
-              className="absolute left-0 top-full mt-1 z-30 w-56 rounded-lg border bg-white shadow-lg">
-              <div className="p-2 border-b">
-                <div className="relative">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                  <input autoFocus placeholder="Search…" value={searchVal} onChange={e => setSearch(e.target.value)}
-                    className="w-full pl-6 pr-2 py-1 text-xs rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300" />
-                </div>
-              </div>
-              <div className="py-1 max-h-52 overflow-y-auto">
-                {options.length === 0
-                  ? <p className="px-3 py-2 text-xs text-muted-foreground">No matches.</p>
-                  : options.map(v => (
-                    <label key={v} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-muted/50 cursor-pointer">
-                      <input type="checkbox" checked={values.has(v)} onChange={() => toggle(v)} className="h-3.5 w-3.5 rounded border-slate-300 cursor-pointer" />
-                      <span className={`text-xs${mono ? ' font-mono' : ''}`}>{v}</span>
-                    </label>
-                  ))}
-              </div>
-              {values.size > 0 && (
-                <div className="border-t p-2">
-                  <button onClick={clear} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center">Clear selection</button>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    )
-  }
 
   return (
     <motion.div
@@ -2580,257 +2581,11 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', onFirmwar
               className="pl-8 h-8 text-sm"
             />
           </div>
-          {/* Health multi-select dropdown */}
-          <div className="relative" ref={statusDropdownRef}>
-            <button
-              onClick={() => { setStatusDropdownOpen(v => !v); setMfrDropdownOpen(false); setModelDropdownOpen(false); setConnDropdownOpen(false); setFwDropdownOpen(false) }}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                statusValues.size > 0 ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
-              }`}
-            >
-              {statusLabel}
-              {statusValues.size > 0 && (
-                <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none"
-                  onClick={e => { e.stopPropagation(); setStatusValues(new Set()) }} title="Clear">×</span>
-              )}
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </button>
-            <AnimatePresence>
-              {statusDropdownOpen && (
-                <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.12 }}
-                  className="absolute left-0 top-full mt-1 z-30 w-48 rounded-lg border bg-white shadow-lg">
-                  <div className="p-2 border-b">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                      <input autoFocus placeholder="Search…" value={statusSearch} onChange={e => setStatusSearch(e.target.value)}
-                        className="w-full pl-6 pr-2 py-1 text-xs rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300" />
-                    </div>
-                  </div>
-                  <div className="py-1 max-h-52 overflow-y-auto">
-                    {filteredStatusOptions.length === 0
-                      ? <p className="px-3 py-2 text-xs text-muted-foreground">No matches.</p>
-                      : filteredStatusOptions.map(v => (
-                        <label key={v} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-muted/50 cursor-pointer">
-                          <input type="checkbox" checked={statusValues.has(v)} onChange={() => toggleStatusValue(v)} className="h-3.5 w-3.5 rounded border-slate-300 cursor-pointer" />
-                          <span className="text-xs">{v}</span>
-                        </label>
-                      ))}
-                  </div>
-                  {statusValues.size > 0 && (
-                    <div className="border-t p-2">
-                      <button onClick={() => setStatusValues(new Set())} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center">Clear selection</button>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-          {/* Manufacturer multi-select dropdown */}
-          <div className="relative" ref={mfrDropdownRef}>
-            <button
-              onClick={() => { setMfrDropdownOpen(v => !v); setStatusDropdownOpen(false); setModelDropdownOpen(false); setConnDropdownOpen(false); setFwDropdownOpen(false) }}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                mfrValues.size > 0 ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
-              }`}
-            >
-              {mfrLabel}
-              {mfrValues.size > 0 && (
-                <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none"
-                  onClick={e => { e.stopPropagation(); setMfrValues(new Set()) }} title="Clear">×</span>
-              )}
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </button>
-            <AnimatePresence>
-              {mfrDropdownOpen && (
-                <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.12 }}
-                  className="absolute left-0 top-full mt-1 z-30 w-64 rounded-lg border bg-white shadow-lg">
-                  <div className="p-2 border-b">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                      <input autoFocus placeholder="Search…" value={mfrSearch} onChange={e => setMfrSearch(e.target.value)}
-                        className="w-full pl-6 pr-2 py-1 text-xs rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300" />
-                    </div>
-                  </div>
-                  <div className="py-1 max-h-52 overflow-y-auto">
-                    {filteredMfrOptions.length === 0
-                      ? <p className="px-3 py-2 text-xs text-muted-foreground">No matches.</p>
-                      : filteredMfrOptions.map(v => (
-                        <label key={v} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-muted/50 cursor-pointer">
-                          <input type="checkbox" checked={mfrValues.has(v)} onChange={() => toggleMfrValue(v)} className="h-3.5 w-3.5 rounded border-slate-300 cursor-pointer" />
-                          <span className="text-xs">{v}</span>
-                        </label>
-                      ))}
-                  </div>
-                  {mfrValues.size > 0 && (
-                    <div className="border-t p-2">
-                      <button onClick={() => setMfrValues(new Set())} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center">Clear selection</button>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-          {/* Model multi-select dropdown */}
-          <div className="relative" ref={modelDropdownRef}>
-            <button
-              onClick={() => { setModelDropdownOpen(v => !v); setStatusDropdownOpen(false); setMfrDropdownOpen(false); setConnDropdownOpen(false); setFwDropdownOpen(false) }}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                modelValues.size > 0 ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
-              }`}
-            >
-              {modelLabel}
-              {modelValues.size > 0 && (
-                <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none"
-                  onClick={e => { e.stopPropagation(); setModelValues(new Set()) }} title="Clear">×</span>
-              )}
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </button>
-            <AnimatePresence>
-              {modelDropdownOpen && (
-                <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.12 }}
-                  className="absolute left-0 top-full mt-1 z-30 w-64 rounded-lg border bg-white shadow-lg">
-                  <div className="p-2 border-b">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                      <input autoFocus placeholder="Search…" value={modelSearch} onChange={e => setModelSearch(e.target.value)}
-                        className="w-full pl-6 pr-2 py-1 text-xs rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300" />
-                    </div>
-                  </div>
-                  <div className="py-1 max-h-52 overflow-y-auto">
-                    {filteredModelOptions.length === 0
-                      ? <p className="px-3 py-2 text-xs text-muted-foreground">No matches.</p>
-                      : filteredModelOptions.map(v => (
-                        <label key={v} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-muted/50 cursor-pointer">
-                          <input type="checkbox" checked={modelValues.has(v)} onChange={() => toggleModelValue(v)} className="h-3.5 w-3.5 rounded border-slate-300 cursor-pointer" />
-                          <span className="font-mono text-xs">{v}</span>
-                        </label>
-                      ))}
-                  </div>
-                  {modelValues.size > 0 && (
-                    <div className="border-t p-2">
-                      <button onClick={() => setModelValues(new Set())} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center">Clear selection</button>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-          {/* Connectivity multi-select dropdown */}
-          <div className="relative" ref={connDropdownRef}>
-            <button
-              onClick={() => { setConnDropdownOpen(v => !v); setStatusDropdownOpen(false); setMfrDropdownOpen(false); setModelDropdownOpen(false); setFwDropdownOpen(false) }}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                connectivityValues.size > 0 ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-600 hover:bg-muted/50'
-              }`}
-            >
-              {connLabel}
-              {connectivityValues.size > 0 && (
-                <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none"
-                  onClick={e => { e.stopPropagation(); setConnectivityValues(new Set()) }} title="Clear">×</span>
-              )}
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </button>
-            <AnimatePresence>
-              {connDropdownOpen && (
-                <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.12 }}
-                  className="absolute left-0 top-full mt-1 z-30 w-52 rounded-lg border bg-white shadow-lg">
-                  <div className="p-2 border-b">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                      <input autoFocus placeholder="Search…" value={connSearch} onChange={e => setConnSearch(e.target.value)}
-                        className="w-full pl-6 pr-2 py-1 text-xs rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300" />
-                    </div>
-                  </div>
-                  <div className="py-1 max-h-52 overflow-y-auto">
-                    {filteredConnOptions.length === 0
-                      ? <p className="px-3 py-2 text-xs text-muted-foreground">No matches.</p>
-                      : filteredConnOptions.map(v => (
-                        <label key={v} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-muted/50 cursor-pointer">
-                          <input type="checkbox" checked={connectivityValues.has(v)} onChange={() => toggleConnValue(v)} className="h-3.5 w-3.5 rounded border-slate-300 cursor-pointer" />
-                          <span className="text-xs">{v}</span>
-                        </label>
-                      ))}
-                  </div>
-                  {connectivityValues.size > 0 && (
-                    <div className="border-t p-2">
-                      <button onClick={() => setConnectivityValues(new Set())} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center">Clear selection</button>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-          {/* Firmware version multi-select dropdown */}
-          <div className="relative" ref={fwDropdownRef}>
-            <button
-              onClick={() => { setFwDropdownOpen(v => !v); setStatusDropdownOpen(false); setMfrDropdownOpen(false); setModelDropdownOpen(false); setConnDropdownOpen(false) }}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                firmwareVersions.size > 0
-                  ? 'bg-slate-900 text-white border-slate-900'
-                  : 'border-slate-200 text-slate-600 hover:bg-muted/50'
-              }`}
-            >
-              <span>{fwLabel}</span>
-              {firmwareVersions.size > 0 && (
-                <span
-                  className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none"
-                  onClick={e => { e.stopPropagation(); setFirmwareVersions(new Set()) }}
-                  title="Clear"
-                >×</span>
-              )}
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </button>
-            <AnimatePresence>
-              {fwDropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -4, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -4, scale: 0.97 }}
-                  transition={{ duration: 0.12 }}
-                  className="absolute left-0 top-full mt-1 z-30 w-52 rounded-lg border bg-white shadow-lg"
-                >
-                  <div className="p-2 border-b">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                      <input
-                        autoFocus
-                        placeholder="Search versions…"
-                        value={fwSearch}
-                        onChange={e => setFwSearch(e.target.value)}
-                        className="w-full pl-6 pr-2 py-1 text-xs rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300"
-                      />
-                    </div>
-                  </div>
-                  <div className="py-1 max-h-52 overflow-y-auto">
-                    {filteredFwOptions.length === 0 ? (
-                      <p className="px-3 py-2 text-xs text-muted-foreground">No versions match.</p>
-                    ) : filteredFwOptions.map(v => (
-                      <label
-                        key={v}
-                        className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-muted/50 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={firmwareVersions.has(v)}
-                          onChange={() => toggleFwVersion(v)}
-                          className="h-3.5 w-3.5 rounded border-slate-300 cursor-pointer"
-                        />
-                        <span className="font-mono text-xs">{v}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {firmwareVersions.size > 0 && (
-                    <div className="border-t p-2">
-                      <button
-                        onClick={() => setFirmwareVersions(new Set())}
-                        className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center"
-                      >Clear selection</button>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          {mkDropdown(statusLabel, statusDropdownOpen, setStatusDropdownOpen, statusDropdownRef, statusSearch, setStatusSearch, filteredStatusOptions, statusValues, toggleStatusValue, () => setStatusValues(new Set()))}
+          {mkDropdown(mfrLabel, mfrDropdownOpen, setMfrDropdownOpen, mfrDropdownRef, mfrSearch, setMfrSearch, filteredMfrOptions, mfrValues, toggleMfrValue, () => setMfrValues(new Set()))}
+          {mkDropdown(modelLabel, modelDropdownOpen, setModelDropdownOpen, modelDropdownRef, modelSearch, setModelSearch, filteredModelOptions, modelValues, toggleModelValue, () => setModelValues(new Set()), true)}
+          {mkDropdown(connLabel, connDropdownOpen, setConnDropdownOpen, connDropdownRef, connSearch, setConnSearch, filteredConnOptions, connectivityValues, toggleConnValue, () => setConnectivityValues(new Set()))}
+          {mkDropdown(fwLabel, fwDropdownOpen, setFwDropdownOpen, fwDropdownRef, fwSearch, setFwSearch, filteredFwOptions, firmwareVersions, toggleFwVersion, () => setFirmwareVersions(new Set()), true)}
           <span className="ml-auto text-xs text-muted-foreground">
             {filtered.length.toLocaleString()} of {namespace.totalDevices.toLocaleString()}
           </span>
@@ -3242,8 +2997,6 @@ function VBarChart({ data, total }: { data: { label: string; value: number }[]; 
 
 const FW_TABS = ['Overview', 'Weaknesses', 'Software Components', 'Binary Hardening', 'Certificates', 'Password Hashes', 'Keys'] as const
 type FwTab = typeof FW_TABS[number]
-
-// severityBg is defined once below FirmwareAnalysisView and reused by both views
 
 const severityColor: Record<string, string> = {
   Critical: '#dc2626', High: '#f97316', Medium: '#f59e0b', Low: '#94a3b8',
