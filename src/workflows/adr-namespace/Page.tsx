@@ -3160,21 +3160,7 @@ function IotOpsView() {
               </div>
             </div>
             <div className="rounded-lg border p-4 space-y-3">
-              <p className="text-xs font-medium text-muted-foreground">Connected Devices</p>
-              <div className="space-y-2">
-                {aioInstances.map(inst => (
-                  <div key={inst.name}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[130px]">{inst.name.replace('aio-tx-', '')}</span>
-                      <span className="text-[11px] font-mono text-foreground ml-2">{inst.connectedDevices.toLocaleString()}</span>
-                    </div>
-                    <HBar value={inst.connectedDevices} max={maxDevices} color={inst.status === 'Degraded' ? '#f59e0b' : '#3b82f6'} />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-lg border p-4 space-y-3">
-              <p className="text-xs font-medium text-muted-foreground">Assets Managed</p>
+              <p className="text-xs font-medium text-muted-foreground">Assets</p>
               <div className="space-y-2">
                 {aioInstances.map(inst => (
                   <div key={inst.name}>
@@ -3183,6 +3169,20 @@ function IotOpsView() {
                       <span className="text-[11px] font-mono text-foreground ml-2">{inst.assets.toLocaleString()}</span>
                     </div>
                     <HBar value={inst.assets} max={maxAssets} color="#8b5cf6" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-lg border p-4 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground">Devices</p>
+              <div className="space-y-2">
+                {aioInstances.map(inst => (
+                  <div key={inst.name}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[130px]">{inst.name.replace('aio-tx-', '')}</span>
+                      <span className="text-[11px] font-mono text-foreground ml-2">{inst.connectedDevices.toLocaleString()}</span>
+                    </div>
+                    <HBar value={inst.connectedDevices} max={maxDevices} color={inst.status === 'Degraded' ? '#f59e0b' : '#3b82f6'} />
                   </div>
                 ))}
               </div>
@@ -3196,8 +3196,8 @@ function IotOpsView() {
             <TableRow>
               <TableHead>Instance</TableHead>
               <TableHead>Site</TableHead>
-              <TableHead className="text-right">Connected Devices</TableHead>
               <TableHead className="text-right">Assets</TableHead>
+              <TableHead className="text-right">Devices</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
@@ -3206,8 +3206,8 @@ function IotOpsView() {
               <TableRow key={inst.name}>
                 <TableCell className="font-mono text-sm font-medium">{inst.name}</TableCell>
                 <TableCell className="text-muted-foreground">{inst.site}</TableCell>
-                <TableCell className="text-right font-mono text-sm">{inst.connectedDevices.toLocaleString()}</TableCell>
                 <TableCell className="text-right font-mono text-sm">{inst.assets.toLocaleString()}</TableCell>
+                <TableCell className="text-right font-mono text-sm">{inst.connectedDevices.toLocaleString()}</TableCell>
                 <TableCell><StatusBadge status={inst.status} /></TableCell>
               </TableRow>
             ))}
