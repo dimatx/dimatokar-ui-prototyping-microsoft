@@ -478,8 +478,6 @@ export default function AdrNamespacePage() {
   const [hubToConfirm, setHubToConfirm] = useState<Hub | null>(null)
   const [hubConfirmText, setHubConfirmText] = useState('')
   const [jobs, setJobs] = useState<CreatedJob[]>(initialJobs)
-  const [showNewJobWizard, setShowNewJobWizard] = useState(false)
-  const [expandedJobId, setExpandedJobId] = useState<string | null>(null)
   const [runJobTarget, setRunJobTarget] = useState<{ ids: string[]; source: 'Devices' | 'Assets' } | null>(null)
 
   // Services state
@@ -607,7 +605,7 @@ export default function AdrNamespacePage() {
       {activeMenuItem === 'all-resources' ? (
         <AllResourcesView key="all-resources" />
       ) : activeMenuItem === 'assets' ? (
-        <AssetsView key="assets" onRunJob={(ids) => setRunJobTarget({ ids, source: 'Assets' })} />
+        <AssetsView key={`assets-${assetPrefilter}`} initialSearch={assetPrefilter} onRunJob={(ids) => setRunJobTarget({ ids, source: 'Assets' })} />
       ) : activeMenuItem === 'devices' ? (
         <DevicesView
           key={`devices-${devicePrefilter}-${deviceFirmwarePrefilter}`}
@@ -883,7 +881,7 @@ export default function AdrNamespacePage() {
       {/* Jobs + Firmware Analysis moved to dedicated menu sub-views */}
 
       {/* ── Service Config Dialog ────────────────────────────── */}
-      {svcConfigTarget && createPortal(
+      {svcConfigTarget && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -1007,8 +1005,7 @@ export default function AdrNamespacePage() {
               )}
             </div>
           </motion.div>
-        </motion.div>,
-        document.body
+        </motion.div>
       )}
 
       {/* ── Add Service Dialog ───────────────────────────────── */}
@@ -3028,9 +3025,9 @@ function IotHubView({ hubs, onAddHub, unlinkedCount }: { hubs: Hub[]; onAddHub: 
           <Button
             size="sm"
             className="gap-1.5 text-xs"
-            onClick={() => window.open('https://portal.azure.com', '_blank')}
+            onClick={() => {}}
           >
-            <ExternalLink className="h-3.5 w-3.5" />
+            <Plus className="h-3.5 w-3.5" />
             Add New Hub
           </Button>
         </div>
@@ -3218,157 +3215,6 @@ function IotOpsView() {
   )
 }
 
-/* ─── Jobs View ─────────────────────────────────────────────── */
-
-interface JobsViewProps {
-  jobs: CreatedJob[]
-  setJobs: React.Dispatch<React.SetStateAction<CreatedJob[]>>
-  expandedJobId: string | null
-  setExpandedJobId: (id: string | null) => void
-  showNewJobWizard: boolean
-  setShowNewJobWizard: (v: boolean) => void
-  linkedHubs: Hub[]
-  aioInstances: { name: string; site: string; status: string; connectedDevices: number; assets: number }[]
-  namespaceSvcs: NamespaceService[]
-}
-
-const JOB_TYPE_COLOR: Record<string, string> = {
-  'Software Update': 'bg-blue-100 text-blue-700',
-  'Certificate': 'bg-purple-100 text-purple-700',
-  'Command': 'bg-slate-100 text-slate-600',
-  'Configuration': 'bg-teal-100 text-teal-700',
-}
-
-function JobsView({ jobs, setJobs, expandedJobId, setExpandedJobId, showNewJobWizard, setShowNewJobWizard, linkedHubs, aioInstances: aioInst, namespaceSvcs }: JobsViewProps) {
-  const deviceUpdateEnabled = namespaceSvcs.some(s => s.name === 'Device Update' && s.status === 'Healthy')
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.25 }}
-      className="space-y-8"
-    >
-      <div className="flex items-center justify-between">
-        <SubViewHeader title="Jobs" count={jobs.length} subtitle="Texas-Wind-Namespace" />
-        <Button size="sm" className="gap-1.5 text-xs" onClick={() => setShowNewJobWizard(true)}>
-          <Plus className="h-3.5 w-3.5" />
-          New Job
-        </Button>
-      </div>
-      <div className="rounded-lg border shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-[90px]">Job ID</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Targets</TableHead>
-              <TableHead>Started</TableHead>
-              <TableHead className="w-[80px]" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {jobs.map(job => (
-              <>
-                <TableRow
-                  key={job.id}
-                  className="cursor-pointer"
-                  onClick={() => setExpandedJobId(expandedJobId === job.id ? null : job.id)}
-                >
-                  <TableCell className="font-mono text-xs text-muted-foreground">{job.id}</TableCell>
-                  <TableCell className="font-medium text-sm">{job.name}</TableCell>
-                  <TableCell>
-                    <span className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium ${
-                      JOB_TYPE_COLOR[job.type] ?? 'bg-slate-100 text-slate-600'
-                    }`}>{job.type}</span>
-                  </TableCell>
-                  <TableCell><StatusBadge status={job.status} /></TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{job.targets}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{job.started}</TableCell>
-                  <TableCell>
-                    <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${
-                      expandedJobId === job.id ? 'rotate-90' : ''
-                    }`} />
-                  </TableCell>
-                </TableRow>
-                <AnimatePresence>
-                {expandedJobId === job.id && (
-                  <TableRow key={`${job.id}-exp`}>
-                    <TableCell colSpan={7} className="p-0">
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="px-6 py-4 bg-slate-50 border-t">
-                          {job.hubProgress && job.hubProgress.length > 0 ? (
-                            <div className="space-y-3">
-                              {job.hubProgress.map(hp => {
-                                const pct = hp.total > 0 ? Math.round(((hp.completed) / hp.total) * 100) : 0
-                                return (
-                                  <div key={hp.hubName}>
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="font-mono text-xs font-medium">{hp.hubName}</span>
-                                      <span className="text-xs text-muted-foreground">{hp.completed.toLocaleString()} / {hp.total.toLocaleString()} · {pct}%</span>
-                                    </div>
-                                    <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
-                                      <div
-                                        className="h-full rounded-full bg-emerald-500 transition-all"
-                                        style={{ width: `${pct}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-muted-foreground">No per-hub breakdown available.</p>
-                          )}
-                        </div>
-                      </motion.div>
-                    </TableCell>
-                  </TableRow>
-                )}
-                </AnimatePresence>
-              </>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      <AnimatePresence>
-        {showNewJobWizard && (
-          <motion.div
-            key="new-job-wizard"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm flex items-start justify-end p-6"
-          >
-            <NewJobWizard
-              linkedHubs={linkedHubs}
-              aioInstances={aioInst}
-              totalAssets={namespace.totalAssets}
-              existingJobs={jobs}
-              deviceUpdateEnabled={deviceUpdateEnabled}
-              onClose={() => setShowNewJobWizard(false)}
-              onCreate={(job) => {
-                setJobs(prev => [job, ...prev])
-                setShowNewJobWizard(false)
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  )
-}
-
 /* ─── Vertical Bar Chart (for Binary Hardening) ─────────────── */
 
 function VBarChart({ data, total }: { data: { label: string; value: number }[]; total: number }) {
@@ -3397,7 +3243,12 @@ function VBarChart({ data, total }: { data: { label: string; value: number }[]; 
 const FW_TABS = ['Overview', 'Weaknesses', 'Software Components', 'Binary Hardening', 'Certificates', 'Password Hashes', 'Keys'] as const
 type FwTab = typeof FW_TABS[number]
 
-const severityDetailBg: Record<string, string> = {
+// severityBg is defined once below FirmwareAnalysisView and reused by both views
+
+const severityColor: Record<string, string> = {
+  Critical: '#dc2626', High: '#f97316', Medium: '#f59e0b', Low: '#94a3b8',
+}
+const severityBg: Record<string, string> = {
   Critical: 'bg-red-600 text-white', High: 'bg-orange-500 text-white',
   Medium: 'bg-amber-100 text-amber-700 border border-amber-200',
   Low: 'bg-slate-100 text-slate-500 border border-slate-200',
@@ -3639,7 +3490,7 @@ function FirmwareDetailView({ version, onBack, onDevicesClick, onAssetsClick }: 
                 <TableRow key={c.id}>
                   <TableCell className="font-mono text-xs font-medium">{c.id}</TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ${severityDetailBg[c.severity]}`}>{c.severity}</span>
+                    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ${severityBg[c.severity]}`}>{c.severity}</span>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{c.description}</TableCell>
                 </TableRow>
@@ -3712,15 +3563,6 @@ function FirmwareDetailView({ version, onBack, onDevicesClick, onAssetsClick }: 
 }
 
 /* ─── Firmware Analysis View ─────────────────────────────────── */
-
-const severityColor: Record<string, string> = {
-  Critical: '#dc2626', High: '#f97316', Medium: '#f59e0b', Low: '#94a3b8',
-}
-const severityBg: Record<string, string> = {
-  Critical: 'bg-red-600 text-white', High: 'bg-orange-500 text-white',
-  Medium: 'bg-amber-100 text-amber-700 border border-amber-200',
-  Low: 'bg-slate-100 text-slate-500 border border-slate-200',
-}
 
 function FirmwareAnalysisView({ onFirmwareSelect, onVersionClick, onManufacturerClick, onModelClick }: {
   onFirmwareSelect?: (version: string) => void
