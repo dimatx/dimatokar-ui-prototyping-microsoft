@@ -65,6 +65,7 @@ interface SavedGroup {
   name: string
   condition: string
   deviceCount: number
+  kind?: 'adu-classic'
 }
 
 export interface JobPrefill {
@@ -173,6 +174,10 @@ const SAMPLE_SAVED_GROUPS: SavedGroup[] = [
   { id: 'g3', name: 'Critical wind sensors', condition: 'critical sensors at any site', deviceCount: 1_209 },
   { id: 'g4', name: 'Sweetwater cluster', condition: 'all devices in Sweetwater cluster', deviceCount: 7_831 },
   { id: 'g5', name: 'Turbine Controllers', condition: 'ADUGroup=turbine-controllers', deviceCount: 10_797 },
+  // ADU (classic) groups — only shown in Software Update flow
+  { id: 'ag1', name: 'Turbine Controllers – TX Wind', condition: 'ADUGroup=turbine-controllers-tx', deviceCount: 4_210, kind: 'adu-classic' },
+  { id: 'ag2', name: 'Pitch Controllers – All Sites', condition: 'ADUGroup=pitch-controllers-all', deviceCount: 2_180, kind: 'adu-classic' },
+  { id: 'ag3', name: 'Edge Gateways – Update Ring A', condition: 'ADUGroup=edge-gateways-ring-a', deviceCount: 876, kind: 'adu-classic' },
 ]
 
 /* ─── Wizard ────────────────────────────────────────────────── */
@@ -625,11 +630,6 @@ function StepJobType({
           <p className="mt-0.5 text-xs text-muted-foreground">{type.description}</p>
         </div>
         <div className="ml-auto flex items-center gap-2 shrink-0">
-          {isDemo && !isGated && (
-            <span className="rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-[9px] font-medium text-orange-600 tracking-wide uppercase">
-              try me
-            </span>
-          )}
           {isGated && (
             <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-medium text-slate-500 tracking-wide uppercase">
               Enable Device Update
@@ -1008,7 +1008,6 @@ function StepTarget({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium">Load Group</p>
-                <span className="rounded border border-orange-300 bg-orange-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-orange-600">P2</span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {selectedGroup ? selectedGroup.name : 'Pick a saved group of devices'}
@@ -1021,7 +1020,7 @@ function StepTarget({
           {targetMode === 'group' && (
             <div className="border-t mx-0">
               <div className="divide-y max-h-52 overflow-y-auto">
-                {savedGroups.map((group) => (
+                {savedGroups.filter(g => jobType === 'software-update' || g.kind !== 'adu-classic').map((group) => (
                   <button
                     key={group.id}
                     onClick={() => onSelectGroup(group)}
@@ -1035,7 +1034,12 @@ function StepTarget({
                       {selectedGroup?.id === group.id && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium">{group.name}</p>
+                      <p className="text-xs font-medium flex items-center gap-1.5">
+                        {group.name}
+                        {group.kind === 'adu-classic' && (
+                          <span className="text-[9px] font-semibold rounded px-1 py-px bg-amber-50 text-amber-700 border border-amber-200 uppercase tracking-wide">ADU</span>
+                        )}
+                      </p>
                       <p className="text-[10px] text-muted-foreground truncate italic">{group.condition}</p>
                     </div>
                     <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">{group.deviceCount.toLocaleString()} devices</span>

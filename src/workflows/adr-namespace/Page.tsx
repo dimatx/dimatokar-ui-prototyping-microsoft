@@ -1865,16 +1865,20 @@ const mockEnrollmentGroups = [
 ]
 
 const mockGroups = [
-  { id: 'GRP-001', name: 'All Turbine Controllers',     memberKind: 'devices' as const, type: 'Device Group',  devices: 6_100, assets: 0,   status: 'Active',   criteria: { type: 'Turbine Controller' } },
-  { id: 'GRP-002', name: 'Abilene Wind Farm – All',      memberKind: 'devices' as const, type: 'Device Group',  devices: 2_430, assets: 434, status: 'Active',   criteria: { site: 'Abilene Wind Farm' } },
-  { id: 'GRP-003', name: 'Midland Wind Farm – All',      memberKind: 'devices' as const, type: 'Device Group',  devices: 2_180, assets: 318, status: 'Active',   criteria: { site: 'Midland Wind Farm' } },
-  { id: 'GRP-004', name: 'Odessa Wind Farm – All',       memberKind: 'devices' as const, type: 'Device Group',  devices: 1_820, assets: 244, status: 'Active',   criteria: { site: 'Odessa Wind Farm' } },
-  { id: 'GRP-005', name: 'San Angelo Wind Farm – All',   memberKind: 'devices' as const, type: 'Device Group',  devices: 1_100, assets: 187, status: 'Active',   criteria: { site: 'San Angelo Wind Farm' } },
-  { id: 'GRP-006', name: 'Firmware v3.1.0 – Pending Update', memberKind: 'devices' as const, type: 'Device Group', devices: 6_203, assets: 0, status: 'Active', criteria: { firmware: 'v3.1.0' } },
-  { id: 'GRP-007', name: 'Degraded + Unhealthy',         memberKind: 'devices' as const, type: 'Device Group',  devices: 583,   assets: 0,   status: 'Active',   criteria: { status: 'Degraded' } },
-  { id: 'GRP-008', name: 'Contoso Turbine Assets',       memberKind: 'assets'  as const, type: 'Asset Group',   devices: 0,     assets: 1_420, status: 'Active', criteria: { manufacturer: 'Contoso Wind Systems' } },
-  { id: 'GRP-009', name: 'All Anemometer Sensors',       memberKind: 'assets'  as const, type: 'Asset Group',   devices: 0,     assets: 782,  status: 'Active',   criteria: { type: 'Anemometer' } },
-  { id: 'GRP-010', name: 'Edge Gateways – All Sites',    memberKind: 'assets'  as const, type: 'Asset Group',   devices: 0,     assets: 541,  status: 'Active',   criteria: { type: 'Edge Gateway' } },
+  { id: 'GRP-001', name: 'All Turbine Controllers',     memberKind: 'devices' as const, type: 'Device Group' as const,        devices: 6_100, assets: 0,   status: 'Active',   criteria: { type: 'Turbine Controller' } },
+  { id: 'GRP-002', name: 'Abilene Wind Farm – All',      memberKind: 'devices' as const, type: 'Device Group' as const,        devices: 2_430, assets: 434, status: 'Active',   criteria: { site: 'Abilene Wind Farm' } },
+  { id: 'GRP-003', name: 'Midland Wind Farm – All',      memberKind: 'devices' as const, type: 'Device Group' as const,        devices: 2_180, assets: 318, status: 'Active',   criteria: { site: 'Midland Wind Farm' } },
+  { id: 'GRP-004', name: 'Odessa Wind Farm – All',       memberKind: 'devices' as const, type: 'Device Group' as const,        devices: 1_820, assets: 244, status: 'Active',   criteria: { site: 'Odessa Wind Farm' } },
+  { id: 'GRP-005', name: 'San Angelo Wind Farm – All',   memberKind: 'devices' as const, type: 'Device Group' as const,        devices: 1_100, assets: 187, status: 'Active',   criteria: { site: 'San Angelo Wind Farm' } },
+  { id: 'GRP-006', name: 'Firmware v3.1.0 – Pending Update', memberKind: 'devices' as const, type: 'Device Group' as const,   devices: 6_203, assets: 0, status: 'Active', criteria: { firmware: 'v3.1.0' } },
+  { id: 'GRP-007', name: 'Degraded + Unhealthy',         memberKind: 'devices' as const, type: 'Device Group' as const,        devices: 583,   assets: 0,   status: 'Active',   criteria: { status: 'Degraded' } },
+  { id: 'GRP-008', name: 'Contoso Turbine Assets',       memberKind: 'assets'  as const, type: 'Asset Group' as const,         devices: 0,     assets: 1_420, status: 'Active', criteria: { manufacturer: 'Contoso Wind Systems' } },
+  { id: 'GRP-009', name: 'All Anemometer Sensors',       memberKind: 'assets'  as const, type: 'Asset Group' as const,         devices: 0,     assets: 782,  status: 'Active',   criteria: { type: 'Anemometer' } },
+  { id: 'GRP-010', name: 'Edge Gateways – All Sites',    memberKind: 'assets'  as const, type: 'Asset Group' as const,         devices: 0,     assets: 541,  status: 'Active',   criteria: { type: 'Edge Gateway' } },
+  // ADU (classic) groups
+  { id: 'GRP-011', name: 'Turbine Controllers – TX Wind', memberKind: 'devices' as const, type: 'ADU Group (classic)' as const, devices: 4_210, assets: 0,   status: 'Active',   criteria: { type: 'Turbine Controller' } },
+  { id: 'GRP-012', name: 'Pitch Controllers – All Sites', memberKind: 'devices' as const, type: 'ADU Group (classic)' as const, devices: 2_180, assets: 0,   status: 'Active',   criteria: { type: 'Pitch Controller' } },
+  { id: 'GRP-013', name: 'Edge Gateways – Update Ring A', memberKind: 'devices' as const, type: 'ADU Group (classic)' as const, devices: 876,   assets: 0,   status: 'Active',   criteria: { type: 'Edge Gateway' } },
 ]
 
 const mockCertHierarchy = [
@@ -2205,8 +2209,9 @@ function GroupsView({ onGroupSelect }: { onGroupSelect?: (id: string) => void })
   const [groups, setGroups] = useState(mockGroups)
   const [showWizard, setShowWizard] = useState(false)
 
-  const deviceGroups = groups.filter(g => g.memberKind === 'devices')
+  const deviceGroups = groups.filter(g => g.memberKind === 'devices' && g.type !== 'ADU Group (classic)')
   const assetGroups  = groups.filter(g => g.memberKind === 'assets')
+  const aduGroups    = groups.filter(g => g.type === 'ADU Group (classic)')
 
   function handleCreate(draft: GroupDraft) {
     const newId = `GRP-${String(groups.length + 1).padStart(3, '0')}`
@@ -2243,7 +2248,7 @@ function GroupsView({ onGroupSelect }: { onGroupSelect?: (id: string) => void })
           { label: 'Total Groups',   value: groups.length.toString() },
           { label: 'Device Groups',  value: deviceGroups.length.toString() },
           { label: 'Asset Groups',   value: assetGroups.length.toString() },
-          { label: 'Active Groups',  value: groups.filter(g => g.status === 'Active').length.toString() },
+          { label: 'ADU (classic)',  value: aduGroups.length.toString() },
         ].map(c => (
           <div key={c.label} className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
             <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">{c.label}</p>
@@ -2256,6 +2261,7 @@ function GroupsView({ onGroupSelect }: { onGroupSelect?: (id: string) => void })
           <DonutChart segments={[
             { label: 'Device Groups', value: deviceGroups.length, color: '#3b82f6' },
             { label: 'Asset Groups',  value: assetGroups.length,  color: '#8b5cf6' },
+            { label: 'ADU (classic)', value: aduGroups.length,    color: '#f59e0b' },
           ]} centerLabel="Groups" legendBelow />
         </ChartCard>
         <ChartCard title="Member Count by Group">
@@ -2284,10 +2290,17 @@ function GroupsView({ onGroupSelect }: { onGroupSelect?: (id: string) => void })
                 <TableCell className="font-mono text-xs text-slate-400">{g.id}</TableCell>
                 <TableCell className="font-medium text-sm">{g.name}</TableCell>
                 <TableCell>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${g.memberKind === 'assets' ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
-                    {g.memberKind === 'assets' ? <Drill className="h-3 w-3" /> : <Cpu className="h-3 w-3" />}
-                    {g.type}
-                  </span>
+                  {g.type === 'ADU Group (classic)' ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-amber-50 text-amber-700 border-amber-200">
+                      <Layers className="h-3 w-3" />
+                      ADU Group (classic)
+                    </span>
+                  ) : (
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${g.memberKind === 'assets' ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                      {g.memberKind === 'assets' ? <Drill className="h-3 w-3" /> : <Cpu className="h-3 w-3" />}
+                      {g.type}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell className="text-right font-mono text-sm">
                   {g.memberKind === 'devices' ? g.devices.toLocaleString() : g.assets.toLocaleString()}
