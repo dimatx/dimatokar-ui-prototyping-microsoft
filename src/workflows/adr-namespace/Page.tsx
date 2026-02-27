@@ -921,7 +921,7 @@ export default function AdrNamespacePage() {
       {/* ── Header / Hero ────────────────────────────────────── */}
       <div className="flex items-start justify-between">
         <div className="space-y-1.5">
-          <p className="text-sm font-semibold text-slate-500 tracking-wide">Azure Device Registry</p>
+          <p className="text-sm font-semibold text-slate-500 uppercase tracking-widest">Azure Device Registry</p>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
               <Wind className="h-5 w-5" />
