@@ -1491,6 +1491,10 @@ function LeftMenu({
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     () => new Set((LEFT_MENU_SECTIONS as Array<{ title: string; collapsible?: boolean; defaultCollapsed?: boolean; items: unknown[] }>).filter(s => s.defaultCollapsed).map(s => s.title))
   )
+  const { pathname } = useLocation()
+  const visibleSections = (LEFT_MENU_SECTIONS as Array<{ title: string; collapsible?: boolean; defaultCollapsed?: boolean; items: { id: string; label: string; icon: typeof Cpu; disabled?: boolean }[] }>).filter(
+    s => s.title !== 'Other' || pathname.includes('/other')
+  )
   return (
     <motion.div
       animate={{ width: open ? 204 : 40 }}
@@ -1519,7 +1523,7 @@ function LeftMenu({
             transition={{ duration: 0.15 }}
             className="py-3"
           >
-            {(LEFT_MENU_SECTIONS as Array<{ title: string; collapsible?: boolean; defaultCollapsed?: boolean; items: { id: string; label: string; icon: typeof Cpu; disabled?: boolean }[] }>).map((section, si) => {
+            {visibleSections.map((section, si) => {
               const isSectionCollapsed = !!(section.collapsible && collapsedSections.has(section.title))
               return (
               <div key={section.title} className={si > 0 ? 'mt-3 pt-3 border-t border-slate-100' : ''}>
@@ -4274,6 +4278,40 @@ function OtaManagementView({ onFirmwareSelect, onDeploy }: {
                   </TableCell>
                 </TableRow>
               )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* CVE Detail Table */}
+      <div>
+        <div className="mb-4 flex items-center gap-2">
+          <h2 className="text-base font-semibold">CVE Detail</h2>
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{cveByName.length} vulnerabilities</span>
+        </div>
+        <div className="rounded-lg border shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>CVE ID</TableHead>
+                <TableHead>Severity</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead className="text-right">Devices Affected</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {cveByName.map((c) => (
+                <TableRow key={c.cve}>
+                  <TableCell className="font-mono text-xs font-medium">{c.cve}</TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ${severityBg[c.severity]}`}>
+                      {c.severity}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{c.description}</TableCell>
+                  <TableCell className="text-right font-mono text-sm">{c.devices.toLocaleString()}</TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </div>
