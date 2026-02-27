@@ -83,7 +83,7 @@ const INSTANCE_NAME_OPTIONS: Record<string, string[]> = {
   'Provisioning': ['dps-zava-tx-01', 'dps-zava-tx-02', 'dps-zava-global'],
   'Certificate Management': ['certmgr-zava-tx-01', 'certmgr-zava-prod', 'certmgr-zava-internal'],
   'Device Update': ['adu-zava-tx-01', 'adu-zava-prod-01', 'adu-zava-staging'],
-  'Firmware Analysis': ['fwa-zava-tx-01', 'fwa-zava-prod-01'],
+  'OTA Management': ['fwa-zava-tx-01', 'fwa-zava-prod-01'],
   'Future 3P Integration': ['3p-zava-tx-01', '3p-zava-dev-01'],
 }
 
@@ -91,7 +91,7 @@ const initialServices: NamespaceService[] = [
   { name: 'Provisioning', icon: Upload, status: 'Healthy', instanceName: 'dps-zava-tx-01' },
   { name: 'Certificate Management', icon: KeyRound, status: 'Healthy', configurable: true, instanceName: 'certmgr-zava-tx-01' },
   { name: 'Device Update', icon: RefreshCw, status: 'Healthy', configurable: true },
-  { name: 'Firmware Analysis', icon: Shield, status: 'Healthy', configurable: true, instanceName: 'fwa-zava-tx-01' },
+  { name: 'OTA Management', icon: Shield, status: 'Healthy', configurable: true, instanceName: 'fwa-zava-tx-01' },
 ]
 
 const addableServices: NamespaceService[] = [
@@ -881,7 +881,7 @@ export default function AdrNamespacePage() {
               'Certificate Management': 'cert-mgmt',
               'Device Update': 'device-update',
               'IoT Operations': 'iot-ops',
-              'Firmware Analysis': 'firmware',
+              'OTA Management': 'firmware',
             }
             const navId = SVC_NAV_ID[svc.name]
             return (
@@ -1416,7 +1416,7 @@ const LEFT_MENU_SECTIONS = [
       { id: 'groups', label: 'Groups', icon: Users },
       { id: 'jobs', label: 'Jobs', icon: Activity },
       { id: 'device-update', label: 'Device Update', icon: RefreshCw },
-      { id: 'firmware', label: 'Firmware Analysis', icon: Shield },
+      { id: 'firmware', label: 'OTA Management', icon: Shield },
       { id: '3p', label: '3P Capability', icon: Puzzle, disabled: true },
     ],
   },
@@ -3611,7 +3611,7 @@ function FirmwareDetailView({ version, onBack, onDevicesClick, onAssetsClick }: 
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-3"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
-          Firmware Analysis
+          OTA Management
         </button>
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">{fw.file}</h1>
@@ -3883,7 +3883,7 @@ function FirmwareAnalysisView({ onFirmwareSelect, onVersionClick, onManufacturer
       transition={{ duration: 0.25 }}
       className="space-y-8"
     >
-      <SubViewHeader title="Firmware Analysis" subtitle="Texas-Wind-Namespace" count={firmwareImages.length} />
+      <SubViewHeader title="OTA Management" subtitle="Texas-Wind-Namespace" count={firmwareImages.length} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <ChartCard title="Affected Devices by Manufacturer">
@@ -4137,7 +4137,7 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob }: { asse
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">CVE Summary</p>
             </div>
             <button onClick={() => onFirmwareSelect(fwVersion)} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-              View full firmware analysis<ChevronRight className="h-3 w-3" />
+              View vulnerability report<ChevronRight className="h-3 w-3" />
             </button>
           </div>
           <div className="px-4 py-4">
@@ -4162,7 +4162,7 @@ function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob }: { asse
               ))}
               {fwData.cves.length > 3 && (
                 <button onClick={() => onFirmwareSelect(fwVersion)} className="text-xs text-blue-600 hover:underline mt-1">
-                  +{fwData.cves.length - 3} more CVEs → view firmware analysis
+                  +{fwData.cves.length - 3} more CVEs → view vulnerability report
                 </button>
               )}
             </div>
@@ -4315,7 +4315,7 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob }: { de
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">CVE Summary</p>
             </div>
             <button onClick={() => onFirmwareSelect(fwVersion)} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-              View full firmware analysis<ChevronRight className="h-3 w-3" />
+              View vulnerability report<ChevronRight className="h-3 w-3" />
             </button>
           </div>
           <div className="px-4 py-4">
@@ -4340,7 +4340,7 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob }: { de
               ))}
               {fwData.cves.length > 3 && (
                 <button onClick={() => onFirmwareSelect(fwVersion)} className="text-xs text-blue-600 hover:underline mt-1">
-                  +{fwData.cves.length - 3} more CVEs → view firmware analysis
+                  +{fwData.cves.length - 3} more CVEs → view vulnerability report
                 </button>
               )}
             </div>
