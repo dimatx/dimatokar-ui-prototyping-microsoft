@@ -2843,7 +2843,7 @@ function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSe
       </div>
       <div>
         {/* Toolbar */}
-        <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="mb-3 relative flex flex-wrap items-center gap-2">
           <div className="relative min-w-[200px] max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
@@ -2859,6 +2859,50 @@ function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSe
           <span className="ml-auto text-xs text-muted-foreground">
             {filtered.length.toLocaleString()} of {namespace.totalAssets.toLocaleString()}
           </span>
+          <AnimatePresence>
+            {selected.size > 0 && !pendingAction && !actionDone && (
+              <motion.div key="sel-action" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}
+                className="absolute inset-0 flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 z-10"
+              >
+                <span className="text-xs font-semibold text-slate-700 pr-3 border-r border-slate-200 mr-1">{selected.size} selected</span>
+                {DEVICE_ACTIONS.map(action => (
+                  <button key={action.id} onClick={() => setPendingAction(action.id)}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white hover:shadow-sm ${action.cls}`}>
+                    <action.icon className="h-3 w-3" />{action.label}
+                  </button>
+                ))}
+                {onRunJob && (
+                  <button onClick={() => { const names = Object.fromEntries([...selected].map(id => [id, mockAssets.find(a => a.id === id)?.name ?? id])); onRunJob([...selected], names); setSelected(new Set()); }}
+                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-white hover:shadow-sm">
+                    <Play className="h-3 w-3" />Run Job
+                  </button>
+                )}
+                <div className="ml-auto" />
+                <button onClick={() => setSelected(new Set())} className="rounded-full p-1.5 text-slate-400 hover:text-slate-700 hover:bg-white transition-colors">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </motion.div>
+            )}
+            {pendingAction && (
+              <motion.div key="sel-confirm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}
+                className="absolute inset-0 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 z-10"
+              >
+                <span className="text-xs font-medium text-amber-900">
+                  Apply <span className="font-semibold">{DEVICE_ACTIONS.find(a => a.id === pendingAction)?.label}</span> to {selected.size} asset{selected.size !== 1 ? 's' : ''}?
+                </span>
+                <button onClick={confirmAction} className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 transition-colors">Confirm</button>
+                <button onClick={() => setPendingAction(null)} className="ml-auto text-xs text-amber-700 hover:text-amber-900 transition-colors">Cancel</button>
+              </motion.div>
+            )}
+            {actionDone && (
+              <motion.div key="sel-success" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}
+                className="absolute inset-0 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 z-10"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <span className="text-xs font-medium text-emerald-800">{actionDone}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
         <div className="rounded-lg border shadow-sm overflow-hidden">
           <Table>
@@ -2921,65 +2965,6 @@ function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSe
           </Table>
         </div>
       </div>
-
-      {createPortal(
-        <AnimatePresence>
-          {selected.size > 0 && !pendingAction && !actionDone && (
-            <motion.div
-              key="float-action"
-              initial={{ opacity: 0, y: -12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
-            >
-              <span className="text-xs font-semibold text-slate-700 pl-1 pr-3 border-r border-slate-200 mr-1">{selected.size} selected</span>
-              {DEVICE_ACTIONS.map(action => (
-                <button key={action.id} onClick={() => setPendingAction(action.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-slate-100 ${action.cls}`}>
-                  <action.icon className="h-3 w-3" />{action.label}
-                </button>
-              ))}
-              {onRunJob && (
-                <button onClick={() => { const names = Object.fromEntries([...selected].map(id => [id, mockAssets.find(a => a.id === id)?.name ?? id])); onRunJob([...selected], names); setSelected(new Set()); }}
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100">
-                  <Play className="h-3 w-3" />Run Job
-                </button>
-              )}
-              <div className="w-px h-4 bg-slate-200 mx-1" />
-              <button onClick={() => setSelected(new Set())} className="rounded-full p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </motion.div>
-          )}
-          {pendingAction && (
-            <motion.div
-              key="float-confirm"
-              initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
-            >
-              <span className="text-xs font-medium text-amber-900">
-                Apply <span className="font-semibold">{DEVICE_ACTIONS.find(a => a.id === pendingAction)?.label}</span> to {selected.size} asset{selected.size !== 1 ? 's' : ''}?
-              </span>
-              <button onClick={confirmAction} className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 transition-colors">Confirm</button>
-              <button onClick={() => setPendingAction(null)} className="text-xs text-amber-700 hover:text-amber-900 transition-colors">Cancel</button>
-            </motion.div>
-          )}
-          {actionDone && (
-            <motion.div
-              key="float-success"
-              initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
-            >
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-              <span className="text-xs font-medium text-emerald-800">{actionDone}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
     </motion.div>
   )
 }
@@ -3187,7 +3172,7 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
       </div>
       <div>
         {/* Toolbar */}
-        <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="mb-3 relative flex flex-wrap items-center gap-2">
           <div className="relative min-w-[200px] max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
@@ -3205,6 +3190,50 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
           <span className="ml-auto text-xs text-muted-foreground">
             {filtered.length.toLocaleString()} of {namespace.totalDevices.toLocaleString()}
           </span>
+          <AnimatePresence>
+            {selected.size > 0 && !pendingAction && !actionDone && (
+              <motion.div key="sel-action" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}
+                className="absolute inset-0 flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 z-10"
+              >
+                <span className="text-xs font-semibold text-slate-700 pr-3 border-r border-slate-200 mr-1">{selected.size} selected</span>
+                {DEVICE_ACTIONS.map(action => (
+                  <button key={action.id} onClick={() => setPendingAction(action.id)}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white hover:shadow-sm ${action.cls}`}>
+                    <action.icon className="h-3 w-3" />{action.label}
+                  </button>
+                ))}
+                {onRunJob && (
+                  <button onClick={() => { const names = Object.fromEntries([...selected].map(id => [id, mockDevices.find(d => d.id === id)?.name ?? id])); onRunJob([...selected], names); setSelected(new Set()); }}
+                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-white hover:shadow-sm">
+                    <Play className="h-3 w-3" />Run Job
+                  </button>
+                )}
+                <div className="ml-auto" />
+                <button onClick={() => setSelected(new Set())} className="rounded-full p-1.5 text-slate-400 hover:text-slate-700 hover:bg-white transition-colors">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </motion.div>
+            )}
+            {pendingAction && (
+              <motion.div key="sel-confirm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}
+                className="absolute inset-0 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 z-10"
+              >
+                <span className="text-xs font-medium text-amber-900">
+                  Apply <span className="font-semibold">{DEVICE_ACTIONS.find(a => a.id === pendingAction)?.label}</span> to {selected.size} device{selected.size !== 1 ? 's' : ''}?
+                </span>
+                <button onClick={confirmAction} className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 transition-colors">Confirm</button>
+                <button onClick={() => setPendingAction(null)} className="ml-auto text-xs text-amber-700 hover:text-amber-900 transition-colors">Cancel</button>
+              </motion.div>
+            )}
+            {actionDone && (
+              <motion.div key="sel-success" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}
+                className="absolute inset-0 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 z-10"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <span className="text-xs font-medium text-emerald-800">{actionDone}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Table */}
@@ -3289,65 +3318,6 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
           </Table>
         </div>
       </div>
-
-      {createPortal(
-        <AnimatePresence>
-          {selected.size > 0 && !pendingAction && !actionDone && (
-            <motion.div
-              key="float-action"
-              initial={{ opacity: 0, y: -12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
-            >
-              <span className="text-xs font-semibold text-slate-700 pl-1 pr-3 border-r border-slate-200 mr-1">{selected.size} selected</span>
-              {DEVICE_ACTIONS.map(action => (
-                <button key={action.id} onClick={() => setPendingAction(action.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-slate-100 ${action.cls}`}>
-                  <action.icon className="h-3 w-3" />{action.label}
-                </button>
-              ))}
-              {onRunJob && (
-                <button onClick={() => { const names = Object.fromEntries([...selected].map(id => [id, mockDevices.find(d => d.id === id)?.name ?? id])); onRunJob([...selected], names); setSelected(new Set()); }}
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100">
-                  <Play className="h-3 w-3" />Run Job
-                </button>
-              )}
-              <div className="w-px h-4 bg-slate-200 mx-1" />
-              <button onClick={() => setSelected(new Set())} className="rounded-full p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </motion.div>
-          )}
-          {pendingAction && (
-            <motion.div
-              key="float-confirm"
-              initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
-            >
-              <span className="text-xs font-medium text-amber-900">
-                Apply <span className="font-semibold">{DEVICE_ACTIONS.find(a => a.id === pendingAction)?.label}</span> to {selected.size} device{selected.size !== 1 ? 's' : ''}?
-              </span>
-              <button onClick={confirmAction} className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 transition-colors">Confirm</button>
-              <button onClick={() => setPendingAction(null)} className="text-xs text-amber-700 hover:text-amber-900 transition-colors">Cancel</button>
-            </motion.div>
-          )}
-          {actionDone && (
-            <motion.div
-              key="float-success"
-              initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 shadow-xl shadow-black/10 whitespace-nowrap"
-            >
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-              <span className="text-xs font-medium text-emerald-800">{actionDone}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
     </motion.div>
   )
 }
