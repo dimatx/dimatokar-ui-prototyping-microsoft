@@ -30,6 +30,7 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  Layers,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -426,20 +427,21 @@ function HBar({ value, max, color = '#3b82f6' }: { value: number; max: number; c
 /* ─── URL mapping ────────────────────────────────────────────── */
 
 const ID_TO_SEGMENT: Record<string, string> = {
-  '':              '',
-  'assets':        'assets',
-  'devices':       'devices',
-  'credentials':   'credentials',
-  'policies':      'policies',
-  'provisioning':  'provisioning',
-  'cert-mgmt':     'cert-mgmt',
-  'groups':        'groups',
-  'jobs':          'jobs',
-  'device-update': 'device-update',
-  'firmware':      'firmware',
-  'iot-hub':       'iot-hubs',
-  'iot-ops':       'iot-ops',
-  '3p':            '3p',
+  '':               '',
+  'all-resources':  'all-resources',
+  'assets':         'assets',
+  'devices':        'devices',
+  'credentials':    'credentials',
+  'policies':       'policies',
+  'provisioning':   'provisioning',
+  'cert-mgmt':      'cert-mgmt',
+  'groups':         'groups',
+  'jobs':           'jobs',
+  'device-update':  'device-update',
+  'firmware':       'firmware',
+  'iot-hub':        'iot-hubs',
+  'iot-ops':        'iot-ops',
+  '3p':             '3p',
 }
 const SEGMENT_TO_ID: Record<string, string> = Object.fromEntries(
   Object.entries(ID_TO_SEGMENT).map(([k, v]) => [v || k, k])
@@ -600,7 +602,9 @@ export default function AdrNamespacePage() {
       />
       <div className="flex-1 min-w-0 pl-6">
       <AnimatePresence mode="wait">
-      {activeMenuItem === 'assets' ? (
+      {activeMenuItem === 'all-resources' ? (
+        <AllResourcesView key="all-resources" />
+      ) : activeMenuItem === 'assets' ? (
         <AssetsView key="assets" />
       ) : activeMenuItem === 'devices' ? (
         <DevicesView
@@ -1190,6 +1194,7 @@ const LEFT_MENU_SECTIONS = [
   {
     title: 'Resources',
     items: [
+      { id: 'all-resources', label: 'All', icon: Layers },
       { id: 'assets', label: 'Assets', icon: Cpu },
       { id: 'devices', label: 'Devices', icon: Radio },
       { id: 'credentials', label: 'Credentials', icon: KeyRound },
@@ -1525,6 +1530,220 @@ function PlaceholderView({ title, description, icon: Icon }: { title: string; de
 function SortIcon({ field, sort }: { field: string; sort: { field: string; dir: string } }) {
   if (sort.field !== field) return <ArrowUpDown className="h-3 w-3 opacity-30 group-hover:opacity-70 transition-opacity" />
   return sort.dir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+}
+
+/* ─── All Resources Mock Data ───────────────────────────────── */
+
+const mockCredentials = [
+  { id: 'CRT-0001', name: 'X.509 Cert – tx-wind-a001-ctrl',    site: 'Abilene Wind Farm',    status: 'Valid',         lastSeen: '2 hrs ago' },
+  { id: 'CRT-0002', name: 'X.509 Cert – tx-wind-m007-ctrl',    site: 'Midland Wind Farm',    status: 'Valid',         lastSeen: '3 hrs ago' },
+  { id: 'CRT-0003', name: 'X.509 Cert – tx-wind-o003-ctrl',    site: 'Odessa Wind Farm',     status: 'Expiring Soon', lastSeen: '1 day ago' },
+  { id: 'CRT-0004', name: 'X.509 Cert – tx-wind-s002-ctrl',    site: 'San Angelo Wind Farm', status: 'Valid',         lastSeen: '5 hrs ago' },
+  { id: 'CRT-0005', name: 'CA Root – Texas-Wind-Namespace',     site: 'Namespace',            status: 'Valid',         lastSeen: '6 hrs ago' },
+]
+
+const mockPolicies = [
+  { id: 'POL-0001', name: 'Firmware Compliance – v3.2.1',         site: 'Namespace', status: 'Active',   lastSeen: '2 days ago' },
+  { id: 'POL-0002', name: 'Device Connectivity Alert Policy',     site: 'Namespace', status: 'Active',   lastSeen: '1 day ago' },
+  { id: 'POL-0003', name: 'Certificate Renewal Policy',           site: 'Namespace', status: 'Active',   lastSeen: '3 days ago' },
+  { id: 'POL-0004', name: 'Non-conformance Quarantine Policy',    site: 'Namespace', status: 'Inactive', lastSeen: '5 days ago' },
+]
+
+function statusBadgeLabel(resourceType: string, rawStatus: string): string {
+  if (rawStatus === 'Available' || rawStatus === 'Healthy' || rawStatus === 'Valid') return 'Healthy'
+  if (rawStatus === 'Active') return 'Active'
+  if (rawStatus === 'Degraded') return 'Degraded'
+  if (rawStatus === 'Expiring Soon') return 'Warning'
+  if (rawStatus === 'Unhealthy') return 'Error'
+  if (rawStatus === 'Expired') return 'Critical'
+  if (rawStatus === 'Inactive') return 'Inactive'
+  return 'Inactive' // Unknown
+}
+
+function normalizeHealth(rawStatus: string): 'healthy' | 'degraded' | 'error' | 'inactive' {
+  if (['Available', 'Healthy', 'Valid', 'Active'].includes(rawStatus)) return 'healthy'
+  if (['Degraded', 'Expiring Soon', 'Warning'].includes(rawStatus)) return 'degraded'
+  if (['Unhealthy', 'Error', 'Critical', 'Expired'].includes(rawStatus)) return 'error'
+  return 'inactive'
+}
+
+const ALL_RESOURCE_TYPE_STYLES: Record<string, string> = {
+  Asset:      'bg-sky-50 text-sky-700 border-sky-200',
+  Device:     'bg-indigo-50 text-indigo-700 border-indigo-200',
+  Credential: 'bg-amber-50 text-amber-700 border-amber-200',
+  Policy:     'bg-violet-50 text-violet-700 border-violet-200',
+}
+
+/* ─── All Resources View ─────────────────────────────────────── */
+
+function AllResourcesView() {
+  const [typeFilter, setTypeFilter] = useState<string>('All')
+
+  const allRows = useMemo(() => [
+    ...mockAssets.map(a => ({ id: a.id, name: a.name, resourceType: 'Asset' as const, rawStatus: a.status, site: a.site, lastSeen: a.lastSeen })),
+    ...mockDevices.map(d => ({ id: d.id, name: d.name, resourceType: 'Device' as const, rawStatus: d.status, site: d.site, lastSeen: d.lastSeen })),
+    ...mockCredentials.map(c => ({ id: c.id, name: c.name, resourceType: 'Credential' as const, rawStatus: c.status, site: c.site, lastSeen: c.lastSeen })),
+    ...mockPolicies.map(p => ({ id: p.id, name: p.name, resourceType: 'Policy' as const, rawStatus: p.status, site: p.site, lastSeen: p.lastSeen })),
+  ], [])
+
+  const filtered = useMemo(
+    () => typeFilter === 'All' ? allRows : allRows.filter(r => r.resourceType === typeFilter),
+    [allRows, typeFilter]
+  )
+
+  const byType = [
+    { label: 'Assets',      count: mockAssets.length,      color: '#0ea5e9' },
+    { label: 'Devices',     count: mockDevices.length,     color: '#6366f1' },
+    { label: 'Credentials', count: mockCredentials.length, color: '#f59e0b' },
+    { label: 'Policies',    count: mockPolicies.length,    color: '#8b5cf6' },
+  ]
+
+  const healthCounts = useMemo(() => allRows.reduce((acc, r) => {
+    const key = normalizeHealth(r.rawStatus)
+    acc[key] = (acc[key] ?? 0) + 1
+    return acc
+  }, {} as Record<string, number>), [allRows])
+
+  const bySite = useMemo(() => {
+    const map: Record<string, number> = {}
+    allRows.forEach(r => { map[r.site] = (map[r.site] ?? 0) + 1 })
+    return Object.entries(map).sort((a, b) => b[1] - a[1])
+  }, [allRows])
+  const maxSite = bySite[0]?.[1] ?? 1
+
+  const FILTER_TYPES = ['All', 'Asset', 'Device', 'Credential', 'Policy'] as const
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className="space-y-6"
+    >
+      <SubViewHeader
+        title="All Resources"
+        count={allRows.length}
+        subtitle="Assets, Devices, Credentials and Policies in this namespace"
+      />
+
+      {/* ── Charts ───────────────────────────────────────────── */}
+      <div className="grid grid-cols-3 gap-4">
+        {/* By Resource Type */}
+        <div className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm space-y-3">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">By Resource Type</p>
+          <SegBar segs={byType.map(t => ({ v: t.count, c: t.color }))} />
+          <div className="space-y-1.5">
+            {byType.map(t => (
+              <div key={t.label} className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-block w-2 h-2 rounded-sm flex-shrink-0" style={{ background: t.color }} />
+                  <span className="text-slate-600">{t.label}</span>
+                </div>
+                <span className="font-medium text-slate-900">{t.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Health Overview */}
+        <div className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm space-y-3">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Health Overview</p>
+          <SegBar segs={[
+            { v: healthCounts.healthy  ?? 0, c: '#10b981' },
+            { v: healthCounts.degraded ?? 0, c: '#f59e0b' },
+            { v: healthCounts.error    ?? 0, c: '#ef4444' },
+            { v: healthCounts.inactive ?? 0, c: '#94a3b8' },
+          ]} />
+          <div className="space-y-1.5">
+            {([
+              { label: 'Healthy / Active',    color: '#10b981', key: 'healthy'  },
+              { label: 'Degraded / Warning',  color: '#f59e0b', key: 'degraded' },
+              { label: 'Unhealthy / Error',   color: '#ef4444', key: 'error'    },
+              { label: 'Unknown / Inactive',  color: '#94a3b8', key: 'inactive' },
+            ] as const).map(row => (
+              <div key={row.key} className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-block w-2 h-2 rounded-sm flex-shrink-0" style={{ background: row.color }} />
+                  <span className="text-slate-600">{row.label}</span>
+                </div>
+                <span className="font-medium text-slate-900">{healthCounts[row.key] ?? 0}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* By Site */}
+        <div className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm space-y-3">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">By Site</p>
+          <div className="space-y-2.5 pt-0.5">
+            {bySite.map(([site, count]) => (
+              <div key={site} className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-600 truncate max-w-[150px]">{site}</span>
+                  <span className="font-medium text-slate-900">{count}</span>
+                </div>
+                <HBar value={count} max={maxSite} color="#6366f1" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Filter Buttons ───────────────────────────────────── */}
+      <div className="flex items-center gap-2">
+        {FILTER_TYPES.map(t => {
+          const count = t === 'All' ? allRows.length : allRows.filter(r => r.resourceType === t).length
+          return (
+            <button
+              key={t}
+              onClick={() => setTypeFilter(t)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                typeFilter === t
+                  ? 'bg-slate-900 text-white border-slate-900'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:text-slate-900'
+              }`}
+            >
+              {t === 'All' ? `All (${count})` : `${t}s (${count})`}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* ── Table ────────────────────────────────────────────── */}
+      <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-slate-50">
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide w-[100px]">ID</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Type</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Health</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Site</TableHead>
+              <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Last Updated</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map(row => (
+              <TableRow key={row.id} className="hover:bg-slate-50/60 transition-colors">
+                <TableCell className="font-mono text-xs text-slate-500">{row.id}</TableCell>
+                <TableCell className="font-medium text-sm text-slate-900">{row.name}</TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${ALL_RESOURCE_TYPE_STYLES[row.resourceType]}`}>
+                    {row.resourceType}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <StatusBadge status={statusBadgeLabel(row.resourceType, row.rawStatus)} />
+                </TableCell>
+                <TableCell className="text-sm text-slate-600">{row.site}</TableCell>
+                <TableCell className="text-xs text-slate-400">{row.lastSeen}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </motion.div>
+  )
 }
 
 /* ─── Assets View ────────────────────────────────────────────── */
