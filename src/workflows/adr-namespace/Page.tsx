@@ -807,7 +807,7 @@ export default function AdrNamespacePage() {
           onUpdateFirmware={(pf) => setJobPrefill(pf)}
         />
       ) : activeMenuItem === 'assets' ? (
-        <AssetsView key={`assets-${assetPrefilter}`} initialSearch={assetPrefilter} onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Assets' })} onAssetSelect={(id) => navigateToDetail('asset', id)} />
+        <AssetsView key={`assets-${assetPrefilter}`} initialSearch={assetPrefilter} onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Assets' })} onAssetSelect={(id) => navigateToDetail('asset', id)} onUpdateFirmware={(pf) => setJobPrefill(pf)} />
       ) : activeMenuItem === 'devices' && deviceDetailId ? (
         <DeviceDetailView
           key={`device-detail-${deviceDetailId}`}
@@ -827,6 +827,7 @@ export default function AdrNamespacePage() {
           onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Devices' })}
           onDeviceSelect={(id) => navigateToDetail('device', id)}
           onClearGroupFilter={() => navigate(-1)}
+          onUpdateFirmware={(pf) => setJobPrefill(pf)}
         />
       ) : activeMenuItem === 'iot-hub' ? (
         <IotHubView key="iot-hub" hubs={linkedHubs} onAddHub={() => setShowHubPicker(true)} unlinkedCount={unlinkedHubs.length} />
@@ -3109,7 +3110,7 @@ function mkDropdown<T extends string>(
   )
 }
 
-function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSearch?: string; onRunJob?: (ids: string[], names: Record<string, string>) => void; onAssetSelect?: (id: string) => void }) {
+function AssetsView({ initialSearch = '', onRunJob, onAssetSelect, onUpdateFirmware }: { initialSearch?: string; onRunJob?: (ids: string[], names: Record<string, string>) => void; onAssetSelect?: (id: string) => void; onUpdateFirmware?: (prefill: JobPrefill) => void }) {
   const [search, setSearch] = useState(initialSearch)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   // Health multi-select
@@ -3229,7 +3230,15 @@ function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSe
               >
                 <span className="text-xs font-semibold text-slate-700 pr-3 border-r border-slate-200 mr-1">{selected.size} selected</span>
                 {DEVICE_ACTIONS.filter(a => a.id === 'enable' ? showEnableInBar : a.id === 'disable' ? !showEnableInBar : true).map(action => (
-                  <button key={action.id} onClick={() => setPendingAction(action.id)}
+                  <button key={action.id} onClick={() => {
+                    if (action.id === 'update-firmware' && onUpdateFirmware) {
+                      const names = Object.fromEntries([...selected].map(id => [id, mockAssets.find(a => a.id === id)?.name ?? id]))
+                      onUpdateFirmware({ jobType: 'software-update', jobName: `Firmware Update – ${selected.size} asset${selected.size !== 1 ? 's' : ''}`, startAtStep: 3, preselectedIds: [...selected], preselectedSource: 'Assets', preselectedNames: names })
+                      setSelected(new Set())
+                    } else {
+                      setPendingAction(action.id)
+                    }
+                  }}
                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white hover:shadow-sm ${action.cls}`}>
                     <action.icon className="h-3 w-3" />{action.label}
                   </button>
@@ -3364,7 +3373,7 @@ const DEVICE_ACTIONS = [
   { id: 'update-firmware', label: 'Update Firmware', icon: Upload, cls: 'text-blue-700' },
 ]
 
-function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGroupFilter = '', onFirmwareSelect, onRunJob, onDeviceSelect, onClearGroupFilter }: { initialSearch?: string; initialFirmwareFilter?: string; initialGroupFilter?: string; onFirmwareSelect?: (version: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void; onDeviceSelect?: (id: string) => void; onClearGroupFilter?: () => void }) {
+function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGroupFilter = '', onFirmwareSelect, onRunJob, onDeviceSelect, onClearGroupFilter, onUpdateFirmware }: { initialSearch?: string; initialFirmwareFilter?: string; initialGroupFilter?: string; onFirmwareSelect?: (version: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void; onDeviceSelect?: (id: string) => void; onClearGroupFilter?: () => void; onUpdateFirmware?: (prefill: JobPrefill) => void }) {
   const [search, setSearch] = useState(initialSearch)
   // Status multi-select
   const [statusValues, setStatusValues] = useState<Set<string>>(new Set())
@@ -3582,7 +3591,15 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
               >
                 <span className="text-xs font-semibold text-slate-700 pr-3 border-r border-slate-200 mr-1">{selected.size} selected</span>
                 {DEVICE_ACTIONS.filter(a => a.id === 'enable' ? showEnableInBar : a.id === 'disable' ? !showEnableInBar : true).map(action => (
-                  <button key={action.id} onClick={() => setPendingAction(action.id)}
+                  <button key={action.id} onClick={() => {
+                    if (action.id === 'update-firmware' && onUpdateFirmware) {
+                      const names = Object.fromEntries([...selected].map(id => [id, mockDevices.find(d => d.id === id)?.name ?? id]))
+                      onUpdateFirmware({ jobType: 'software-update', jobName: `Firmware Update – ${selected.size} device${selected.size !== 1 ? 's' : ''}`, startAtStep: 3, preselectedIds: [...selected], preselectedSource: 'Devices', preselectedNames: names })
+                      setSelected(new Set())
+                    } else {
+                      setPendingAction(action.id)
+                    }
+                  }}
                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white hover:shadow-sm ${action.cls}`}>
                     <action.icon className="h-3 w-3" />{action.label}
                   </button>
