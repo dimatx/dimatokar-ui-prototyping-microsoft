@@ -3182,6 +3182,7 @@ function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSe
   const statusLabel = statusValues.size === 0 ? 'Health' : statusValues.size === 1 ? [...statusValues][0] : `${statusValues.size} statuses`
   const mfrLabel = mfrValues.size === 0 ? 'Manufacturer' : mfrValues.size === 1 ? [...mfrValues][0] : `${mfrValues.size} selected`
   const fwLabel = fwValues.size === 0 ? 'Firmware version' : fwValues.size === 1 ? [...fwValues][0] : `${fwValues.size} versions`
+  const showEnableInBar = [...selected].filter(id => { const a = mockAssets.find(x => x.id === id); return a?.status === 'Disabled' || a?.status === 'Inactive' }).length > selected.size / 2
 
   return (
     <motion.div
@@ -3227,7 +3228,7 @@ function AssetsView({ initialSearch = '', onRunJob, onAssetSelect }: { initialSe
                 className="absolute inset-0 flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 z-10"
               >
                 <span className="text-xs font-semibold text-slate-700 pr-3 border-r border-slate-200 mr-1">{selected.size} selected</span>
-                {DEVICE_ACTIONS.map(action => (
+                {DEVICE_ACTIONS.filter(a => a.id === 'enable' ? showEnableInBar : a.id === 'disable' ? !showEnableInBar : true).map(action => (
                   <button key={action.id} onClick={() => setPendingAction(action.id)}
                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white hover:shadow-sm ${action.cls}`}>
                     <action.icon className="h-3 w-3" />{action.label}
@@ -3505,6 +3506,7 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
   const modelLabel = modelValues.size === 0 ? 'Model' : modelValues.size === 1 ? [...modelValues][0] : `${modelValues.size} selected`
   const connLabel = connectivityValues.size === 0 ? 'Connectivity' : connectivityValues.size === 1 ? [...connectivityValues][0] : `${connectivityValues.size} selected`
   const fwLabel = firmwareVersions.size === 0 ? 'Firmware version' : firmwareVersions.size === 1 ? [...firmwareVersions][0] : `${firmwareVersions.size} versions`
+  const showEnableInBar = [...selected].filter(id => { const d = mockDevices.find(x => x.id === id); return d?.status === 'Disabled' || d?.status === 'Inactive' }).length > selected.size / 2
 
   return (
     <motion.div
@@ -3579,7 +3581,7 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
                 className="absolute inset-0 flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 z-10"
               >
                 <span className="text-xs font-semibold text-slate-700 pr-3 border-r border-slate-200 mr-1">{selected.size} selected</span>
-                {DEVICE_ACTIONS.map(action => (
+                {DEVICE_ACTIONS.filter(a => a.id === 'enable' ? showEnableInBar : a.id === 'disable' ? !showEnableInBar : true).map(action => (
                   <button key={action.id} onClick={() => setPendingAction(action.id)}
                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white hover:shadow-sm ${action.cls}`}>
                     <action.icon className="h-3 w-3" />{action.label}
