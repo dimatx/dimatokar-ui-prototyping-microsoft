@@ -109,16 +109,17 @@ export function StepSelectUpdate({
           const isSelected = selectedKey === key
           const isExpanded = expandedKey === key
           const isLatest = update.version === ADU_UPDATES[ADU_UPDATES.length - 1].version
+          const isBlocked = update.version === '1.3.0'
 
           return (
             <div
               key={key}
-              className={`rounded-lg border transition-all ${isSelected ? 'border-foreground ring-1 ring-foreground' : 'hover:bg-muted/10'}`}
+              className={`rounded-lg border transition-all ${isBlocked ? 'opacity-50 cursor-not-allowed' : isSelected ? 'border-foreground ring-1 ring-foreground' : 'hover:bg-muted/10'}`}
             >
               {/* Row header */}
               <div
-                className="flex items-center gap-3 p-3 cursor-pointer"
-                onClick={() => select(update)}
+                className={`flex items-center gap-3 p-3 ${isBlocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                onClick={() => !isBlocked && select(update)}
               >
                 <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${isSelected ? 'bg-foreground text-white' : 'bg-muted text-foreground'}`}>
                   <Package className="h-4 w-4" />
@@ -132,6 +133,11 @@ export function StepSelectUpdate({
                     {isLatest && (
                       <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
                         Latest
+                      </span>
+                    )}
+                    {isBlocked && (
+                      <span className="text-[10px] font-semibold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
+                        Blocked by Policy
                       </span>
                     )}
                   </div>
