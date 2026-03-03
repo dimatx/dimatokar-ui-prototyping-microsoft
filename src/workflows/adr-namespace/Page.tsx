@@ -984,7 +984,7 @@ export default function AdrNamespacePage() {
                     More details
                   </button>
                   <button
-                    onClick={() => setJobPrefill({ jobType: 'software-update', jobName: 'CVE-2014-0160 Mitigation – v3.1.0 → v3.2.1', jobDescription: 'Deploy firmware v3.2.1 to all devices running v3.1.0 to mitigate CVE-2014-0160 (OpenSSL Heartbleed).', targetMode: 'namespace' })}
+                    onClick={() => setJobPrefill({ jobType: 'software-update', jobName: 'CVE-2014-0160 Mitigation – v3.1.0 → v3.2.1', jobDescription: 'Deploy firmware v3.2.1 to all devices running v3.1.0 to mitigate CVE-2014-0160 (OpenSSL Heartbleed).', targetMode: 'custom', targetCondition: "firmware = '3.1.0'", prefillEstimateDevices: 6203, priority: '5' })}
                     className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 transition-colors"
                   >
                     <Play className="h-3.5 w-3.5" />

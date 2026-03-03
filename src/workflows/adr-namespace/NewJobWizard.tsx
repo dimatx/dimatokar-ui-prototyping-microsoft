@@ -1,5 +1,5 @@
 ﻿import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   X,
@@ -83,6 +83,10 @@ export interface JobPrefill {
   preselectedIds?: string[]
   preselectedSource?: 'Devices' | 'Assets'
   preselectedNames?: Record<string, string>
+  /** Pre-fill the custom target condition query string */
+  targetCondition?: string
+  /** Seed the device-count estimate (shown in custom target step) */
+  prefillEstimateDevices?: number
 }
 
 interface NewJobWizardProps {
@@ -214,7 +218,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
 
   // Step: Targeting
   const [priority, setPriority] = useState(prefill?.priority ?? '10')
-  const [targetCondition, setTargetCondition] = useState('')
+  const [targetCondition, setTargetCondition] = useState(prefill?.targetCondition ?? '')
   const [savedGroups, setSavedGroups] = useState<SavedGroup[]>([...SAMPLE_SAVED_GROUPS])
   const [showSaveGroupInput, setShowSaveGroupInput] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
@@ -464,6 +468,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                     savedGroups={savedGroups}
                     targetCondition={targetCondition}
                     onTargetConditionChange={setTargetCondition}
+                    initialEstimate={prefill?.prefillEstimateDevices ? { devices: prefill.prefillEstimateDevices, assets: 0 } : null}
                     priority={priority}
                     onPriorityChange={setPriority}
                     showSaveGroupInput={showSaveGroupInput}
@@ -889,6 +894,7 @@ function StepTarget({
   justSaved,
   selectedNamespace,
   onNamespaceChange,
+  initialEstimate,
 }: {
   hubs: Hub[]
   aioInstances: { name: string; site: string; status: string; connectedDevices: number; assets: number }[]
@@ -910,16 +916,23 @@ function StepTarget({
   justSaved: boolean
   selectedNamespace: MockNamespace
   onNamespaceChange: (ns: MockNamespace) => void
+  initialEstimate?: { devices: number; assets: number } | null
 }) {
   const totalHubDevices = hubs.reduce((s, h) => s + h.devices, 0)
   const totalAssets = aioInstances.reduce((s, a) => s + a.assets, 0)
   const aioEnabled = jobType === 'management-action' || jobType === 'management-update'
 
-  const [estimate, setEstimate] = useState<{ devices: number; assets: number } | null>(null)
+  const [estimate, setEstimate] = useState<{ devices: number; assets: number } | null>(initialEstimate ?? null)
   const [estimating, setEstimating] = useState(false)
 
-  // Clear estimate whenever the condition changes
-  useEffect(() => { setEstimate(null) }, [targetCondition])
+  // Clear estimate only when condition changes after mount
+  const prevCondRef = useRef(targetCondition)
+  useEffect(() => {
+    if (prevCondRef.current !== targetCondition) {
+      prevCondRef.current = targetCondition
+      setEstimate(null)
+    }
+  }, [targetCondition])
 
   function runEstimate() {
     setEstimating(true)
