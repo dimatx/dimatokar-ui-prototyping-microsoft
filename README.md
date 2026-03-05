@@ -105,10 +105,23 @@ src/
 │   └── CommandSearch.tsx
 ├── workflows/
 │   ├── registry.ts       ← Add new workflows here
+│   ├── _template/        ← Copy this to start a new workflow
 │   ├── adr-namespace/    ← Main ADR namespace prototype
+│   │   ├── Page.tsx              ← Orchestrator: routing, nav, dashboard
+│   │   ├── mockData.ts           ← Types, mock data, constants
+│   │   ├── chartHelpers.tsx      ← Chart components (DonutChart, HBarChart, etc.)
+│   │   ├── sharedComponents.tsx  ← Shared UI (HeroStat, CollapsibleHeading, etc.)
+│   │   ├── AllResourcesView.tsx  ← Combined assets + devices view
+│   │   ├── AssetsView.tsx        ← Asset list with filters
+│   │   ├── DevicesView.tsx       ← Device list with filters
+│   │   ├── DetailViews.tsx       ← Asset and device detail pages
+│   │   ├── CapabilityViews.tsx   ← Provisioning, certs, credentials, policies
+│   │   ├── GroupsView.tsx        ← Groups with create/edit wizards
+│   │   ├── IotViews.tsx          ← IoT Hub and IoT Operations views
+│   │   ├── FirmwareViews.tsx     ← Firmware analysis, detail, OTA management
+│   │   └── NewJobWizard.tsx      ← Multi-step job creation wizard
 │   ├── job-list/         ← Job list view
-│   ├── job-detail/       ← Job detail view
-│   └── _template/        ← Copy this to start a new workflow
+│   └── job-detail/       ← Job detail view
 ├── pages/
 │   └── Home.tsx          ← Landing page / workflow cards
 └── lib/
