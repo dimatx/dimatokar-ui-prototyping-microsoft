@@ -5216,7 +5216,10 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
           <div className="flex flex-col gap-0.5">
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Update capable?</span>
             {(device as any).otaManaged === false ? (
-              <span className="inline-flex w-fit items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-50 text-slate-500 border border-slate-200 leading-none">AGENT NOT INSTALLED</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex w-fit items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-50 text-slate-500 border border-slate-200 leading-none">AGENT NOT INSTALLED</span>
+                <a href="https://learn.microsoft.com/en-us/azure/iot-hub-device-update/understand-device-update" target="_blank" rel="noreferrer" className="text-[11px] text-blue-600 hover:underline">Learn about Azure Device Update.</a>
+              </div>
             ) : (
               <span className="inline-flex w-fit items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 leading-none">AGENT INSTALLED</span>
             )}
