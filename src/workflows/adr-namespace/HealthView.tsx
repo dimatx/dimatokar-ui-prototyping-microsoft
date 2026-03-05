@@ -131,7 +131,7 @@ function LayerIcon({ layer }: { layer: string }) {
   if (layer.includes('IoT\u00a0Operations') || layer.includes('IoT Operations')) return <Zap className="h-4 w-4 text-slate-400" />
   if (layer.includes('Hub')) return <CloudUpload className="h-4 w-4 text-slate-400" />
   if (layer.includes('Kubernetes')) return <Layers className="h-4 w-4 text-slate-400" />
-  if (layer.includes('Baremetal')) return <Server className="h-4 w-4 text-slate-400" />
+  if (layer.includes('Host OS')) return <Server className="h-4 w-4 text-slate-400" />
   return <Activity className="h-4 w-4 text-slate-400" />
 }
 
@@ -228,7 +228,7 @@ export function NamespaceHealthView({ onViewAsset, onViewDevice }: NamespaceHeal
               {criticalCount > 0 && `${criticalCount} critical`}
               {criticalCount > 0 && warningCount > 0 && ' · '}
               {warningCount > 0 && `${warningCount} warning`}
-              {' · '}Spanning assets, AIO instances, IoT Hubs, and baremetal
+              {' · '}Spanning assets, AIO instances, IoT Hubs, and host OS
             </p>
           </div>
           <div className="ml-auto flex items-center gap-2">
