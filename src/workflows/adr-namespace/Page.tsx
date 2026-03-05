@@ -5216,9 +5216,9 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
           <div className="flex flex-col gap-0.5">
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Update capable?</span>
             {(device as any).otaManaged === false ? (
-              <span className="inline-flex w-fit items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">Agent not installed</span>
+              <span className="inline-flex w-fit items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-50 text-slate-500 border border-slate-200 leading-none">AGENT NOT INSTALLED</span>
             ) : (
-              <span className="inline-flex w-fit items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Agent installed</span>
+              <span className="inline-flex w-fit items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 leading-none">AGENT INSTALLED</span>
             )}
           </div>
         </div>
