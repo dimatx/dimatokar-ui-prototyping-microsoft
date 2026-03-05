@@ -117,7 +117,7 @@ function IssueCard({ issue, onViewAsset, onViewDevice }: {
           }}
           className={`shrink-0 flex items-center gap-1 text-xs font-medium hover:underline mt-0.5 ${issue.severity === 'Critical' ? 'text-red-700' : 'text-amber-700'}`}
         >
-          View <ChevronRight className="h-3 w-3" />
+          View in Azure Monitor <ChevronRight className="h-3 w-3" />
         </button>
       )}
     </div>
@@ -310,9 +310,12 @@ export function NamespaceHealthView({ onViewAsset, onViewDevice }: NamespaceHeal
         </table>
       </div>
 
-      {/* Active issues */}
+      {/* Active alerts */}
       <div>
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Active Issues</p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Active Alerts</p>
+          <a href="#" className="text-[11px] text-blue-600 hover:underline font-medium">Manage in Azure Monitor</a>
+        </div>
         <div className="space-y-2.5">
           {namespaceActiveIssues.map(issue => (
             <IssueCard
