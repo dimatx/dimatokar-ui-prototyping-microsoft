@@ -3464,8 +3464,8 @@ function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGr
     if (connectivityValues.size > 0) rows = rows.filter(d => connectivityValues.has(d.connectivity))
     if (firmwareVersions.size > 0) rows = rows.filter(d => firmwareVersions.has(d.firmware))
     return [...rows].sort((a, b) => {
-      const av = (a as Record<string, string>)[sort.field] ?? ''
-      const bv = (b as Record<string, string>)[sort.field] ?? ''
+      const av = (a as unknown as Record<string, string>)[sort.field] ?? ''
+      const bv = (b as unknown as Record<string, string>)[sort.field] ?? ''
       const cmp = av < bv ? -1 : av > bv ? 1 : 0
       return sort.dir === 'asc' ? cmp : -cmp
     })
