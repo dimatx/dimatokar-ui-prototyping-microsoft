@@ -82,8 +82,8 @@ export function MetricsRow({ isAsset, msgPerMin, errorsPerHr, msgCountOrDataKB, 
       />
       <MiniMetric
         title={isAsset ? 'Total Messages' : 'Data to Cloud'}
-        value={isAsset ? lastKB.toLocaleString() : lastKB.toLocaleString()}
-        unit={isAsset ? 'msgs' : 'KB/min'}
+        value={isAsset ? lastKB.toLocaleString() : (lastKB / 12).toFixed(1)}
+        unit={isAsset ? 'msgs' : 'GB/hr'}
         trend="up"
         trendPositive={true}
         data={msgCountOrDataKB}

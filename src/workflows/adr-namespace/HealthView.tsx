@@ -269,8 +269,8 @@ export function NamespaceHealthView({ onViewAsset, onViewDevice }: NamespaceHeal
           />
           <FleetKpiCard
             title="Data to Cloud"
-            value={lastKBm.toLocaleString()}
-            unit="KB/min"
+            value="1.8"
+            unit="GB/hr"
             data={m.totalDataKBPerMin}
             color="#8b5cf6"
             trend="flat"
@@ -328,23 +328,6 @@ export function NamespaceHealthView({ onViewAsset, onViewDevice }: NamespaceHeal
         </div>
       </div>
 
-      {/* Throughput sparkline strip */}
-      <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
-        <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Activity className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Aggregate Throughput · 24h</p>
-          </div>
-          <span className="text-[11px] text-muted-foreground">30-min intervals</span>
-        </div>
-        <div className="px-4 py-4">
-          <SparklineChart data={m.totalMsgPerMin} color="#3b82f6" width={900} height={64} />
-          <div className="flex justify-between mt-1">
-            <span className="text-[10px] text-slate-400">24h ago</span>
-            <span className="text-[10px] text-slate-400">Now</span>
-          </div>
-        </div>
-      </div>
     </motion.div>
   )
 }
