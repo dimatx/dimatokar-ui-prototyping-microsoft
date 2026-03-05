@@ -4517,22 +4517,13 @@ function OtaManagementView({ onFirmwareSelect, onDeploy }: {
             <p className="text-sm text-muted-foreground mt-0.5">Texas-Wind-Namespace</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {}}
-            className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
-          >
-            <Upload className="h-3.5 w-3.5" />
-            Analyze Firmware Image
-          </button>
-          <button
-            onClick={() => onDeploy?.({ jobType: 'software-update' })}
-            className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-slate-700"
-          >
-            <Play className="h-3.5 w-3.5" />
-            Deploy Update
-          </button>
-        </div>
+        <button
+          onClick={() => onDeploy?.({ jobType: 'software-update' })}
+          className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-slate-700"
+        >
+          <Play className="h-3.5 w-3.5" />
+          Deploy Update
+        </button>
       </div>
 
       {/* KPI row */}
