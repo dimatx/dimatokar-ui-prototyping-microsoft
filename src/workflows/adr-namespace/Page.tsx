@@ -5216,9 +5216,9 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
           <div className="flex flex-col gap-0.5">
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">ADU Capable</span>
             {(device as any).otaManaged === false ? (
-              <span className="text-sm font-mono text-slate-400">ADU agent not installed</span>
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">ADU agent not installed</span>
             ) : (
-              <span className="text-sm font-mono text-emerald-600">Enabled</span>
+              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Enabled</span>
             )}
           </div>
         </div>
