@@ -787,7 +787,7 @@ export default function AdrNamespacePage() {
           key={`ar-device-detail-${deviceDetailId}`}
           deviceId={deviceDetailId}
           onBack={() => navigate(-1)}
-          onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
+          onFirmwareSelect={(v) => v === 'ota-management' ? navigateTo('ota-management') : navigateTo('firmware', { firmware: v })}
           onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Devices' })}
           onUpdateFirmware={(pf) => setJobPrefill(pf)}
         />
@@ -813,7 +813,7 @@ export default function AdrNamespacePage() {
           key={`device-detail-${deviceDetailId}`}
           deviceId={deviceDetailId}
           onBack={() => navigate(-1)}
-          onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
+          onFirmwareSelect={(v) => v === 'ota-management' ? navigateTo('ota-management') : navigateTo('firmware', { firmware: v })}
           onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Devices' })}
           onUpdateFirmware={(pf) => setJobPrefill(pf)}
         />
@@ -5088,32 +5088,44 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
           if (a.id === 'enable') return isItemDisabled
           if (a.id === 'disable') return !isItemDisabled
           return true
-        }).map(action => (
-          <button
-            key={action.id}
-            onClick={
-              (action.id === 'enable' || action.id === 'disable')
-                ? handleToggle
-                : action.id === 'update-firmware' && onUpdateFirmware
-                  ? () => onUpdateFirmware({
-                      jobType: 'software-update',
-                      jobName: `Firmware Update – ${device.name}`,
-                      startAtStep: 3,
-                      preselectedIds: [device.id],
-                      preselectedSource: 'Devices',
-                      preselectedNames: { [device.id]: device.name },
-                    })
-                  : undefined
-            }
-            disabled={toggling !== null && (action.id === 'enable' || action.id === 'disable')}
-            className={`inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-60 ${action.cls}`}
-          >
-            {toggling !== null && (action.id === 'enable' || action.id === 'disable')
-              ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />{toggling === 'enabling' ? 'Enabling…' : 'Disabling…'}</>
-              : <><action.icon className="h-3.5 w-3.5" />{action.label}</>
-            }
-          </button>
-        ))}
+        }).map(action => {
+          const isNoOta = (device as any).otaManaged === false
+          const isFwBtn = action.id === 'update-firmware'
+          if (isFwBtn && isNoOta) {
+            return (
+              <div key={action.id} className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-400 cursor-not-allowed select-none" title="ADU agent not installed">
+                <Upload className="h-3.5 w-3.5" />
+                <span>No ADU agent installed</span>
+              </div>
+            )
+          }
+          return (
+            <button
+              key={action.id}
+              onClick={
+                (action.id === 'enable' || action.id === 'disable')
+                  ? handleToggle
+                  : action.id === 'update-firmware' && onUpdateFirmware
+                    ? () => onUpdateFirmware({
+                        jobType: 'software-update',
+                        jobName: `Firmware Update – ${device.name}`,
+                        startAtStep: 3,
+                        preselectedIds: [device.id],
+                        preselectedSource: 'Devices',
+                        preselectedNames: { [device.id]: device.name },
+                      })
+                    : undefined
+              }
+              disabled={toggling !== null && (action.id === 'enable' || action.id === 'disable')}
+              className={`inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-60 ${action.cls}`}
+            >
+              {toggling !== null && (action.id === 'enable' || action.id === 'disable')
+                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />{toggling === 'enabling' ? 'Enabling…' : 'Disabling…'}</>
+                : <><action.icon className="h-3.5 w-3.5" />{action.label}</>
+              }
+            </button>
+          )
+        })}
         {onRunJob && (
           <button
             onClick={() => onRunJob([device.id], { [device.id]: device.name })}
@@ -5172,9 +5184,9 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
             {(device as any).otaManaged === false ? (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm font-mono text-slate-400">Unknown</span>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-200 leading-none">
-                  <Zap className="h-2.5 w-2.5" />Install ADU agent to enable OTA
-                </span>
+                <button onClick={() => {}} className="text-[11px] text-blue-600 hover:underline cursor-pointer">
+                  Install device agent to manage on-device firmware
+                </button>
               </div>
             ) : device.firmware === '—' ? (
               <span className="text-sm font-mono text-slate-400">—</span>
@@ -5234,9 +5246,9 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
           <div className="px-4 py-4">
             <div className="grid grid-cols-4 gap-3 mb-5">
               {(['Critical', 'High', 'Medium', 'Low'] as const).map(s => (
-                <div key={s} className="rounded-lg border border-slate-100 p-3 text-center">
-                  <p className="text-lg font-bold text-slate-300">—</p>
-                  <p className="text-xs text-muted-foreground">{s}</p>
+                <div key={s} className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-center">
+                  <p className="text-lg font-bold text-amber-400">?</p>
+                  <p className="text-xs text-amber-600">{s}</p>
                 </div>
               ))}
             </div>
@@ -5246,7 +5258,7 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
               <p className="text-xs text-slate-400 max-w-sm">
                 Associate a firmware image with this device type in Firmware Analysis to automatically detect CVEs, assess binary hardening, and score security posture.
               </p>
-              <button className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-blue-600 shadow-sm transition-colors hover:bg-slate-50">
+              <button onClick={() => onFirmwareSelect('firmware-management')} className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-blue-600 shadow-sm transition-colors hover:bg-slate-50">
                 <Upload className="h-3.5 w-3.5" />Upload firmware image
               </button>
             </div>
