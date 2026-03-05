@@ -5190,7 +5190,12 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
             {device.firmware === '—' ? (
               <span className="text-sm font-mono text-slate-400">—</span>
             ) : (device as any).otaManaged === false ? (
-              <span className="text-sm font-mono text-slate-700">{device.firmware}</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-mono text-slate-700">{device.firmware}</span>
+                <button onClick={() => onFirmwareSelect('ota-management')} className="text-[11px] text-blue-600 hover:underline cursor-pointer">
+                  Image not found. Upload firmware to library.
+                </button>
+              </div>
             ) : (
               <div className="flex items-center gap-2">
                 <button onClick={() => onFirmwareSelect(fwVersion)} className="text-sm font-mono text-blue-600 hover:underline text-left flex items-center gap-1">
