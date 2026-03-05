@@ -76,12 +76,14 @@ import { DevicesView } from './DevicesView'
 import { IotHubView, IotOpsView } from './IotViews'
 import { FirmwareDetailView, FirmwareAnalysisView, OtaManagementView } from './FirmwareViews'
 import { AssetDetailView, DeviceDetailView } from './DetailViews'
+import { NamespaceHealthView } from './HealthView'
 
 export type { Hub } from './mockData'
 /* ─── URL mapping ────────────────────────────────────────────── */
 
 const ID_TO_SEGMENT: Record<string, string> = {
   '':               '',
+  'health':         'health',
   'all-resources':  'all-resources',
   'assets':         'assets',
   'devices':        'devices',
@@ -120,6 +122,7 @@ function parseFirmwareFromPath(pathname: string): string | null {
 
 const SECTION_LABELS: Record<string, string> = {
   '':               'Dashboard',
+  'health':         'Health',
   'all-resources':  'All Resources',
   'assets':         'Assets',
   'devices':        'Devices',
@@ -448,6 +451,12 @@ export default function AdrNamespacePage() {
           onDeviceSelect={(id) => navigateToDetail('device', id)}
           onClearGroupFilter={() => navigate(-1)}
           onUpdateFirmware={(pf) => setJobPrefill(pf)}
+        />
+      ) : activeMenuItem === 'health' ? (
+        <NamespaceHealthView
+          key="health"
+          onViewAsset={(id) => navigateToDetail('asset', id)}
+          onViewDevice={(id) => navigateToDetail('device', id)}
         />
       ) : activeMenuItem === 'iot-hub' ? (
         <IotHubView key="iot-hub" hubs={linkedHubs} onAddHub={() => setShowHubPicker(true)} unlinkedCount={unlinkedHubs.length} />
@@ -1200,6 +1209,7 @@ const LEFT_MENU_SECTIONS = [
     title: 'Dashboard',
     items: [
       { id: '', label: 'Dashboard', icon: LayoutDashboard },
+      { id: 'health', label: 'Health', icon: Activity },
     ],
   },
   {

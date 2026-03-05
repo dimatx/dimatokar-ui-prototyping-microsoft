@@ -11,8 +11,13 @@ import {
   ASSET_MODEL_MAP, DEVICE_ACTIONS,
   LATEST_ASSET_FW_BY_TYPE, LATEST_DEVICE_FW_BY_MODEL,
   firmwareDetailData,
+  assetObservabilityData,
+  deviceObservabilityData,
+  assetStackHealth,
+  deviceHubHealthData,
 } from './mockData'
 import { SensitivitySelect } from './sharedComponents'
+import { MetricsRow, ConnectivityTimeline, AssetStackHealth, DeviceHubHealth, HealthSection } from './healthComponents'
 
 export function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, onUpdateFirmware }: { assetId: string; onBack: () => void; onFirmwareSelect: (v: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void; onUpdateFirmware?: (prefill: JobPrefill) => void }) {
   const asset = mockAssets.find(a => a.id === assetId)
@@ -198,6 +203,27 @@ export function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, o
           </div>
         </div>
       )}
+
+      {/* ── Health section ── */}
+      {(() => {
+        const obs = assetObservabilityData[asset.id]
+        const layers = assetStackHealth[asset.id]
+        const overallStatus = asset.status === 'Available' ? 'Healthy' : asset.status
+        if (!obs || !layers) return null
+        return (
+          <HealthSection summaryStatus={overallStatus}>
+            <MetricsRow
+              isAsset={true}
+              msgPerMin={obs.msgPerMin}
+              errorsPerHr={obs.errorsPerHr}
+              msgCountOrDataKB={obs.msgCount}
+              connectivity={obs.connectivity}
+            />
+            <ConnectivityTimeline connectivity={obs.connectivity} />
+            <AssetStackHealth layers={layers} />
+          </HealthSection>
+        )
+      })()}
     </motion.div>
   )
 }
@@ -475,6 +501,31 @@ export function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob,
           </div>
         </div>
       ) : null}
+
+      {/* ── Health section ── */}
+      {(() => {
+        const obs = deviceObservabilityData[device.id]
+        const hubData = deviceHubHealthData[device.id]
+        if (!obs || !hubData) return null
+        return (
+          <HealthSection summaryStatus={device.status === 'Healthy' ? 'Healthy' : device.status}>
+            <MetricsRow
+              isAsset={false}
+              msgPerMin={obs.msgPerMin}
+              errorsPerHr={obs.errorsPerHr}
+              msgCountOrDataKB={obs.dataKBPerMin}
+              connectivity={obs.connectivity}
+            />
+            <ConnectivityTimeline connectivity={obs.connectivity} />
+            <DeviceHubHealth
+              deviceName={device.name}
+              deviceStatus={device.status}
+              deviceConnectivity={device.connectivity}
+              hubData={hubData}
+            />
+          </HealthSection>
+        )
+      })()}
     </motion.div>
   )
 }

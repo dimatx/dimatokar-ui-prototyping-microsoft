@@ -509,3 +509,248 @@ export const ASSET_MODEL_MAP: Record<string, string> = {
   'Pitch Controller': 'PitchController-5000',
   'Edge Gateway': 'EdgeGateway-1900',
 }
+
+/* ─── Health / Observability Mock Data ───────────────────────── */
+
+// Deterministic pseudo-noise for consistent sparkline generation
+function _dn(seed: number, i: number): number {
+  const x = Math.sin(seed * 7.3 + i * 1.37 + seed * i * 0.011) * 43758.5453
+  return (x - Math.floor(x)) // 0..1
+}
+function _genSeries(len: number, base: number, variance: number, seed: number, dips?: [number, number][]): number[] {
+  return Array.from({ length: len }, (_, i) => {
+    let v = base + (_dn(seed, i) * 2 - 1) * variance + Math.sin(i * 0.4) * variance * 0.4
+    if (dips) for (const [s, e] of dips) if (i >= s && i < e) v *= 0.08
+    return Math.max(0, Math.round(v))
+  })
+}
+function _genCumulative(len: number, startVal: number, ratePerSlot: number, seed: number): number[] {
+  let cum = startVal
+  return Array.from({ length: len }, (_, i) => {
+    cum += ratePerSlot * (0.7 + _dn(seed, i) * 0.6)
+    return Math.round(cum)
+  })
+}
+function _genConnectivity(len: number, dropSlots?: [number, number][]): boolean[] {
+  return Array.from({ length: len }, (_, i) => {
+    if (dropSlots) for (const [s, e] of dropSlots) if (i >= s && i < e) return false
+    return true
+  })
+}
+
+// Asset time-series (48 slots = 30-min intervals over 24h)
+// Fields: msgPerMin (current rate), errorsPerHr, msgCount (cumulative total), connectivity (boolean[48])
+export interface AssetObsData {
+  msgPerMin: number[]
+  errorsPerHr: number[]
+  msgCount: number[]
+  connectivity: boolean[]
+}
+
+export const assetObservabilityData: Record<string, AssetObsData> = {
+  'AST-0001': { msgPerMin: _genSeries(48, 62, 12, 1),    errorsPerHr: _genSeries(24, 1,  1,  11),  msgCount: _genCumulative(48, 84_200, 62, 1),   connectivity: _genConnectivity(48) },
+  'AST-0002': { msgPerMin: _genSeries(48, 28, 6,  2),    errorsPerHr: _genSeries(24, 0,  0.5,12),  msgCount: _genCumulative(48, 31_400, 28, 2),   connectivity: _genConnectivity(48) },
+  'AST-0003': { msgPerMin: _genSeries(48, 115, 20, 3),   errorsPerHr: _genSeries(24, 2,  1,  13),  msgCount: _genCumulative(48, 162_000, 115, 3),  connectivity: _genConnectivity(48) },
+  // AST-0004: Degraded — Baremetal memory pressure (91%), elevated latency causing some msg loss
+  'AST-0004': { msgPerMin: _genSeries(48, 38, 18, 4, [[32, 40]]), errorsPerHr: _genSeries(24, 8, 4, 14), msgCount: _genCumulative(48, 41_900, 38, 4), connectivity: _genConnectivity(48, [[33, 36]]) },
+  'AST-0005': { msgPerMin: _genSeries(48, 65, 10, 5),   errorsPerHr: _genSeries(24, 1,  1,  15),  msgCount: _genCumulative(48, 91_300, 65, 5),   connectivity: _genConnectivity(48) },
+  'AST-0006': { msgPerMin: _genSeries(48, 26, 5,  6),   errorsPerHr: _genSeries(24, 0,  0.4,16),  msgCount: _genCumulative(48, 29_100, 26, 6),   connectivity: _genConnectivity(48) },
+  // AST-0007: Unhealthy — AIO broker CrashLoopBackOff, Baremetal memory 87% + CPU 94%
+  'AST-0007': { msgPerMin: _genSeries(48, 58, 30, 7, [[28, 48]]), errorsPerHr: _genSeries(24, 24, 12, 17), msgCount: _genCumulative(48, 77_800, 22, 7), connectivity: _genConnectivity(48, [[30, 48]]) },
+  'AST-0008': { msgPerMin: _genSeries(48, 108, 18, 8),  errorsPerHr: _genSeries(24, 2,  1,  18),  msgCount: _genCumulative(48, 148_000, 108, 8),  connectivity: _genConnectivity(48) },
+  'AST-0009': { msgPerMin: _genSeries(48, 60, 11, 9),   errorsPerHr: _genSeries(24, 1,  1,  19),  msgCount: _genCumulative(48, 88_400, 60, 9),   connectivity: _genConnectivity(48) },
+  // AST-0010: Degraded — AIO instance aio-tx-odessa-01 degraded (MQTT broker high latency)
+  'AST-0010': { msgPerMin: _genSeries(48, 35, 15, 10, [[20, 26], [38, 43]]), errorsPerHr: _genSeries(24, 6, 3, 20), msgCount: _genCumulative(48, 39_200, 35, 10), connectivity: _genConnectivity(48, [[20, 23]]) },
+  'AST-0011': { msgPerMin: _genSeries(48, 24, 5,  21),  errorsPerHr: _genSeries(24, 0,  0.4,31),  msgCount: _genCumulative(48, 27_600, 24, 21),  connectivity: _genConnectivity(48) },
+  'AST-0012': { msgPerMin: _genSeries(48, 63, 12, 22),  errorsPerHr: _genSeries(24, 1,  1,  32),  msgCount: _genCumulative(48, 87_700, 63, 22),  connectivity: _genConnectivity(48) },
+  'AST-0013': { msgPerMin: _genSeries(48, 112, 19, 23), errorsPerHr: _genSeries(24, 2,  1,  33),  msgCount: _genCumulative(48, 158_000, 112, 23), connectivity: _genConnectivity(48) },
+  'AST-0014': { msgPerMin: _genSeries(48, 55, 10, 24),  errorsPerHr: _genSeries(24, 3,  2,  34),  msgCount: _genCumulative(48, 72_400, 55, 24),  connectivity: _genConnectivity(48, [[10, 12]]) },
+  'AST-0015': { msgPerMin: _genSeries(48, 0, 0, 25),    errorsPerHr: _genSeries(24, 0, 0, 35),   msgCount: _genCumulative(48, 1_200, 0, 25),    connectivity: _genConnectivity(48, [[0, 48]]) },
+}
+
+// Device time-series (48 slots = 30-min intervals over 24h)
+// Fields: msgPerMin, errorsPerHr, dataKBPerMin, connectivity
+export interface DeviceObsData {
+  msgPerMin: number[]
+  errorsPerHr: number[]
+  dataKBPerMin: number[]
+  connectivity: boolean[]
+}
+
+export const deviceObservabilityData: Record<string, DeviceObsData> = {
+  'DEV-0001': { msgPerMin: _genSeries(48, 58, 11, 41),  errorsPerHr: _genSeries(24, 1, 1,  51), dataKBPerMin: _genSeries(48, 22, 5,  61), connectivity: _genConnectivity(48) },
+  'DEV-0002': { msgPerMin: _genSeries(48, 25, 5,  42),  errorsPerHr: _genSeries(24, 0, 0.4,52), dataKBPerMin: _genSeries(48, 8,  2,  62), connectivity: _genConnectivity(48) },
+  'DEV-0003': { msgPerMin: _genSeries(48, 32, 14, 43, [[24, 30]]), errorsPerHr: _genSeries(24, 7, 4, 53), dataKBPerMin: _genSeries(48, 14, 7, 63), connectivity: _genConnectivity(48, [[25, 28]]) },
+  'DEV-0004': { msgPerMin: _genSeries(48, 62, 10, 44),  errorsPerHr: _genSeries(24, 1, 1,  54), dataKBPerMin: _genSeries(48, 24, 5,  64), connectivity: _genConnectivity(48) },
+  // DEV-0005: Unhealthy / Disconnected
+  'DEV-0005': { msgPerMin: _genSeries(48, 55, 25, 45, [[28, 48]]), errorsPerHr: _genSeries(24, 18, 9, 55), dataKBPerMin: _genSeries(48, 20, 12, 65, [[28, 48]]), connectivity: _genConnectivity(48, [[28, 48]]) },
+  'DEV-0006': { msgPerMin: _genSeries(48, 60, 11, 46),  errorsPerHr: _genSeries(24, 1, 1,  56), dataKBPerMin: _genSeries(48, 23, 5,  66), connectivity: _genConnectivity(48) },
+  'DEV-0007': { msgPerMin: _genSeries(48, 30, 12, 47, [[18, 23]]), errorsPerHr: _genSeries(24, 5, 3, 57), dataKBPerMin: _genSeries(48, 12, 6, 67, [[18, 23]]), connectivity: _genConnectivity(48, [[19, 22]]) },
+  // DEV-0008: on hub-tx-wind-04 (Degraded) — throttling visible, elevated errors
+  'DEV-0008': { msgPerMin: _genSeries(48, 58, 20, 48, [[16, 22], [32, 38]]), errorsPerHr: _genSeries(24, 12, 6, 58), dataKBPerMin: _genSeries(48, 22, 10, 68, [[16, 22]]), connectivity: _genConnectivity(48) },
+  'DEV-0009': { msgPerMin: _genSeries(48, 110, 18, 49), errorsPerHr: _genSeries(24, 2, 1,  59), dataKBPerMin: _genSeries(48, 44, 8,  69), connectivity: _genConnectivity(48) },
+  'DEV-0010': { msgPerMin: _genSeries(48, 27, 5,  50),  errorsPerHr: _genSeries(24, 0, 0.4,60), dataKBPerMin: _genSeries(48, 10, 2,  70), connectivity: _genConnectivity(48) },
+  'DEV-0011': { msgPerMin: _genSeries(48, 23, 5,  71),  errorsPerHr: _genSeries(24, 0, 0.4,81), dataKBPerMin: _genSeries(48, 9,  2,  91), connectivity: _genConnectivity(48) },
+  // DEV-0012: on hub-tx-wind-04 (Degraded)
+  'DEV-0012': { msgPerMin: _genSeries(48, 52, 22, 72, [[20, 26]]), errorsPerHr: _genSeries(24, 10, 5, 82), dataKBPerMin: _genSeries(48, 20, 9, 92, [[20, 26]]), connectivity: _genConnectivity(48) },
+  'DEV-0013': { msgPerMin: _genSeries(48, 53, 9,  73),  errorsPerHr: _genSeries(24, 2, 1,  83), dataKBPerMin: _genSeries(48, 20, 4,  93), connectivity: _genConnectivity(48) },
+  'DEV-0014': { msgPerMin: _genSeries(48, 0,  0,  74),  errorsPerHr: _genSeries(24, 0, 0,  84), dataKBPerMin: _genSeries(48, 0,  0,  94), connectivity: _genConnectivity(48, [[0, 48]]) },
+  // DEV-0015: on hub-tx-wind-04 (Degraded)
+  'DEV-0015': { msgPerMin: _genSeries(48, 106, 24, 75, [[22, 28], [36, 40]]), errorsPerHr: _genSeries(24, 9, 5, 85), dataKBPerMin: _genSeries(48, 40, 12, 95, [[22, 28]]), connectivity: _genConnectivity(48) },
+}
+
+// Full-stack health layers per asset
+export interface StackLayer {
+  type: 'asset' | 'aio' | 'k8s' | 'baremetal'
+  label: string
+  name: string
+  status: 'Healthy' | 'Degraded' | 'Warning' | 'Unhealthy'
+  detail: string
+  alertMsg?: string
+}
+
+function _healthyStack(assetName: string, aioName: string, k8sName: string, baremetalName: string, aioDetail: string, k8sDetail: string, baremetalDetail: string): StackLayer[] {
+  return [
+    { type: 'asset',      label: 'Asset',                        name: assetName,    status: 'Healthy',  detail: 'Operating normally' },
+    { type: 'aio',        label: 'Azure IoT\u00a0Operations',    name: aioName,      status: 'Healthy',  detail: aioDetail },
+    { type: 'k8s',        label: 'Kubernetes',                   name: k8sName,      status: 'Healthy',  detail: k8sDetail },
+    { type: 'baremetal',  label: 'Baremetal Host',               name: baremetalName, status: 'Healthy', detail: baremetalDetail },
+  ]
+}
+
+export const assetStackHealth: Record<string, StackLayer[]> = {
+  // Healthy assets — all layers green
+  'AST-0001': _healthyStack('Turbine Controller #A-001', 'aio-tx-abilene-01', 'k8s-abilene-prod', 'host-abilene-01', 'Broker running · 434 assets', '5/5 nodes ready', 'CPU 42% · Mem 58%'),
+  'AST-0002': _healthyStack('Anemometer Sensor #A-014',  'aio-tx-abilene-01', 'k8s-abilene-prod', 'host-abilene-02', 'Broker running · 434 assets', '5/5 nodes ready', 'CPU 38% · Mem 61%'),
+  'AST-0003': _healthyStack('Edge Gateway #AB-03',        'aio-tx-abilene-01', 'k8s-abilene-prod', 'host-abilene-02', 'Broker running · 434 assets', '5/5 nodes ready', 'CPU 38% · Mem 61%'),
+  // AST-0004: Degraded — Baremetal memory pressure causing latency
+  'AST-0004': [
+    { type: 'asset',     label: 'Asset',                       name: 'Pitch Controller #A-021', status: 'Degraded', detail: 'Elevated message latency · p99 1,840ms', alertMsg: 'Latency spike traced to baremetal memory pressure' },
+    { type: 'aio',       label: 'Azure IoT\u00a0Operations',   name: 'aio-tx-abilene-01',       status: 'Healthy',  detail: 'Broker running · 434 assets' },
+    { type: 'k8s',       label: 'Kubernetes',                  name: 'k8s-abilene-prod',        status: 'Healthy',  detail: '5/5 nodes ready' },
+    { type: 'baremetal', label: 'Baremetal Host',              name: 'host-abilene-03',         status: 'Warning',  detail: 'CPU 78% · Mem 91% · 3 pods at risk', alertMsg: 'Memory pressure causing GC pauses on aio-broker pod' },
+  ],
+  'AST-0005': _healthyStack('Turbine Controller #M-007', 'aio-tx-midland-01', 'k8s-midland-prod', 'host-midland-02', 'Broker running · 318 assets', '4/4 nodes ready', 'CPU 44% · Mem 62%'),
+  'AST-0006': _healthyStack('Anemometer Sensor #M-023',  'aio-tx-midland-01', 'k8s-midland-prod', 'host-midland-02', 'Broker running · 318 assets', '4/4 nodes ready', 'CPU 44% · Mem 62%'),
+  // AST-0007: Unhealthy — AIO broker CrashLoopBackOff root-caused to baremetal memory+CPU
+  'AST-0007': [
+    { type: 'asset',     label: 'Asset',                       name: 'Turbine Controller #M-011', status: 'Unhealthy', detail: 'No data received · last seen 3h ago', alertMsg: 'Asset unreachable — MQTT broker unavailable' },
+    { type: 'aio',       label: 'Azure IoT\u00a0Operations',   name: 'aio-tx-midland-01',        status: 'Degraded',  detail: 'aio-broker: CrashLoopBackOff · restarted 8×', alertMsg: 'Broker pod OOMKilled — insufficient memory on host' },
+    { type: 'k8s',       label: 'Kubernetes',                  name: 'k8s-midland-prod',         status: 'Warning',   detail: '3/4 nodes ready · host-midland-01 NotReady', alertMsg: '1 node is in NotReady state due to memory exhaustion' },
+    { type: 'baremetal', label: 'Baremetal Host',              name: 'host-midland-01',          status: 'Unhealthy', detail: 'CPU 94% · Mem 87% · OOMKill events: 12', alertMsg: 'Node under severe resource pressure — root cause of asset failure' },
+  ],
+  'AST-0008': _healthyStack('Edge Gateway #MB-01',        'aio-tx-midland-01', 'k8s-midland-prod', 'host-midland-02', 'Broker running · 318 assets', '4/4 nodes ready', 'CPU 44% · Mem 62%'),
+  'AST-0009': _healthyStack('Turbine Controller #O-003', 'aio-tx-odessa-01',  'k8s-odessa-prod',  'host-odessa-01',  'Broker running · 244 assets', '4/4 nodes ready', 'CPU 40% · Mem 55%'),
+  // AST-0010: Degraded — AIO instance on Odessa degraded (MQTT broker high latency)
+  'AST-0010': [
+    { type: 'asset',     label: 'Asset',                       name: 'Pitch Controller #O-017',  status: 'Degraded', detail: 'Intermittent connectivity · MQTT timeouts', alertMsg: 'MQTT broker latency affecting asset telemetry' },
+    { type: 'aio',       label: 'Azure IoT\u00a0Operations',   name: 'aio-tx-odessa-01',         status: 'Degraded', detail: 'MQTT broker p99 latency: 3,200ms · throttling', alertMsg: 'Broker overloaded — possible noisy-neighbor on shared node' },
+    { type: 'k8s',       label: 'Kubernetes',                  name: 'k8s-odessa-prod',          status: 'Healthy',  detail: '4/4 nodes ready' },
+    { type: 'baremetal', label: 'Baremetal Host',              name: 'host-odessa-01',           status: 'Healthy',  detail: 'CPU 45% · Mem 62%' },
+  ],
+  'AST-0011': _healthyStack('Anemometer Sensor #O-009', 'aio-tx-odessa-01',  'k8s-odessa-prod',  'host-odessa-01',  'Broker running · 244 assets', '4/4 nodes ready', 'CPU 40% · Mem 55%'),
+  'AST-0012': _healthyStack('Turbine Controller #S-002', 'aio-tx-sanangelo-01', 'k8s-sanangelo-prod', 'host-sanangelo-01', 'Broker running · 244 assets', '4/4 nodes ready', 'CPU 51% · Mem 67%'),
+  'AST-0013': _healthyStack('Edge Gateway #SB-02',       'aio-tx-sanangelo-01', 'k8s-sanangelo-prod', 'host-sanangelo-01', 'Broker running · 244 assets', '4/4 nodes ready', 'CPU 51% · Mem 67%'),
+  'AST-0014': _healthyStack('Turbine Controller #A-044', 'aio-tx-abilene-01', 'k8s-abilene-prod', 'host-abilene-01', 'Broker running · 434 assets', '5/5 nodes ready', 'CPU 42% · Mem 58%'),
+  'AST-0015': [
+    { type: 'asset',     label: 'Asset',                       name: 'Pitch Controller #M-031', status: 'Degraded',  detail: 'Never connected · no telemetry received' },
+    { type: 'aio',       label: 'Azure IoT\u00a0Operations',   name: 'aio-tx-midland-01',       status: 'Healthy',  detail: 'Broker running · 318 assets' },
+    { type: 'k8s',       label: 'Kubernetes',                  name: 'k8s-midland-prod',        status: 'Healthy',  detail: '4/4 nodes ready' },
+    { type: 'baremetal', label: 'Baremetal Host',              name: 'host-midland-02',         status: 'Healthy',  detail: 'CPU 44% · Mem 62%' },
+  ],
+}
+
+// Device hub health layers (device + its hub)
+export interface HubHealthData {
+  hubName: string
+  hubStatus: 'Healthy' | 'Degraded' | 'Warning'
+  p50ms: number
+  p99ms: number
+  throttled: boolean
+  detail: string
+  alertMsg?: string
+}
+
+const _healthyHub = (hubName: string, p50: number, p99: number): HubHealthData => ({
+  hubName, hubStatus: 'Healthy', p50ms: p50, p99ms: p99, throttled: false,
+  detail: `${p50}ms p50 · ${p99}ms p99 · No throttling`,
+})
+const _degradedHub = (hubName: string): HubHealthData => ({
+  hubName, hubStatus: 'Degraded', p50ms: 820, p99ms: 4_200, throttled: true,
+  detail: 'p50: 820ms · p99: 4,200ms · Throttling active',
+  alertMsg: 'Hub is throttling D2C messages — quota limit exceeded. Devices on this hub may experience message loss and delayed commands.',
+})
+
+export const deviceHubHealthData: Record<string, HubHealthData> = {
+  'DEV-0001': _healthyHub('hub-tx-wind-01', 48, 210),
+  'DEV-0002': _healthyHub('hub-tx-wind-01', 52, 190),
+  'DEV-0003': _healthyHub('hub-tx-wind-02', 61, 280),
+  'DEV-0004': _healthyHub('hub-tx-wind-01', 45, 195),
+  'DEV-0005': _healthyHub('hub-tx-wind-02', 55, 240),
+  'DEV-0006': _healthyHub('hub-tx-wind-03', 42, 180),
+  'DEV-0007': _healthyHub('hub-tx-wind-03', 44, 195),
+  'DEV-0008': _degradedHub('hub-tx-wind-04'),
+  'DEV-0009': _healthyHub('hub-tx-wind-01', 50, 215),
+  'DEV-0010': _healthyHub('hub-tx-wind-02', 58, 250),
+  'DEV-0011': _healthyHub('hub-tx-wind-03', 41, 185),
+  'DEV-0012': _degradedHub('hub-tx-wind-04'),
+  'DEV-0013': _healthyHub('hub-tx-wind-01', 47, 205),
+  'DEV-0014': _healthyHub('hub-tx-wind-02', 0,  0),
+  'DEV-0015': _degradedHub('hub-tx-wind-04'),
+}
+
+// Namespace-level health data
+export const namespaceFleetMetrics = {
+  // 48 half-hour slots over 24h — aggregate across all assets/devices
+  totalMsgPerMin:    _genSeries(48, 3_840, 420, 101),
+  totalErrorsPerHr:  _genSeries(24, 186,  60,  102),
+  totalDataKBPerMin: _genSeries(48, 1_520, 180, 103),
+  connectedDevices:  _genSeries(48, 11_912, 80, 104),
+}
+
+export const namespaceActiveIssues = [
+  {
+    id: 'ISS-001',
+    severity: 'Critical' as const,
+    layer: 'Baremetal',
+    resource: 'host-midland-01',
+    symptom: 'Memory exhausted (87%) + CPU 94% — caused OOMKill on aio-broker pod, asset Turbine Controller #M-011 unreachable',
+    since: '3 hrs ago',
+    assetId: 'AST-0007',
+  },
+  {
+    id: 'ISS-002',
+    severity: 'Warning' as const,
+    layer: 'Azure IoT\u00a0Operations',
+    resource: 'aio-tx-odessa-01',
+    symptom: 'MQTT broker latency spike (p99 3,200ms) — Pitch Controller #O-017 experiencing intermittent timeouts',
+    since: '1 hr 12 min ago',
+    assetId: 'AST-0010',
+  },
+  {
+    id: 'ISS-003',
+    severity: 'Warning' as const,
+    layer: 'IoT Hub',
+    resource: 'hub-tx-wind-04',
+    symptom: 'D2C throttling active — 3 devices affected (p99 4,200ms). Quota limit reached.',
+    since: '2 hrs 40 min ago',
+    deviceId: 'DEV-0008',
+  },
+  {
+    id: 'ISS-004',
+    severity: 'Warning' as const,
+    layer: 'Baremetal',
+    resource: 'host-abilene-03',
+    symptom: 'Memory at 91% — GC pressure on aio-broker pod causing latency for Pitch Controller #A-021',
+    since: '47 min ago',
+    assetId: 'AST-0004',
+  },
+]
+
+export const namespaceStackSummary = [
+  { layer: 'Assets',                         total: 3_215, healthy: 2_926, degraded: 198,  unhealthy: 91  },
+  { layer: 'Azure IoT\u00a0Operations',      total: 5,     healthy: 3,     degraded: 2,    unhealthy: 0   },
+  { layer: 'IoT Hubs',                       total: 4,     healthy: 3,     degraded: 1,    unhealthy: 0   },
+  { layer: 'Kubernetes Clusters',            total: 5,     healthy: 4,     degraded: 1,    unhealthy: 0   },
+  { layer: 'Baremetal Hosts',                total: 12,    healthy: 10,    degraded: 1,    unhealthy: 1   },
+]
