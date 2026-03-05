@@ -5191,7 +5191,7 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm font-mono text-slate-400">Unknown</span>
                 <button onClick={() => {}} className="text-[11px] text-blue-600 hover:underline cursor-pointer">
-                  Install device agent to manage on-device firmware
+                  Install device update agent to manage on-device firmware
                 </button>
               </div>
             ) : device.firmware === '—' ? (
