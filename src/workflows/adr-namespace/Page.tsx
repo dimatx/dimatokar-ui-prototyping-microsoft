@@ -548,6 +548,7 @@ export default function AdrNamespacePage() {
   const [jobs, setJobs] = useState<CreatedJob[]>(initialJobs)
   const [runJobTarget, setRunJobTarget] = useState<{ ids: string[]; names: Record<string, string>; source: 'Devices' | 'Assets' } | null>(null)
   const [jobPrefill, setJobPrefill] = useState<JobPrefill | null>(null)
+  const [pendingOtaUpload, setPendingOtaUpload] = useState(false)
   const [cveDismissed, setCveDismissed] = useState(false)
 
   // Services state
@@ -787,7 +788,7 @@ export default function AdrNamespacePage() {
           key={`ar-device-detail-${deviceDetailId}`}
           deviceId={deviceDetailId}
           onBack={() => navigate(-1)}
-          onFirmwareSelect={(v) => v === 'ota-management' ? navigateTo('ota-management') : navigateTo('firmware', { firmware: v })}
+          onFirmwareSelect={(v) => { if (v === 'ota-management-upload') { setPendingOtaUpload(true); navigateTo('ota-management') } else if (v === 'ota-management') { navigateTo('ota-management') } else { navigateTo('firmware', { firmware: v }) } }}
           onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Devices' })}
           onUpdateFirmware={(pf) => setJobPrefill(pf)}
         />
@@ -813,7 +814,7 @@ export default function AdrNamespacePage() {
           key={`device-detail-${deviceDetailId}`}
           deviceId={deviceDetailId}
           onBack={() => navigate(-1)}
-          onFirmwareSelect={(v) => v === 'ota-management' ? navigateTo('ota-management') : navigateTo('firmware', { firmware: v })}
+          onFirmwareSelect={(v) => { if (v === 'ota-management-upload') { setPendingOtaUpload(true); navigateTo('ota-management') } else if (v === 'ota-management') { navigateTo('ota-management') } else { navigateTo('firmware', { firmware: v }) } }}
           onRunJob={(ids, names) => setRunJobTarget({ ids, names, source: 'Devices' })}
           onUpdateFirmware={(pf) => setJobPrefill(pf)}
         />
@@ -836,6 +837,8 @@ export default function AdrNamespacePage() {
       ) : activeMenuItem === 'ota-management' ? (
         <OtaManagementView
           key="ota-management"
+          autoOpenUpload={pendingOtaUpload}
+          onAutoOpenConsumed={() => setPendingOtaUpload(false)}
           onFirmwareSelect={(v) => navigateTo('firmware', { firmware: v })}
           onDeploy={(prefill) => setJobPrefill(prefill)}
         />
@@ -4447,12 +4450,15 @@ function FirmwareAnalysisView({ onFirmwareSelect, onVersionClick, onManufacturer
 }
 /* ─── Firmware Management View ───────────────────────────── */
 
-function OtaManagementView({ onFirmwareSelect, onDeploy }: {
+function OtaManagementView({ onFirmwareSelect, onDeploy, autoOpenUpload, onAutoOpenConsumed }: {
   onFirmwareSelect?: (version: string) => void
   onDeploy?: (prefill: JobPrefill) => void
+  autoOpenUpload?: boolean
+  onAutoOpenConsumed?: () => void
 }) {
   const [images, setImages] = useState(() => [...firmwareImages])
-  const [showUpload, setShowUpload] = useState(false)
+  const [showUpload, setShowUpload] = useState(autoOpenUpload ?? false)
+  useEffect(() => { if (autoOpenUpload) onAutoOpenConsumed?.() }, [])
   const [uploadDraft, setUploadDraft] = useState({ file: '', manufacturer: '', model: '', version: '' })
 
   const latestByModel = useMemo(() => {
@@ -5192,8 +5198,8 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
             ) : (device as any).otaManaged === false ? (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm font-mono text-slate-700">{device.firmware}</span>
-                <button onClick={() => onFirmwareSelect('ota-management')} className="text-[11px] text-blue-600 hover:underline cursor-pointer">
-                  Image not found. Upload firmware to library.
+                <button onClick={() => onFirmwareSelect('ota-management-upload')} className="text-[11px] text-blue-600 hover:underline cursor-pointer">
+                  Not found. Upload firmware image to library.
                 </button>
               </div>
             ) : (
