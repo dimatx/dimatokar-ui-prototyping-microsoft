@@ -423,7 +423,7 @@ const mockDevices = [
   { id: 'DEV-0001', name: 'tx-wind-a001-ctrl', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', model: 'TurbineController-X700', hub: 'hub-tx-wind-01', site: 'Abilene Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.2.1', lastSeen: '1 min ago' },
   { id: 'DEV-0002', name: 'tx-wind-a014-anem', type: 'Anemometer', manufacturer: 'Zephyr Sensors Inc.', model: 'AnemometerPro-2400', hub: 'hub-tx-wind-01', site: 'Abilene Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v2.4.0', lastSeen: '3 min ago' },
   { id: 'DEV-0003', name: 'tx-wind-a021-pitch', type: 'Pitch Controller', manufacturer: 'AeroLogix Systems', model: 'PitchController-5000', hub: 'hub-tx-wind-02', site: 'Abilene Wind Farm', status: 'Degraded', connectivity: 'Connected', firmware: 'v5.0.2', lastSeen: '8 min ago' },
-  { id: 'DEV-0004', name: 'tx-wind-m007-ctrl', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', model: 'TurbineController-X700', hub: 'hub-tx-wind-01', site: 'Midland Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.1.0', lastSeen: '2 min ago' },
+  { id: 'DEV-0004', name: 'tx-wind-m007-ctrl', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', model: 'TurbineController-X700', hub: 'hub-tx-wind-01', site: 'Midland Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: '—', lastSeen: '2 min ago', otaManaged: false },
   { id: 'DEV-0005', name: 'tx-wind-m011-ctrl', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', model: 'TurbineController-X700', hub: 'hub-tx-wind-02', site: 'Midland Wind Farm', status: 'Unhealthy', connectivity: 'Disconnected', firmware: 'v3.1.0', lastSeen: '4 hrs ago' },
   { id: 'DEV-0006', name: 'tx-wind-o003-ctrl', type: 'Turbine Controller', manufacturer: 'Contoso Wind Systems', model: 'TurbineController-X700', hub: 'hub-tx-wind-03', site: 'Odessa Wind Farm', status: 'Healthy', connectivity: 'Connected', firmware: 'v3.2.1', lastSeen: '1 min ago' },
   { id: 'DEV-0007', name: 'tx-wind-o017-pitch', type: 'Pitch Controller', manufacturer: 'AeroLogix Systems', model: 'PitchController-5000', hub: 'hub-tx-wind-03', site: 'Odessa Wind Farm', status: 'Degraded', connectivity: 'Connected', firmware: 'v5.0.2', lastSeen: '31 min ago' },
@@ -508,7 +508,7 @@ const SECTION_LABELS: Record<string, string> = {
   'policies':       'Policies',
   'provisioning':   'Provisioning',
   'cert-mgmt':      'Certificate Management',
-  'ota-management': 'OTA Management',
+  'ota-management': 'Firmware Management',
   'groups':         'Groups',
   'jobs':           'Jobs',
   'iot-hub':        'IoT Hubs',
@@ -1589,7 +1589,7 @@ const LEFT_MENU_SECTIONS = [
     items: [
       { id: 'provisioning', label: 'Provisioning', icon: Upload },
       { id: 'cert-mgmt', label: 'Certificate Mgmt.', icon: KeyRound },
-      { id: 'ota-management', label: 'OTA Management', icon: Zap },
+      { id: 'ota-management', label: 'Firmware Management', icon: Zap },
       { id: 'groups', label: 'Groups', icon: Users },
       { id: 'jobs', label: 'Jobs', icon: Activity },
       { id: '3p', label: '3P Capability', icon: Puzzle, disabled: true },
@@ -4439,7 +4439,7 @@ function FirmwareAnalysisView({ onFirmwareSelect, onVersionClick, onManufacturer
     </motion.div>
   )
 }
-/* ─── OTA Management View ─────────────────────────────────── */
+/* ─── Firmware Management View ───────────────────────────── */
 
 function OtaManagementView({ onFirmwareSelect, onDeploy }: {
   onFirmwareSelect?: (version: string) => void
@@ -4507,7 +4507,7 @@ function OtaManagementView({ onFirmwareSelect, onDeploy }: {
             <Zap className="h-5 w-5 text-slate-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">OTA Management</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Firmware Management</h1>
             <p className="text-sm text-muted-foreground mt-0.5">Texas-Wind-Namespace</p>
           </div>
         </div>
@@ -5169,7 +5169,14 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
           </div>
           <div className="flex flex-col gap-0.5">
             <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Firmware Version</span>
-            {device.firmware === '—' ? (
+            {(device as any).otaManaged === false ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-mono text-slate-400">Unknown</span>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-200 leading-none">
+                  <Zap className="h-2.5 w-2.5" />Install ADU agent to enable OTA
+                </span>
+              </div>
+            ) : device.firmware === '—' ? (
               <span className="text-sm font-mono text-slate-400">—</span>
             ) : (
               <div className="flex items-center gap-2">
@@ -5218,7 +5225,34 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
         </div>
       </div>
 
-      {fwData && (
+      {(device as any).otaManaged === false ? (
+        <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
+          <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex items-center gap-2">
+            <Shield className="h-3.5 w-3.5 text-slate-400" />
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Security Summary</p>
+          </div>
+          <div className="px-4 py-4">
+            <div className="grid grid-cols-4 gap-3 mb-5">
+              {(['Critical', 'High', 'Medium', 'Low'] as const).map(s => (
+                <div key={s} className="rounded-lg border border-slate-100 p-3 text-center">
+                  <p className="text-lg font-bold text-slate-300">—</p>
+                  <p className="text-xs text-muted-foreground">{s}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-col items-center gap-2 py-3 text-center border border-dashed border-slate-200 rounded-lg bg-slate-50">
+              <Shield className="h-7 w-7 text-slate-300 mb-1" />
+              <p className="text-sm font-medium text-slate-500">No firmware image linked to this device</p>
+              <p className="text-xs text-slate-400 max-w-sm">
+                Associate a firmware image with this device type in Firmware Analysis to automatically detect CVEs, assess binary hardening, and score security posture.
+              </p>
+              <button className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-blue-600 shadow-sm transition-colors hover:bg-slate-50">
+                <Upload className="h-3.5 w-3.5" />Upload firmware image
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : fwData ? (
         <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
           <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -5257,7 +5291,7 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </motion.div>
   )
 }
