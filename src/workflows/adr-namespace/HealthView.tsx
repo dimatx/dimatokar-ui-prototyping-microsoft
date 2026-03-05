@@ -2,17 +2,18 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   Zap, Server, Layers, Drill, CloudUpload, RefreshCw,
-  AlertTriangle, CheckCircle2, XCircle, AlertCircle,
+  AlertTriangle, XCircle,
   TrendingUp, TrendingDown, ChevronRight, Activity,
+  Wind, MapPin,
 } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge'
 import { SparklineChart } from '@/components/SparklineChart'
 import {
+  namespace,
   namespaceFleetMetrics,
   namespaceActiveIssues,
   namespaceStackSummary,
 } from './mockData'
-import { SubViewHeader } from './sharedComponents'
 
 /* ─── Fleet KPI card ─────────────────────────────────────────── */
 
@@ -177,19 +178,38 @@ export function NamespaceHealthView({ onViewAsset, onViewDevice }: NamespaceHeal
       className="space-y-8"
     >
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <SubViewHeader title="Health" subtitle="Texas-Wind-Namespace · All layers" />
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground">
-            Refreshed {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </span>
-          <button
-            onClick={refresh}
-            className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50 transition-colors"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
+      <div className="flex items-start justify-between">
+        <div className="space-y-1.5">
+          <p className="text-sm font-semibold text-slate-500 uppercase tracking-widest">Azure Device Registry</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+              <Wind className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">{namespace.name}</h1>
+              <p className="text-sm text-muted-foreground">Namespace &middot; Health</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5" />
+            {namespace.region}
+            <span className="mx-1 text-border">|</span>
+            {namespace.subscription}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">
+              Refreshed {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+            <button
+              onClick={refresh}
+              className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:bg-slate-50 transition-colors"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
         </div>
       </div>
 
@@ -202,7 +222,7 @@ export function NamespaceHealthView({ onViewAsset, onViewDevice }: NamespaceHeal
           }
           <div>
             <p className={`text-sm font-semibold ${criticalCount > 0 ? 'text-red-800' : 'text-amber-800'}`}>
-              {totalIssues} active {totalIssues === 1 ? 'issue' : 'issues'} detected across your infrastructure
+              {totalIssues} active {totalIssues === 1 ? 'issue' : 'issues'} detected affecting your operations
             </p>
             <p className="text-xs text-slate-500 mt-0.5">
               {criticalCount > 0 && `${criticalCount} critical`}
@@ -270,7 +290,7 @@ export function NamespaceHealthView({ onViewAsset, onViewDevice }: NamespaceHeal
       <div className="rounded-lg border border-slate-100 shadow-sm overflow-hidden">
         <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-100 flex items-center gap-2">
           <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Infrastructure Stack Health</p>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Operational Health</p>
         </div>
         <table className="w-full">
           <thead>
