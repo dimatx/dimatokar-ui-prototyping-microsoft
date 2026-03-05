@@ -99,6 +99,8 @@ interface NewJobWizardProps {
   onCreate: (job: CreatedJob) => void
   /** Gate: Software Update job type is only available when Device Update service is Healthy */
   deviceUpdateEnabled?: boolean
+  /** Additional job type IDs to disable (with a tooltip reason) */
+  disabledJobTypes?: string[]
   /** Pre-selected device/asset IDs from the Devices or Assets page — replaces the Target step */
   preselectedDevices?: { ids: string[]; source: 'Devices' | 'Assets'; names?: Record<string, string> }
 }
@@ -186,7 +188,7 @@ const SAMPLE_SAVED_GROUPS: SavedGroup[] = [
 
 /* ─── Wizard ────────────────────────────────────────────────── */
 
-export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJobs, prefill, onClose, onCreate, deviceUpdateEnabled = false, preselectedDevices: _preselectedDevicesProp }: NewJobWizardProps) {
+export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJobs, prefill, onClose, onCreate, deviceUpdateEnabled = false, disabledJobTypes, preselectedDevices: _preselectedDevicesProp }: NewJobWizardProps) {
   // Merge prop-level preselected with any embedded in the prefill (e.g. from Update Firmware button)
   const preselectedDevices = _preselectedDevicesProp ?? (
     prefill?.preselectedIds
@@ -381,6 +383,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
                   <StepJobType
                     selected={jobType}
                     deviceUpdateEnabled={deviceUpdateEnabled}
+                    disabledJobTypes={disabledJobTypes}
                     onSelect={(id) => {
                       if (id === 'copy-existing') {
                         setJobType(id)
@@ -576,10 +579,12 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
 function StepJobType({
   selected,
   deviceUpdateEnabled,
+  disabledJobTypes,
   onSelect,
 }: {
   selected: string | null
   deviceUpdateEnabled?: boolean
+  disabledJobTypes?: string[]
   onSelect: (id: string) => void
 }) {
   const [showMore, setShowMore] = useState(false)
@@ -605,7 +610,9 @@ function StepJobType({
     const isSelected = selected === type.id
     const isDemo = type.id === 'management-update' || type.id === 'management-action' || type.id === 'cert-revocation' || type.id === 'software-update'
     const isSoftwareUpdate = type.id === 'software-update'
-    const isGated = isSoftwareUpdate && !deviceUpdateEnabled
+    const isGatedByService = isSoftwareUpdate && !deviceUpdateEnabled
+    const isGatedByDevice = !!(disabledJobTypes?.includes(type.id))
+    const isGated = isGatedByService || isGatedByDevice
     return (
       <button
         key={type.id}
@@ -637,7 +644,7 @@ function StepJobType({
         <div className="ml-auto flex items-center gap-2 shrink-0">
           {isGated && (
             <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-medium text-slate-500 tracking-wide uppercase">
-              Enable Device Update
+              {isGatedByDevice ? 'No ADU agent installed' : 'Enable Device Update'}
             </span>
           )}
           {isSelected && (

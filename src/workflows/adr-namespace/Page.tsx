@@ -1415,6 +1415,12 @@ export default function AdrNamespacePage() {
           onClose={() => setRunJobTarget(null)}
           onCreate={(job) => { setJobs(prev => [job, ...prev]); setRunJobTarget(null) }}
           deviceUpdateEnabled={deviceUpdateEnabled}
+          disabledJobTypes={
+            runJobTarget.source === 'Devices' &&
+            runJobTarget.ids.every(id => (mockDevices.find(d => d.id === id) as any)?.otaManaged === false)
+              ? ['software-update']
+              : undefined
+          }
         />,
         document.body
       )}
