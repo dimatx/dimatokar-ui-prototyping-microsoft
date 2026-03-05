@@ -5214,11 +5214,11 @@ function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob, onUpda
             <span className="text-sm font-mono text-slate-700">{device.type}</span>
           </div>
           <div className="flex flex-col gap-0.5">
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">ADU Capable</span>
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Update capable?</span>
             {(device as any).otaManaged === false ? (
-              <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">ADU agent not installed</span>
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">Agent not installed</span>
             ) : (
-              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Enabled</span>
+              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Agent installed</span>
             )}
           </div>
         </div>
