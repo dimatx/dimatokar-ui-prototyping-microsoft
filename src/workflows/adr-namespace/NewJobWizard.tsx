@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { MODAL_SHELL_CLASS, POPOVER_SHELL_CLASS } from '@/components/surfaceStyles'
 
 /* ─── Types ─────────────────────────────────────────────────── */
 
@@ -309,7 +310,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
         transition={{ duration: 0.25 }}
-        className="flex h-[min(90vh,720px)] w-full max-w-2xl flex-col rounded-lg border bg-white shadow-sm"
+        className={`flex h-[min(90vh,720px)] w-full max-w-2xl flex-col ${MODAL_SHELL_CLASS}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Header ─────────────────────────────────────────── */}
@@ -1111,7 +1112,7 @@ function StepTarget({
                       {showSaveGroupInput && (
                         <>
                           <div className="fixed inset-0 z-10" onClick={onToggleSaveGroup} />
-                          <div className="absolute right-0 top-full z-20 mt-1 w-64 rounded-lg border bg-white shadow-sm">
+                          <div className={`absolute right-0 top-full z-20 mt-1 w-64 ${POPOVER_SHELL_CLASS}`}>
                             <div className="px-3 py-2 border-b">
                               <p className="text-[11px] font-medium text-muted-foreground">Save as Group</p>
                             </div>
@@ -1315,7 +1316,7 @@ function StepArmAction({
               {propDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setPropDropdownOpen(false)} />
-                  <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-lg border bg-white shadow-sm">
+                  <div className={`absolute left-0 top-full z-20 mt-1 w-56 ${POPOVER_SHELL_CLASS}`}>
                     <div className="py-1">
                       {availableProps.map((field) => (
                         <button

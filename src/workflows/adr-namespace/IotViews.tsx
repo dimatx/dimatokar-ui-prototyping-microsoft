@@ -145,7 +145,7 @@ export function IotOpsView() {
           Deploy new IoT Operations instance
         </Button>
       </div>
-      {/* AIO charts */}
+      {/* IoT Operations charts */}
       {(() => {
         const healthy = aioInstances.filter(i => i.status === 'Healthy').length
         const degraded = aioInstances.filter(i => i.status === 'Degraded').length

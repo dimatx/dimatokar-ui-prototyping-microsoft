@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { MODAL_SHELL_CLASS } from '@/components/surfaceStyles'
 import {
   mockGroups,
   GROUP_DEVICE_TYPES, GROUP_ASSET_TYPES, GROUP_SITES, GROUP_MANUFACTURERS, GROUP_STATUSES,
@@ -39,7 +40,7 @@ function CreateGroupWizard({ onClose, onCreate }: { onClose: () => void; onCreat
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.2 }}
-        className="w-full max-w-lg rounded-lg border bg-white shadow-sm"
+        className={`w-full max-w-lg ${MODAL_SHELL_CLASS}`}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b px-6 py-4">
@@ -167,7 +168,7 @@ function EditGroupModal({ group, onClose, onSave }: {
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.2 }}
-        className="w-full max-w-lg rounded-lg border bg-white shadow-sm"
+        className={`w-full max-w-lg ${MODAL_SHELL_CLASS}`}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b px-6 py-4">

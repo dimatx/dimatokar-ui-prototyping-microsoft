@@ -543,11 +543,11 @@ export const assetObservabilityData: Record<string, AssetObsData> = {
   'AST-0004': { msgPerMin: _genSeries(48, 38, 18, 4, [[32, 40]]), errorsPerHr: _genSeries(24, 8, 4, 14), msgCount: _genCumulative(48, 41_900, 38, 4), connectivity: _genConnectivity(48, [[33, 36]]) },
   'AST-0005': { msgPerMin: _genSeries(48, 65, 10, 5),   errorsPerHr: _genSeries(24, 1,  1,  15),  msgCount: _genCumulative(48, 91_300, 65, 5),   connectivity: _genConnectivity(48) },
   'AST-0006': { msgPerMin: _genSeries(48, 26, 5,  6),   errorsPerHr: _genSeries(24, 0,  0.4,16),  msgCount: _genCumulative(48, 29_100, 26, 6),   connectivity: _genConnectivity(48) },
-  // AST-0007: Unhealthy — AIO broker CrashLoopBackOff, Baremetal memory 87% + CPU 94%
+  // AST-0007: Unhealthy — IoT Operations broker CrashLoopBackOff, Baremetal memory 87% + CPU 94%
   'AST-0007': { msgPerMin: _genSeries(48, 58, 30, 7, [[28, 48]]), errorsPerHr: _genSeries(24, 24, 12, 17), msgCount: _genCumulative(48, 77_800, 22, 7), connectivity: _genConnectivity(48, [[30, 48]]) },
   'AST-0008': { msgPerMin: _genSeries(48, 108, 18, 8),  errorsPerHr: _genSeries(24, 2,  1,  18),  msgCount: _genCumulative(48, 148_000, 108, 8),  connectivity: _genConnectivity(48) },
   'AST-0009': { msgPerMin: _genSeries(48, 60, 11, 9),   errorsPerHr: _genSeries(24, 1,  1,  19),  msgCount: _genCumulative(48, 88_400, 60, 9),   connectivity: _genConnectivity(48) },
-  // AST-0010: Degraded — AIO instance aio-tx-odessa-01 degraded (MQTT broker high latency)
+  // AST-0010: Degraded — IoT Operations instance aio-tx-odessa-01 degraded (MQTT broker high latency)
   'AST-0010': { msgPerMin: _genSeries(48, 35, 15, 10, [[20, 26], [38, 43]]), errorsPerHr: _genSeries(24, 6, 3, 20), msgCount: _genCumulative(48, 39_200, 35, 10), connectivity: _genConnectivity(48, [[20, 23]]) },
   'AST-0011': { msgPerMin: _genSeries(48, 24, 5,  21),  errorsPerHr: _genSeries(24, 0,  0.4,31),  msgCount: _genCumulative(48, 27_600, 24, 21),  connectivity: _genConnectivity(48) },
   'AST-0012': { msgPerMin: _genSeries(48, 63, 12, 22),  errorsPerHr: _genSeries(24, 1,  1,  32),  msgCount: _genCumulative(48, 87_700, 63, 22),  connectivity: _genConnectivity(48) },
@@ -629,7 +629,7 @@ export const assetStackHealth: Record<string, StackLayer[]> = {
   ],
   'AST-0005': _healthyStack('Turbine Controller #M-007', 'aio-tx-midland-01', 'k8s-midland-prod', 'host-midland-02', 'Broker running · 318 assets', '4/4 nodes ready', 'CPU 44% · Mem 62%'),
   'AST-0006': _healthyStack('Anemometer Sensor #M-023',  'aio-tx-midland-01', 'k8s-midland-prod', 'host-midland-02', 'Broker running · 318 assets', '4/4 nodes ready', 'CPU 44% · Mem 62%'),
-  // AST-0007: Unhealthy — AIO broker CrashLoopBackOff root-caused to baremetal memory+CPU
+  // AST-0007: Unhealthy — IoT Operations broker CrashLoopBackOff root-caused to baremetal memory+CPU
   'AST-0007': [
     { type: 'asset',     label: 'Asset',                       name: 'Turbine Controller #M-011', status: 'Unhealthy', detail: 'No data received · last seen 3h ago', alertMsg: 'Asset unreachable — MQTT broker unavailable' },
     { type: 'aio',       label: 'Azure IoT\u00a0Operations',   name: 'aio-tx-midland-01',        status: 'Degraded',  detail: 'aio-broker: CrashLoopBackOff · restarted 8×', alertMsg: 'Broker pod OOMKilled — insufficient memory on host' },
@@ -645,7 +645,7 @@ export const assetStackHealth: Record<string, StackLayer[]> = {
   ],
   'AST-0008': _healthyStack('Edge Gateway #MB-01',        'aio-tx-midland-01', 'k8s-midland-prod', 'host-midland-02', 'Broker running · 318 assets', '4/4 nodes ready', 'CPU 44% · Mem 62%'),
   'AST-0009': _healthyStack('Turbine Controller #O-003', 'aio-tx-odessa-01',  'k8s-odessa-prod',  'host-odessa-01',  'Broker running · 244 assets', '4/4 nodes ready', 'CPU 40% · Mem 55%'),
-  // AST-0010: Degraded — AIO instance on Odessa degraded (MQTT broker high latency)
+  // AST-0010: Degraded — IoT Operations instance on Odessa degraded (MQTT broker high latency)
   'AST-0010': [
     { type: 'asset',     label: 'Asset',                       name: 'Pitch Controller #O-017',  status: 'Degraded', detail: 'Intermittent connectivity · MQTT timeouts', alertMsg: 'MQTT broker latency affecting asset telemetry' },
     { type: 'aio',       label: 'Azure IoT\u00a0Operations',   name: 'aio-tx-odessa-01',         status: 'Degraded', detail: 'MQTT broker p99 latency: 3,200ms · throttling', alertMsg: 'Broker overloaded — possible noisy-neighbor on shared node' },
