@@ -11,6 +11,8 @@ import {
   DEVICE_STATUSES_FILTER, CONNECTIVITY_OPTIONS, DEVICE_FIRMWARE_VERSIONS,
   DEVICE_MANUFACTURERS, DEVICE_MODELS, DEVICE_SORT_FIELDS, DEVICE_ACTIONS,
   LATEST_DEVICE_FW_BY_MODEL,
+  newCveNotification,
+  isFirmwareAffectedByNewCve,
 } from './mockData'
 import { ChartCard, DonutChart, HBarChart } from './ChartHelpers'
 import { SubViewHeader, SortIcon, mkDropdown } from './SharedComponents'
@@ -72,6 +74,7 @@ export function DevicesView({ initialSearch = '', initialFirmwareFilter = '', in
   const filteredFwOptions = DEVICE_FIRMWARE_VERSIONS.filter(v => v.toLowerCase().includes(fwSearch.toLowerCase()))
 
   const activeGroup = initialGroupFilter ? mockGroups.find(g => g.id === initialGroupFilter) : undefined
+  const effectiveStatus = (d: typeof mockDevices[number]) => isFirmwareAffectedByNewCve(d.firmware) && d.status === 'Healthy' ? 'Degraded' : d.status
 
   const filtered = useMemo(() => {
     let rows = mockDevices
@@ -82,7 +85,7 @@ export function DevicesView({ initialSearch = '', initialFirmwareFilter = '', in
         if (grp.criteria.type) rows = rows.filter(d => d.type === grp.criteria.type)
         if (grp.criteria.site) rows = rows.filter(d => d.site === grp.criteria.site)
         if (grp.criteria.manufacturer) rows = rows.filter(d => d.manufacturer === grp.criteria.manufacturer)
-        if (grp.criteria.status) rows = rows.filter(d => d.status === grp.criteria.status)
+        if (grp.criteria.status) rows = rows.filter(d => effectiveStatus(d) === grp.criteria.status)
       }
     }
     if (search.trim()) {
@@ -94,7 +97,7 @@ export function DevicesView({ initialSearch = '', initialFirmwareFilter = '', in
         d.model.toLowerCase().includes(q)
       )
     }
-    if (statusValues.size > 0) rows = rows.filter(d => statusValues.has(d.status))
+    if (statusValues.size > 0) rows = rows.filter(d => statusValues.has(effectiveStatus(d)))
     if (mfrValues.size > 0) rows = rows.filter(d => mfrValues.has(d.manufacturer))
     if (modelValues.size > 0) rows = rows.filter(d => modelValues.has(d.model))
     if (connectivityValues.size > 0) rows = rows.filter(d => connectivityValues.has(d.connectivity))
@@ -358,7 +361,7 @@ export function DevicesView({ initialSearch = '', initialFirmwareFilter = '', in
                         : 'text-slate-400'
                       }`}>{d.connectivity}</span>
                     </TableCell>
-                    <TableCell><StatusBadge status={d.status} /></TableCell>
+                    <TableCell><StatusBadge status={effectiveStatus(d)} /></TableCell>
                     <TableCell className="text-xs text-muted-foreground">{d.lastSeen}</TableCell>
                   </TableRow>
                 )

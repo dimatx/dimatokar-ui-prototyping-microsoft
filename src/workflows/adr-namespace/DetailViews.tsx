@@ -15,6 +15,8 @@ import {
   deviceObservabilityData,
   assetStackHealth,
   deviceHubHealthData,
+  newCveNotification,
+  isFirmwareAffectedByNewCve,
 } from './mockData'
 import { SensitivitySelect } from './SharedComponents'
 import { MetricsRow, ConnectivityTimeline, AssetStackHealth, DeviceHubHealth, HealthSection } from './HealthComponents'
@@ -41,6 +43,8 @@ export function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, o
   const fwData = firmwareDetailData[fwVersion]
   const model = ASSET_MODEL_MAP[asset.type] ?? asset.type
   const sevColor: Record<string, string> = { Critical: '#ef4444', High: '#f97316', Medium: '#f59e0b', Low: '#94a3b8' }
+  const hasFirmwareSecurityRisk = isFirmwareAffectedByNewCve(asset.firmware)
+  const effectiveAssetStatus = hasFirmwareSecurityRisk && itemStatus === 'Available' ? 'Degraded' : itemStatus
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-6">
@@ -51,7 +55,7 @@ export function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, o
         </div>
         <div className="ml-auto flex items-center gap-2">
           <SensitivitySelect value={sensitivity} onChange={setSensitivity} />
-          <StatusBadge status={itemStatus === 'Available' ? 'Healthy' : itemStatus} />
+          <StatusBadge status={effectiveAssetStatus === 'Available' ? 'Healthy' : effectiveAssetStatus} />
         </div>
       </div>
 
@@ -208,7 +212,9 @@ export function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, o
       {(() => {
         const obs = assetObservabilityData[asset.id]
         const layers = assetStackHealth[asset.id]
-        const overallStatus = asset.status === 'Available' ? 'Healthy' : asset.status
+        const overallStatus = effectiveAssetStatus === 'Available'
+          ? 'Healthy'
+          : effectiveAssetStatus
         if (!obs || !layers) return null
         return (
           <HealthSection summaryStatus={overallStatus}>
@@ -220,7 +226,28 @@ export function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, o
               connectivity={obs.connectivity}
             />
             <ConnectivityTimeline connectivity={obs.connectivity} />
-            <AssetStackHealth layers={layers} />
+            <AssetStackHealth
+              layers={layers}
+              securityAdvisory={hasFirmwareSecurityRisk ? {
+                severity: newCveNotification.severity,
+                cveId: newCveNotification.cveId,
+                title: newCveNotification.title,
+                shortName: newCveNotification.shortName,
+                firmwareVersion: newCveNotification.firmwareVersion,
+                affectedDevices: newCveNotification.affectedDevices,
+                nvdUrl: newCveNotification.nvdUrl,
+                onRemediate: onUpdateFirmware ? () => onUpdateFirmware({
+                  jobType: 'software-update',
+                  jobName: `${newCveNotification.cveId} Mitigation - v${newCveNotification.firmwareVersion} -> v3.2.1`,
+                  jobDescription: `Deploy firmware v3.2.1 to all devices running v${newCveNotification.firmwareVersion} to mitigate ${newCveNotification.cveId} (${newCveNotification.shortName}).`,
+                  targetMode: 'custom',
+                  targetCondition: `firmware = '${newCveNotification.firmwareVersion}'`,
+                  prefillEstimateDevices: newCveNotification.affectedDevices,
+                  priority: '5',
+                }) : undefined,
+                onMoreDetails: () => onFirmwareSelect(newCveNotification.firmwareVersion),
+              } : undefined}
+            />
           </HealthSection>
         )
       })()}
@@ -249,6 +276,8 @@ export function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob,
   const fwVersion = device.firmware.startsWith('v') ? device.firmware.slice(1) : device.firmware
   const fwData = fwVersion !== '—' ? firmwareDetailData[fwVersion] : undefined
   const sevColor: Record<string, string> = { Critical: '#ef4444', High: '#f97316', Medium: '#f59e0b', Low: '#94a3b8' }
+  const hasFirmwareSecurityRisk = isFirmwareAffectedByNewCve(device.firmware)
+  const effectiveDeviceStatus = hasFirmwareSecurityRisk && itemStatus === 'Healthy' ? 'Degraded' : itemStatus
   const isEdge = device.type === 'Edge Gateway'
   const outboundEndpoint = isEdge ? 'None' : `${device.hub}.azure-devices.net`
   const inboundEndpoint = isEdge ? `mqtts://${device.name}.westus2.azure-devices.net:8883` : 'None'
@@ -262,7 +291,7 @@ export function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob,
         </div>
         <div className="ml-auto flex items-center gap-2">
           <SensitivitySelect value={sensitivity} onChange={setSensitivity} />
-          <StatusBadge status={itemStatus} />
+          <StatusBadge status={effectiveDeviceStatus} />
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${device.connectivity === 'Connected' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
             <Wifi className="h-3 w-3" />{device.connectivity}
           </span>
@@ -507,8 +536,9 @@ export function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob,
         const obs = deviceObservabilityData[device.id]
         const hubData = deviceHubHealthData[device.id]
         if (!obs || !hubData) return null
+        const healthSummaryStatus = effectiveDeviceStatus
         return (
-          <HealthSection summaryStatus={device.status === 'Healthy' ? 'Healthy' : device.status}>
+          <HealthSection summaryStatus={healthSummaryStatus === 'Healthy' ? 'Healthy' : healthSummaryStatus}>
             <MetricsRow
               isAsset={false}
               msgPerMin={obs.msgPerMin}
@@ -519,9 +549,28 @@ export function DeviceDetailView({ deviceId, onBack, onFirmwareSelect, onRunJob,
             <ConnectivityTimeline connectivity={obs.connectivity} />
             <DeviceHubHealth
               deviceName={device.name}
-              deviceStatus={device.status}
+              deviceStatus={effectiveDeviceStatus}
               deviceConnectivity={device.connectivity}
               hubData={hubData}
+              securityAdvisory={hasFirmwareSecurityRisk ? {
+                severity: newCveNotification.severity,
+                cveId: newCveNotification.cveId,
+                title: newCveNotification.title,
+                shortName: newCveNotification.shortName,
+                firmwareVersion: newCveNotification.firmwareVersion,
+                affectedDevices: newCveNotification.affectedDevices,
+                nvdUrl: newCveNotification.nvdUrl,
+                onRemediate: onUpdateFirmware ? () => onUpdateFirmware({
+                  jobType: 'software-update',
+                  jobName: `${newCveNotification.cveId} Mitigation - v${newCveNotification.firmwareVersion} -> v3.2.1`,
+                  jobDescription: `Deploy firmware v3.2.1 to all devices running v${newCveNotification.firmwareVersion} to mitigate ${newCveNotification.cveId} (${newCveNotification.shortName}).`,
+                  targetMode: 'custom',
+                  targetCondition: `firmware = '${newCveNotification.firmwareVersion}'`,
+                  prefillEstimateDevices: newCveNotification.affectedDevices,
+                  priority: '5',
+                }) : undefined,
+                onMoreDetails: () => onFirmwareSelect(newCveNotification.firmwareVersion),
+              } : undefined}
             />
           </HealthSection>
         )

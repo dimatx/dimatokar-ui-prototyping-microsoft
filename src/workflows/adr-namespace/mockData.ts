@@ -148,6 +148,24 @@ export const cveByName = [
   { cve: 'CVE-2024-9102', severity: 'Medium', devices: 985, description: 'Path traversal in file upload handler' },
 ]
 
+export const newCveNotification = {
+  severity: 'High',
+  cveId: 'CVE-2014-0160',
+  title: 'OpenSSL Information Disclosure Vulnerability',
+  shortName: 'OpenSSL Heartbleed',
+  firmwareVersion: '3.1.0',
+  affectedDevices: 6_203,
+  nvdUrl: 'https://nvd.nist.gov/vuln/detail/CVE-2014-0160',
+}
+
+export function normalizeFirmwareVersion(version: string): string {
+  return version.trim().toLowerCase().replace(/^v/, '')
+}
+
+export function isFirmwareAffectedByNewCve(version: string): boolean {
+  return normalizeFirmwareVersion(version) === normalizeFirmwareVersion(newCveNotification.firmwareVersion)
+}
+
 /* ─── Per-Firmware Detail Mock Data ─────────────────────────── */
 
 export const firmwareDetailData: Record<string, {
@@ -713,6 +731,15 @@ export const namespaceFleetMetrics = {
 }
 
 export const namespaceActiveIssues = [
+  {
+    id: 'ISS-000',
+    severity: 'Critical' as const,
+    layer: 'Firmware Security',
+    resource: 'turbine-ctrl-x700-v3.1.0.bin',
+    symptom: `${newCveNotification.affectedDevices.toLocaleString()} devices are vulnerable to ${newCveNotification.cveId} (${newCveNotification.shortName}) on firmware v${newCveNotification.firmwareVersion}`,
+    since: '12 min ago',
+    deviceId: 'DEV-0013',
+  },
   {
     id: 'ISS-001',
     severity: 'Critical' as const,

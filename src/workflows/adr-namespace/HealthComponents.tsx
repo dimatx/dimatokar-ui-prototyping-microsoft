@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import {
   Drill, Zap, Layers, Server, Wifi, WifiOff, CloudUpload,
   AlertTriangle, CheckCircle2, XCircle, AlertCircle,
-  TrendingUp, TrendingDown, Minus,
+  TrendingUp, TrendingDown, Minus, ExternalLink, Play, Shield,
 } from 'lucide-react'
 import { SparklineChart } from '@/components/SparklineChart'
 import { StatusBadge } from '@/components/StatusBadge'
@@ -185,18 +185,44 @@ function layerBorder(status: StackLayer['status']) {
 
 interface AssetStackHealthProps {
   layers: StackLayer[]
+  securityAdvisory?: {
+    severity: string
+    cveId: string
+    title: string
+    shortName: string
+    firmwareVersion: string
+    affectedDevices: number
+    nvdUrl: string
+    onRemediate?: () => void
+    onMoreDetails: () => void
+  }
 }
 
-export function AssetStackHealth({ layers }: AssetStackHealthProps) {
+export function AssetStackHealth({ layers, securityAdvisory }: AssetStackHealthProps) {
   return (
     <div className="space-y-2">
-      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Infrastructure Stack</p>
+      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">End-to-End</p>
       <div className="relative">
         {layers.map((layer, idx) => {
+          const hasSecurityAdvisory = layer.type === 'asset' && !!securityAdvisory
           const Icon = layerIcon(layer.type)
           const isLast = idx === layers.length - 1
-          const iconColor = layer.status === 'Healthy' ? 'text-slate-500' : layer.status === 'Unhealthy' ? 'text-red-600' : 'text-amber-600'
-          const iconBg = layer.status === 'Healthy' ? 'bg-slate-100' : layer.status === 'Unhealthy' ? 'bg-red-100' : 'bg-amber-100'
+          const iconColor = hasSecurityAdvisory
+            ? 'text-red-600'
+            : layer.status === 'Healthy'
+            ? 'text-slate-500'
+            : layer.status === 'Unhealthy'
+            ? 'text-red-600'
+            : 'text-amber-600'
+          const iconBg = hasSecurityAdvisory
+            ? 'bg-red-100'
+            : layer.status === 'Healthy'
+            ? 'bg-slate-100'
+            : layer.status === 'Unhealthy'
+            ? 'bg-red-100'
+            : 'bg-amber-100'
+          const wrapperCls = hasSecurityAdvisory ? 'border-red-300 bg-red-50' : layerBorder(layer.status)
+          const statusForIcon = hasSecurityAdvisory ? 'Unhealthy' : layer.status
           return (
             <div key={layer.type}>
               {layer.nodes ? (
@@ -204,7 +230,7 @@ export function AssetStackHealth({ layers }: AssetStackHealthProps) {
                   initial={{ opacity: 0, x: -4 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.06 }}
-                  className={`rounded-lg border overflow-hidden ${layerBorder(layer.status)}`}
+                  className={`rounded-lg border overflow-hidden ${wrapperCls}`}
                 >
                   <div className="px-4 py-2.5 flex items-center gap-2 border-b border-slate-100/80">
                     <div className={`p-1.5 rounded-md ${iconBg}`}>
@@ -240,7 +266,7 @@ export function AssetStackHealth({ layers }: AssetStackHealthProps) {
                   initial={{ opacity: 0, x: -4 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.06 }}
-                  className={`rounded-lg border px-4 py-3 flex items-start gap-3 ${layerBorder(layer.status)}`}
+                  className={`rounded-lg border px-4 py-3 flex items-start gap-3 ${wrapperCls}`}
                 >
                   <div className="mt-0.5 flex-shrink-0">
                     <div className={`p-1.5 rounded-md ${iconBg}`}>
@@ -250,10 +276,48 @@ export function AssetStackHealth({ layers }: AssetStackHealthProps) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{layer.label}</span>
-                      <StatusIcon status={layer.status} />
+                      <StatusIcon status={statusForIcon as StackLayer['status']} />
                       <span className="text-xs font-semibold text-slate-700 font-mono">{layer.name}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{layer.detail}</p>
+                    {hasSecurityAdvisory && securityAdvisory && (
+                      <div className="mt-2 rounded-md border border-red-200 bg-red-100/70 px-2.5 py-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[11px] font-semibold text-red-900">Security advisory</span>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-200 text-red-800 border border-red-300">{securityAdvisory.severity.toUpperCase()}</span>
+                          <a
+                            href={securityAdvisory.nvdUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-red-700 hover:text-red-900 hover:underline"
+                          >
+                            {securityAdvisory.cveId}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                        <p className="text-xs text-red-800 mt-1">
+                          <span className="font-semibold">{securityAdvisory.title}</span> ({securityAdvisory.shortName}) was identified in firmware v{securityAdvisory.firmwareVersion}.
+                        </p>
+                        <div className="mt-2 flex items-center gap-2">
+                          {securityAdvisory.onRemediate && (
+                            <button
+                              onClick={securityAdvisory.onRemediate}
+                              className="inline-flex items-center gap-1.5 rounded-md bg-red-700 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-red-800 transition-colors"
+                            >
+                              <Play className="h-3 w-3" />
+                              Remediate via OTA {'->'} v3.2.1
+                            </button>
+                          )}
+                          <button
+                            onClick={securityAdvisory.onMoreDetails}
+                            className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50 transition-colors"
+                          >
+                            <Shield className="h-3 w-3" />
+                            More details
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     {layer.alertMsg && (
                       <div className={`mt-1.5 flex items-start gap-1.5 text-xs rounded px-2 py-1 ${layer.status === 'Unhealthy' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
                         <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
@@ -283,12 +347,26 @@ interface DeviceHubHealthProps {
   deviceStatus: string
   deviceConnectivity: string
   hubData: HubHealthData
+  securityAdvisory?: {
+    severity: string
+    cveId: string
+    title: string
+    shortName: string
+    firmwareVersion: string
+    affectedDevices: number
+    nvdUrl: string
+    onRemediate?: () => void
+    onMoreDetails: () => void
+  }
 }
 
-export function DeviceHubHealth({ deviceName, deviceStatus, deviceConnectivity, hubData }: DeviceHubHealthProps) {
+export function DeviceHubHealth({ deviceName, deviceStatus, deviceConnectivity, hubData, securityAdvisory }: DeviceHubHealthProps) {
   const isConnected = deviceConnectivity === 'Connected'
+  const hasSecurityAdvisory = !!securityAdvisory
 
-  const deviceLayerBorder = deviceStatus === 'Unhealthy'
+  const deviceLayerBorder = hasSecurityAdvisory
+    ? 'border-red-300 bg-red-50'
+    : deviceStatus === 'Unhealthy'
     ? 'border-red-300 bg-red-50'
     : deviceStatus === 'Degraded'
     ? 'border-amber-300 bg-amber-50'
@@ -300,7 +378,8 @@ export function DeviceHubHealth({ deviceName, deviceStatus, deviceConnectivity, 
     ? 'border-amber-200 bg-amber-50'
     : 'border-slate-100 bg-white'
 
-  const deviceStatusMapped = deviceStatus === 'Healthy' ? 'Healthy'
+  const deviceStatusMapped = hasSecurityAdvisory ? 'Unhealthy'
+    : deviceStatus === 'Healthy' ? 'Healthy'
     : deviceStatus === 'Degraded' ? 'Degraded'
     : deviceStatus === 'Unhealthy' ? 'Unhealthy'
     : 'Inactive' as const
@@ -311,7 +390,7 @@ export function DeviceHubHealth({ deviceName, deviceStatus, deviceConnectivity, 
 
   return (
     <div className="space-y-2">
-      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Infrastructure Stack</p>
+      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">End-to-End</p>
       <div>
         {/* Device layer */}
         <motion.div
@@ -320,8 +399,8 @@ export function DeviceHubHealth({ deviceName, deviceStatus, deviceConnectivity, 
           className={`rounded-lg border px-4 py-3 flex items-start gap-3 ${deviceLayerBorder}`}
         >
           <div className="mt-0.5">
-            <div className={`p-1.5 rounded-md ${deviceStatus === 'Healthy' ? 'bg-slate-100' : deviceStatus === 'Unhealthy' ? 'bg-red-100' : 'bg-amber-100'}`}>
-              <Wifi className={`h-3.5 w-3.5 ${deviceStatus === 'Healthy' ? 'text-slate-500' : deviceStatus === 'Unhealthy' ? 'text-red-600' : 'text-amber-600'}`} />
+            <div className={`p-1.5 rounded-md ${hasSecurityAdvisory ? 'bg-red-100' : deviceStatus === 'Healthy' ? 'bg-slate-100' : deviceStatus === 'Unhealthy' ? 'bg-red-100' : 'bg-amber-100'}`}>
+              <Wifi className={`h-3.5 w-3.5 ${hasSecurityAdvisory ? 'text-red-600' : deviceStatus === 'Healthy' ? 'text-slate-500' : deviceStatus === 'Unhealthy' ? 'text-red-600' : 'text-amber-600'}`} />
             </div>
           </div>
           <div className="flex-1 min-w-0">
@@ -337,6 +416,45 @@ export function DeviceHubHealth({ deviceName, deviceStatus, deviceConnectivity, 
               }
               <span className="text-xs text-muted-foreground">{deviceConnectivity}</span>
             </div>
+            {hasSecurityAdvisory && securityAdvisory && (
+              <div className="mt-2 rounded-md border border-red-200 bg-red-100/70 px-2.5 py-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] font-semibold text-red-900">Security advisory</span>
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-200 text-red-800 border border-red-300">{securityAdvisory.severity.toUpperCase()}</span>
+                  <a
+                    href={securityAdvisory.nvdUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-red-700 hover:text-red-900 hover:underline"
+                  >
+                    {securityAdvisory.cveId}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+                <p className="text-xs text-red-800 mt-1">
+                  <span className="font-semibold">{securityAdvisory.title}</span> ({securityAdvisory.shortName}) was identified in firmware v{securityAdvisory.firmwareVersion}.
+                  &nbsp;<span className="font-semibold">{securityAdvisory.affectedDevices.toLocaleString()} devices</span> are affected.
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  {securityAdvisory.onRemediate && (
+                    <button
+                      onClick={securityAdvisory.onRemediate}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-red-700 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-red-800 transition-colors"
+                    >
+                      <Play className="h-3 w-3" />
+                      Remediate via OTA {'->'} v3.2.1
+                    </button>
+                  )}
+                  <button
+                    onClick={securityAdvisory.onMoreDetails}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50 transition-colors"
+                  >
+                    <Shield className="h-3 w-3" />
+                    More details
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
 

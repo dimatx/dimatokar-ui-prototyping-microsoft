@@ -10,6 +10,7 @@ import {
   assetHealthData, assetsByManufacturer, assetsBySite,
   ASSET_STATUSES, ASSET_MANUFACTURERS, ASSET_FIRMWARE_VERSIONS,
   LATEST_ASSET_FW_BY_TYPE, ASSET_SORT_FIELDS, DEVICE_ACTIONS,
+  isFirmwareAffectedByNewCve,
 } from './mockData'
 import { ChartCard, DonutChart, HBarChart } from './ChartHelpers'
 import { SubViewHeader, SortIcon, mkDropdown } from './SharedComponents'
@@ -58,6 +59,7 @@ export function AssetsView({ initialSearch = '', onRunJob, onAssetSelect, onUpda
   const filteredStatusOptions = ASSET_STATUSES.filter(v => v.toLowerCase().includes(statusSearch.toLowerCase()))
   const filteredMfrOptions = ASSET_MANUFACTURERS.filter(v => v.toLowerCase().includes(mfrSearch.toLowerCase()))
   const filteredFwOptions = ASSET_FIRMWARE_VERSIONS.filter(v => v.toLowerCase().includes(fwSearch.toLowerCase()))
+  const effectiveStatus = (a: typeof mockAssets[number]) => isFirmwareAffectedByNewCve(a.firmware) && a.status === 'Available' ? 'Degraded' : a.status
 
   const filtered = useMemo(() => {
     let rows = mockAssets
@@ -69,7 +71,7 @@ export function AssetsView({ initialSearch = '', onRunJob, onAssetSelect, onUpda
         a.site.toLowerCase().includes(q) || a.firmware.toLowerCase().includes(q)
       )
     }
-    if (statusValues.size > 0) rows = rows.filter(a => statusValues.has(a.status))
+    if (statusValues.size > 0) rows = rows.filter(a => statusValues.has(effectiveStatus(a)))
     if (mfrValues.size > 0) rows = rows.filter(a => mfrValues.has(a.manufacturer))
     if (fwValues.size > 0) rows = rows.filter(a => fwValues.has(a.firmware))
     return [...rows].sort((a, b) => {
@@ -240,7 +242,7 @@ export function AssetsView({ initialSearch = '', onRunJob, onAssetSelect, onUpda
                       )}
                     </div>
                   </TableCell>
-                  <TableCell><StatusBadge status={a.status} /></TableCell>
+                  <TableCell><StatusBadge status={effectiveStatus(a)} /></TableCell>
                   <TableCell className="text-xs text-muted-foreground">{a.lastSeen}</TableCell>
                 </TableRow>
               ))}
