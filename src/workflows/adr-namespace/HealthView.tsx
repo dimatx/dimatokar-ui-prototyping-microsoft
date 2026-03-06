@@ -222,13 +222,13 @@ export function NamespaceHealthView({ onViewAsset, onViewDevice }: NamespaceHeal
           }
           <div>
             <p className={`text-sm font-semibold ${criticalCount > 0 ? 'text-red-800' : 'text-amber-800'}`}>
-              {totalIssues} active {totalIssues === 1 ? 'issue' : 'issues'} detected affecting your operations
+              {totalIssues} active {totalIssues === 1 ? 'issue' : 'issues'} affecting your operations
             </p>
             <p className="text-xs text-slate-500 mt-0.5">
               {criticalCount > 0 && `${criticalCount} critical`}
               {criticalCount > 0 && warningCount > 0 && ' · '}
               {warningCount > 0 && `${warningCount} warning`}
-              {' · '}Monitoring: assets, devices, IoT Operations instances, IoT Hubs
+              {' · '}Assets, Devices, IoT Operations instances, and IoT Hubs.
             </p>
           </div>
           <div className="ml-auto flex items-center gap-2">

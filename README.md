@@ -10,7 +10,7 @@ npm install
 npm run dev
 ```
 
-Open **http://localhost:5173** in your browser.
+Open **<http://localhost:5173>** in your browser.
 
 ## Deployment
 
@@ -19,7 +19,7 @@ Pushes to `main` auto-deploy to **Azure Static Web Apps** via GitHub Actions (`.
 ## Workflows
 
 | Workflow | Description |
-|----------|-------------|
+| -------- | ----------- |
 | **ADR Namespace** | Texas-Wind namespace — devices, assets, IoT Hubs, IoT Operations instances, jobs, firmware, credentials, policies, provisioning, certificate management, groups. Full drill-down with device/asset detail views, a new-job wizard, and mock state transitions. |
 | **Job List** | All namespace jobs — filtering, sorting, status summary cards. |
 | **Job Detail** | Single job execution view — device pie chart, per-hub progress bars, activity timeline. |
@@ -43,7 +43,7 @@ import { YourIcon } from 'lucide-react'
 },
 ```
 
-4. Save — hot reload will show it in the sidebar immediately.
+1. Save — hot reload will show it in the sidebar immediately.
 
 ## Removing a Workflow
 
@@ -55,7 +55,7 @@ That's it. No other files to touch.
 ## Available Components
 
 | Component | Import | Use For |
-|-----------|--------|---------|
+| --------- | ------ | ------- |
 | MetricCard | `@/components/MetricCard` | KPI cards with sparkline charts |
 | StatusBadge | `@/components/StatusBadge` | Status pills (Healthy, Warning, Error, etc.) |
 | SparklineChart | `@/components/SparklineChart` | Inline SVG line charts |
@@ -94,7 +94,7 @@ import { Settings, Users, BarChart3 } from 'lucide-react'
 
 ## Project Structure
 
-```
+```text
 src/
 ├── components/
 │   ├── layout/           ← Shell (sidebar, top nav)
