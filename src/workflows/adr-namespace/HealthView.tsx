@@ -268,7 +268,6 @@ export function NamespaceHealthView({ onViewAsset, onViewDevice }: NamespaceHeal
           <FleetKpiCard
             title="Errors / hr"
             value={lastErr.toLocaleString()}
-            sub="Across all assets + devices"
             data={m.totalErrorsPerHr}
             color="#ef4444"
             trend="up"
@@ -284,7 +283,6 @@ export function NamespaceHealthView({ onViewAsset, onViewDevice }: NamespaceHeal
           <FleetKpiCard
             title="Connected Devices"
             value={lastConn.toLocaleString()}
-            sub={`of ${(12_847).toLocaleString()} total`}
             data={m.connectedDevices}
             color="#10b981"
             trend="flat"

@@ -753,6 +753,7 @@ export const namespaceActiveIssues = [
 
 export const namespaceStackSummary = [
   { layer: 'Assets',                         total: 3_215, healthy: 2_926, degraded: 198,  unhealthy: 91  },
+  { layer: 'Devices',                        total: 12_847, healthy: 11_423, degraded: 847, unhealthy: 341 },
   { layer: 'Azure IoT\u00a0Operations',      total: 5,     healthy: 3,     degraded: 2,    unhealthy: 0   },
   { layer: 'IoT Hubs',                       total: 4,     healthy: 3,     degraded: 1,    unhealthy: 0   },
   { layer: 'Kubernetes Clusters',            total: 5,     healthy: 4,     degraded: 1,    unhealthy: 0   },
