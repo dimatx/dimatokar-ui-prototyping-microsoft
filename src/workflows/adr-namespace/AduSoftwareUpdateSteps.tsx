@@ -40,7 +40,7 @@ export interface AduWizardState {
 
 export const initialAduState: AduWizardState = {
   selectedUpdate: null,
-  rollback: { enabled: false, thresholdPercent: 25, rollbackVersion: '1.3.0' },
+  rollback: { enabled: false, thresholdPercent: 25, rollbackVersion: '3.1.0' },
 }
 
 // ─── Validation ───────────────────────────────────────────────────────────────
