@@ -39,7 +39,7 @@ function CreateGroupWizard({ onClose, onCreate }: { onClose: () => void; onCreat
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.2 }}
-        className="w-full max-w-lg rounded-xl border bg-white shadow-xl"
+        className="w-full max-w-lg rounded-lg border bg-white shadow-sm"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b px-6 py-4">
@@ -167,7 +167,7 @@ function EditGroupModal({ group, onClose, onSave }: {
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.2 }}
-        className="w-full max-w-lg rounded-xl border bg-white shadow-xl"
+        className="w-full max-w-lg rounded-lg border bg-white shadow-sm"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b px-6 py-4">

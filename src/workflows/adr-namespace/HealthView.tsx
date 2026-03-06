@@ -228,7 +228,7 @@ export function NamespaceHealthView({ onViewAsset, onViewDevice }: NamespaceHeal
               {criticalCount > 0 && `${criticalCount} critical`}
               {criticalCount > 0 && warningCount > 0 && ' · '}
               {warningCount > 0 && `${warningCount} warning`}
-              {' · '}Monitoring: assets, devices, AIO instances, IoT Hubs
+              {' · '}Monitoring: assets, devices, IoT Operations instances, IoT Hubs
             </p>
           </div>
           <div className="ml-auto flex items-center gap-2">

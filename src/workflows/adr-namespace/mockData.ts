@@ -7,6 +7,15 @@ import {
   CheckCircle2,
   X,
 } from 'lucide-react'
+import {
+  type Hub,
+  initialHubs as sharedInitialHubs,
+  aioInstances as sharedAioInstances,
+} from '@/workflows/shared/fleet'
+
+export type { Hub } from '@/workflows/shared/fleet'
+export const initialHubs = sharedInitialHubs
+export const aioInstances = sharedAioInstances
 
 /* ─── Mock Data ───────────────────────────────────────────────── */
 
@@ -47,32 +56,11 @@ export const addableServices: NamespaceService[] = [
   { name: 'Future 3P Integration', icon: Puzzle, status: 'Disabled', configurable: true, description: 'Connect third-party services to the namespace' },
 ]
 
-export interface Hub {
-  name: string
-  region: string
-  devices: number
-  status: string
-}
-
-export const initialHubs: Hub[] = [
-  { name: 'hub-tx-wind-01', region: 'South Central US', devices: 4_250, status: 'Healthy' },
-  { name: 'hub-tx-wind-02', region: 'South Central US', devices: 3_980, status: 'Healthy' },
-  { name: 'hub-tx-wind-03', region: 'East US 2', devices: 2_617, status: 'Healthy' },
-  { name: 'hub-tx-wind-04', region: 'East US 2', devices: 2_000, status: 'Degraded' },
-]
-
 export const availableHubs: Hub[] = [
   { name: 'hub-zava-westus-01', region: 'West US 2', devices: 1_820, status: 'Healthy' },
   { name: 'hub-zava-eastus-05', region: 'East US 2', devices: 3_100, status: 'Healthy' },
   { name: 'hub-zava-euwest-01', region: 'West Europe', devices: 950, status: 'Healthy' },
   { name: 'hub-zava-jpeast-01', region: 'Japan East', devices: 420, status: 'Healthy' },
-]
-
-export const aioInstances = [
-  { name: 'aio-tx-abilene-01',  site: 'Abilene Wind Farm',    status: 'Healthy',  connectedDevices: 842, assets: 434 },
-  { name: 'aio-tx-midland-01',  site: 'Midland Wind Farm',    status: 'Healthy',  connectedDevices: 671, assets: 318 },
-  { name: 'aio-tx-sanangelo-01',site: 'San Angelo Wind Farm', status: 'Degraded', connectedDevices: 512, assets: 244 },
-  { name: 'aio-tx-lubbock-01',  site: 'Lubbock Wind Farm',   status: 'Healthy',  connectedDevices: 390, assets: 187 },
 ]
 
 export const firmwareImages = [

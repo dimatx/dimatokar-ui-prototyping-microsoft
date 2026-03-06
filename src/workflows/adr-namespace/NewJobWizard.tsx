@@ -111,14 +111,14 @@ const JOB_TYPES_MAIN = [
     name: 'Management Action',
     description: 'Take an action on devices and assets.',
     icon: Activity,
-    tags: ['Hub', 'AIO'],
+    tags: ['Hub', 'IoT Operations'],
   },
   {
     id: 'management-update',
     name: 'Management Update',
     description: 'Update properties on devices and assets.',
     icon: Settings2,
-    tags: ['Hub', 'AIO'],
+    tags: ['Hub', 'IoT Operations'],
   },
 ]
 
@@ -309,7 +309,7 @@ export function NewJobWizard({ linkedHubs, aioInstances, totalAssets, existingJo
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
         transition={{ duration: 0.25 }}
-        className="flex h-[min(90vh,720px)] w-full max-w-2xl flex-col rounded-xl border bg-white shadow-2xl"
+        className="flex h-[min(90vh,720px)] w-full max-w-2xl flex-col rounded-lg border bg-white shadow-sm"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Header ─────────────────────────────────────────── */}
@@ -1111,7 +1111,7 @@ function StepTarget({
                       {showSaveGroupInput && (
                         <>
                           <div className="fixed inset-0 z-10" onClick={onToggleSaveGroup} />
-                          <div className="absolute right-0 top-full z-20 mt-1 w-64 rounded-lg border bg-white shadow-lg">
+                          <div className="absolute right-0 top-full z-20 mt-1 w-64 rounded-lg border bg-white shadow-sm">
                             <div className="px-3 py-2 border-b">
                               <p className="text-[11px] font-medium text-muted-foreground">Save as Group</p>
                             </div>
@@ -1315,7 +1315,7 @@ function StepArmAction({
               {propDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setPropDropdownOpen(false)} />
-                  <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-lg border bg-white shadow-lg">
+                  <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-lg border bg-white shadow-sm">
                     <div className="py-1">
                       {availableProps.map((field) => (
                         <button

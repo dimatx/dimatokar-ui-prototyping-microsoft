@@ -8,11 +8,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { StatusBadge } from '@/components/StatusBadge'
-import { ALL_JOBS, JobRecord } from '@/workflows/adr-namespace/jobData'
-import { upsertJob } from '@/workflows/adr-namespace/jobStore'
-import { NewJobWizard } from '@/workflows/adr-namespace/NewJobWizard'
-import type { JobPrefill, CreatedJob } from '@/workflows/adr-namespace/NewJobWizard'
-import type { Hub } from '@/workflows/adr-namespace/Page'
+import { ALL_JOBS, type JobRecord, upsertJob } from '@/workflows/shared/jobs'
+import { initialHubs, aioInstances } from '@/workflows/shared/fleet'
+import { NewJobWizard, type JobPrefill, type CreatedJob } from '@/workflows/shared/newJobWizard'
 // ─── Map job display type → wizard job-type id ───────────────────────────────
 const TYPE_TO_WIZARD_ID: Record<string, string> = {
   'Software Update': 'software-update',
@@ -21,14 +19,9 @@ const TYPE_TO_WIZARD_ID: Record<string, string> = {
   'Management Update': 'management-update',
 }
 
-// ─── Mock hub + aio data (same fleet as namespace page) ──────────────────────
-const MOCK_HUBS: Hub[] = [
-  { name: 'hub-tx-wind-01', region: 'South Central US', devices: 4_250, status: 'Healthy' },
-  { name: 'hub-tx-wind-02', region: 'South Central US', devices: 3_980, status: 'Healthy' },
-  { name: 'hub-tx-wind-03', region: 'East US 2', devices: 2_617, status: 'Healthy' },
-  { name: 'hub-tx-wind-04', region: 'East US 2', devices: 2_000, status: 'Degraded' },
-]
-const MOCK_AIO = [{ name: 'aio-tx-abilene-01', site: 'Abilene Wind Farm', status: 'Healthy', connectedDevices: 3200, assets: 3200 }]
+// Shared fleet data, kept in one source so namespace and job views stay consistent.
+const MOCK_HUBS = initialHubs
+const MOCK_AIO = aioInstances
 const MOCK_EXISTING_JOBS = ALL_JOBS.map(j => ({ id: j.id, name: j.name, type: j.type, status: j.status, targets: `${j.targetDevices.toLocaleString()} devices`, started: j.started }))
 
 const FILTER_STYLES: Record<string, { dot: string; badge: string }> = {

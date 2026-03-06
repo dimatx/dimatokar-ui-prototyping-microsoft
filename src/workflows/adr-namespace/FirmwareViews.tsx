@@ -745,7 +745,7 @@ export function OtaManagementView({ onFirmwareSelect, onDeploy, autoOpenUpload, 
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ duration: 0.15 }}
-              className="w-full max-w-sm rounded-xl border bg-white shadow-xl"
+              className="w-full max-w-sm rounded-lg border bg-white shadow-sm"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 px-6 py-5 border-b">
@@ -783,7 +783,7 @@ export function OtaManagementView({ onFirmwareSelect, onDeploy, autoOpenUpload, 
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ duration: 0.2 }}
-              className="w-full max-w-md rounded-xl border bg-white shadow-xl"
+              className="w-full max-w-md rounded-lg border bg-white shadow-sm"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b px-6 py-4">

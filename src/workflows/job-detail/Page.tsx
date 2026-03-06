@@ -6,9 +6,8 @@ import {
   User, CalendarClock, Target, Layers, Info, ChevronRight, Package,
 } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge'
-import { ALL_JOBS } from '@/workflows/adr-namespace/jobData'
-import { findDynamicJob } from '@/workflows/adr-namespace/jobStore'
-import type { JobRecord, HubProgress, TimelineEvent } from '@/workflows/adr-namespace/jobData'
+import { ALL_JOBS, findDynamicJob } from '@/workflows/shared/jobs'
+import type { JobRecord, HubProgress, TimelineEvent } from '@/workflows/shared/jobs'
 
 // ─── Donut chart ─────────────────────────────────────────────────────────────
 
