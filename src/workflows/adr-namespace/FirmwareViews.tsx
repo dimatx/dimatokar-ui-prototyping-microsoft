@@ -628,7 +628,7 @@ export function OtaManagementView({ onFirmwareSelect, onDeploy, autoOpenUpload, 
               {images.map(fw => {
                 const isLatest = fw.version === latestByModel[fw.model]
                 return (
-                  <TableRow key={fw.file} className="hover:bg-slate-50/80">
+                  <TableRow key={fw.file} className="group hover:bg-slate-50/80">
                     <TableCell className="font-mono text-xs text-muted-foreground">{fw.file}</TableCell>
                     <TableCell className="text-sm">{fw.manufacturer}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{fw.model}</TableCell>
@@ -662,13 +662,6 @@ export function OtaManagementView({ onFirmwareSelect, onDeploy, autoOpenUpload, 
                     <TableCell>
                       <div className="flex items-center justify-end gap-1.5">
                         <button
-                          onClick={() => onDeploy?.({ jobType: 'software-update' })}
-                          className="inline-flex items-center gap-1 rounded-md bg-slate-900 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-slate-700"
-                        >
-                          <Play className="h-3 w-3" />
-                          Deploy
-                        </button>
-                        <button
                           onClick={() => onFirmwareSelect?.(fw.version)}
                           className="inline-flex items-center gap-1 rounded-md border border-blue-200 px-2.5 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors"
                         >
@@ -676,8 +669,15 @@ export function OtaManagementView({ onFirmwareSelect, onDeploy, autoOpenUpload, 
                           Analyze
                         </button>
                         <button
+                          onClick={() => onDeploy?.({ jobType: 'software-update' })}
+                          className="inline-flex items-center gap-1 rounded-md bg-slate-900 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-slate-700"
+                        >
+                          <Play className="h-3 w-3" />
+                          Deploy
+                        </button>
+                        <button
                           onClick={() => setImages(prev => prev.filter(f => f.file !== fw.file))}
-                          className="rounded-md border border-slate-200 p-1 text-slate-400 hover:text-red-500 hover:border-red-200 transition-colors"
+                          className="ml-1 rounded-md border border-transparent p-1 text-slate-300 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all"
                           title="Remove firmware image"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
