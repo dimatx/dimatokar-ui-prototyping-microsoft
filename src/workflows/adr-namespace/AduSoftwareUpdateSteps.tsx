@@ -109,7 +109,7 @@ export function StepSelectUpdate({
           const isSelected = selectedKey === key
           const isExpanded = expandedKey === key
           const isLatest = update.version === ADU_UPDATES[ADU_UPDATES.length - 1].version
-          const isBlocked = update.version === '1.3.0'
+          const isBlocked = update.version === '3.1.0'
 
           return (
             <div
