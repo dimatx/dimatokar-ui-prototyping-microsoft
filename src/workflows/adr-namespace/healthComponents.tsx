@@ -195,34 +195,74 @@ export function AssetStackHealth({ layers }: AssetStackHealthProps) {
         {layers.map((layer, idx) => {
           const Icon = layerIcon(layer.type)
           const isLast = idx === layers.length - 1
+          const iconColor = layer.status === 'Healthy' ? 'text-slate-500' : layer.status === 'Unhealthy' ? 'text-red-600' : 'text-amber-600'
+          const iconBg = layer.status === 'Healthy' ? 'bg-slate-100' : layer.status === 'Unhealthy' ? 'bg-red-100' : 'bg-amber-100'
           return (
             <div key={layer.type}>
-              <motion.div
-                initial={{ opacity: 0, x: -4 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.06 }}
-                className={`rounded-lg border px-4 py-3 flex items-start gap-3 ${layerBorder(layer.status)}`}
-              >
-                <div className="mt-0.5 flex-shrink-0">
-                  <div className={`p-1.5 rounded-md ${layer.status === 'Healthy' ? 'bg-slate-100' : layer.status === 'Unhealthy' ? 'bg-red-100' : 'bg-amber-100'}`}>
-                    <Icon className={`h-3.5 w-3.5 ${layer.status === 'Healthy' ? 'text-slate-500' : layer.status === 'Unhealthy' ? 'text-red-600' : 'text-amber-600'}`} />
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
+              {layer.nodes ? (
+                <motion.div
+                  initial={{ opacity: 0, x: -4 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.06 }}
+                  className={`rounded-lg border overflow-hidden ${layerBorder(layer.status)}`}
+                >
+                  <div className="px-4 py-2.5 flex items-center gap-2 border-b border-slate-100/80">
+                    <div className={`p-1.5 rounded-md ${iconBg}`}>
+                      <Icon className={`h-3.5 w-3.5 ${iconColor}`} />
+                    </div>
                     <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{layer.label}</span>
                     <StatusIcon status={layer.status} />
-                    <span className="text-xs font-semibold text-slate-700 font-mono">{layer.name}</span>
+                    <span className="text-[11px] text-muted-foreground ml-auto">{layer.nodes.length} hosts</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">{layer.detail}</p>
-                  {layer.alertMsg && (
-                    <div className={`mt-1.5 flex items-start gap-1.5 text-xs rounded px-2 py-1 ${layer.status === 'Unhealthy' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                      <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
-                      <span>{layer.alertMsg}</span>
+                  <div className="divide-y divide-slate-100">
+                    {layer.nodes.map(node => (
+                      <div
+                        key={node.name}
+                        className={`px-4 py-2 ${node.status === 'Unhealthy' ? 'bg-red-50/60' : node.status !== 'Healthy' ? 'bg-amber-50/40' : ''}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <StatusIcon status={node.status} />
+                          <span className="text-xs font-mono text-slate-700">{node.name}</span>
+                          <span className="text-xs text-muted-foreground ml-1">{node.detail}</span>
+                        </div>
+                        {node.alertMsg && (
+                          <div className={`mt-1 ml-7 flex items-start gap-1.5 text-[11px] rounded px-1.5 py-0.5 w-fit ${node.status === 'Unhealthy' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                            <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+                            <span>{node.alertMsg}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, x: -4 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.06 }}
+                  className={`rounded-lg border px-4 py-3 flex items-start gap-3 ${layerBorder(layer.status)}`}
+                >
+                  <div className="mt-0.5 flex-shrink-0">
+                    <div className={`p-1.5 rounded-md ${iconBg}`}>
+                      <Icon className={`h-3.5 w-3.5 ${iconColor}`} />
                     </div>
-                  )}
-                </div>
-              </motion.div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{layer.label}</span>
+                      <StatusIcon status={layer.status} />
+                      <span className="text-xs font-semibold text-slate-700 font-mono">{layer.name}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{layer.detail}</p>
+                    {layer.alertMsg && (
+                      <div className={`mt-1.5 flex items-start gap-1.5 text-xs rounded px-2 py-1 ${layer.status === 'Unhealthy' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                        <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+                        <span>{layer.alertMsg}</span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
               {!isLast && (
                 <div className="flex justify-start pl-[22px]">
                   <div className="w-px h-3 bg-slate-300" />

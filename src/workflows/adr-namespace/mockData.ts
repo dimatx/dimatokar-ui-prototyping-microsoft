@@ -607,6 +607,7 @@ export interface StackLayer {
   status: 'Healthy' | 'Degraded' | 'Warning' | 'Unhealthy'
   detail: string
   alertMsg?: string
+  nodes?: Array<{ name: string; status: 'Healthy' | 'Degraded' | 'Warning' | 'Unhealthy'; detail: string; alertMsg?: string }>
 }
 
 function _healthyStack(assetName: string, aioName: string, k8sName: string, baremetalName: string, aioDetail: string, k8sDetail: string, baremetalDetail: string): StackLayer[] {
@@ -628,7 +629,15 @@ export const assetStackHealth: Record<string, StackLayer[]> = {
     { type: 'asset',     label: 'Asset',                       name: 'Pitch Controller #A-021', status: 'Degraded', detail: 'Elevated message latency · p99 1,840ms', alertMsg: 'Latency spike traced to host OS memory pressure' },
     { type: 'aio',       label: 'Azure IoT\u00a0Operations',   name: 'aio-tx-abilene-01',       status: 'Healthy',  detail: 'Broker running · 434 assets' },
     { type: 'k8s',       label: 'Kubernetes',                  name: 'k8s-abilene-prod',        status: 'Healthy',  detail: '5/5 nodes ready' },
-    { type: 'baremetal', label: 'Host OS',                     name: 'host-abilene-03',         status: 'Warning',  detail: 'CPU 78% · Mem 91% · 3 pods at risk', alertMsg: 'Memory pressure causing GC pauses on aio-broker pod' },
+    { type: 'baremetal', label: 'Host OS',                     name: 'abilene-hosts',           status: 'Warning',  detail: '1 of 5 hosts under memory pressure',
+      nodes: [
+        { name: 'host-abilene-01', status: 'Healthy', detail: 'CPU 42% · Mem 58%' },
+        { name: 'host-abilene-02', status: 'Healthy', detail: 'CPU 38% · Mem 61%' },
+        { name: 'host-abilene-03', status: 'Warning', detail: 'CPU 78% · Mem 91% · 3 pods at risk', alertMsg: 'Memory pressure causing GC pauses on aio-broker pod' },
+        { name: 'host-abilene-04', status: 'Healthy', detail: 'CPU 35% · Mem 54%' },
+        { name: 'host-abilene-05', status: 'Healthy', detail: 'CPU 41% · Mem 60%' },
+      ],
+    },
   ],
   'AST-0005': _healthyStack('Turbine Controller #M-007', 'aio-tx-midland-01', 'k8s-midland-prod', 'host-midland-02', 'Broker running · 318 assets', '4/4 nodes ready', 'CPU 44% · Mem 62%'),
   'AST-0006': _healthyStack('Anemometer Sensor #M-023',  'aio-tx-midland-01', 'k8s-midland-prod', 'host-midland-02', 'Broker running · 318 assets', '4/4 nodes ready', 'CPU 44% · Mem 62%'),
@@ -637,7 +646,14 @@ export const assetStackHealth: Record<string, StackLayer[]> = {
     { type: 'asset',     label: 'Asset',                       name: 'Turbine Controller #M-011', status: 'Unhealthy', detail: 'No data received · last seen 3h ago', alertMsg: 'Asset unreachable — MQTT broker unavailable' },
     { type: 'aio',       label: 'Azure IoT\u00a0Operations',   name: 'aio-tx-midland-01',        status: 'Degraded',  detail: 'aio-broker: CrashLoopBackOff · restarted 8×', alertMsg: 'Broker pod OOMKilled — insufficient memory on host' },
     { type: 'k8s',       label: 'Kubernetes',                  name: 'k8s-midland-prod',         status: 'Warning',   detail: '3/4 nodes ready · host-midland-01 NotReady', alertMsg: '1 node is in NotReady state due to memory exhaustion' },
-    { type: 'baremetal', label: 'Host OS',                     name: 'host-midland-01',          status: 'Unhealthy', detail: 'CPU 94% · Mem 87% · OOMKill events: 12', alertMsg: 'Node under severe resource pressure — root cause of asset failure' },
+    { type: 'baremetal', label: 'Host OS',                     name: 'midland-hosts',            status: 'Unhealthy', detail: '1 of 4 hosts under severe resource pressure',
+      nodes: [
+        { name: 'host-midland-01', status: 'Unhealthy', detail: 'CPU 94% · Mem 87% · OOMKill events: 12', alertMsg: 'Node under severe resource pressure — root cause of asset failure' },
+        { name: 'host-midland-02', status: 'Healthy',   detail: 'CPU 44% · Mem 62%' },
+        { name: 'host-midland-03', status: 'Healthy',   detail: 'CPU 47% · Mem 65%' },
+        { name: 'host-midland-04', status: 'Healthy',   detail: 'CPU 39% · Mem 57%' },
+      ],
+    },
   ],
   'AST-0008': _healthyStack('Edge Gateway #MB-01',        'aio-tx-midland-01', 'k8s-midland-prod', 'host-midland-02', 'Broker running · 318 assets', '4/4 nodes ready', 'CPU 44% · Mem 62%'),
   'AST-0009': _healthyStack('Turbine Controller #O-003', 'aio-tx-odessa-01',  'k8s-odessa-prod',  'host-odessa-01',  'Broker running · 244 assets', '4/4 nodes ready', 'CPU 40% · Mem 55%'),
