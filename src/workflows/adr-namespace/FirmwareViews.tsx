@@ -482,6 +482,7 @@ export function OtaManagementView({ onFirmwareSelect, onDeploy, autoOpenUpload, 
   const [showUpload, setShowUpload] = useState(autoOpenUpload ?? false)
   useEffect(() => { if (autoOpenUpload) onAutoOpenConsumed?.() }, [])
   const [uploadDraft, setUploadDraft] = useState({ file: '', manufacturer: '', model: '', version: '' })
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null)
 
   const latestByModel = useMemo(() => {
     const map: Record<string, string> = {}
@@ -676,7 +677,7 @@ export function OtaManagementView({ onFirmwareSelect, onDeploy, autoOpenUpload, 
                           Deploy
                         </button>
                         <button
-                          onClick={() => setImages(prev => prev.filter(f => f.file !== fw.file))}
+                          onClick={() => setPendingDelete(fw.file)}
                           className="ml-1 rounded-md border border-transparent p-1 text-slate-300 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all"
                           title="Remove firmware image"
                         >
@@ -735,6 +736,44 @@ export function OtaManagementView({ onFirmwareSelect, onDeploy, autoOpenUpload, 
 
       {/* Upload Firmware Modal */}
       <AnimatePresence>
+        {pendingDelete && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            onClick={() => setPendingDelete(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.15 }}
+              className="w-full max-w-sm rounded-xl border bg-white shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 px-6 py-5 border-b">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-50 flex-shrink-0">
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">Delete firmware image?</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">This will remove <span className="font-mono font-medium text-slate-700">{pendingDelete}</span> from the library.</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 px-6 py-4">
+                <button
+                  onClick={() => setPendingDelete(null)}
+                  className="rounded-lg border px-3.5 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => { setImages(prev => prev.filter(f => f.file !== pendingDelete)); setPendingDelete(null) }}
+                  className="rounded-lg bg-red-600 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
         {showUpload && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
