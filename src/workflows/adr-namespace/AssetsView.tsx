@@ -11,8 +11,8 @@ import {
   ASSET_STATUSES, ASSET_MANUFACTURERS, ASSET_FIRMWARE_VERSIONS,
   LATEST_ASSET_FW_BY_TYPE, ASSET_SORT_FIELDS, DEVICE_ACTIONS,
 } from './mockData'
-import { ChartCard, DonutChart, HBarChart } from './chartHelpers'
-import { SubViewHeader, SortIcon, mkDropdown } from './sharedComponents'
+import { ChartCard, DonutChart, HBarChart } from './ChartHelpers'
+import { SubViewHeader, SortIcon, mkDropdown } from './SharedComponents'
 
 export function AssetsView({ initialSearch = '', onRunJob, onAssetSelect, onUpdateFirmware }: { initialSearch?: string; onRunJob?: (ids: string[], names: Record<string, string>) => void; onAssetSelect?: (id: string) => void; onUpdateFirmware?: (prefill: JobPrefill) => void }) {
   const [search, setSearch] = useState(initialSearch)

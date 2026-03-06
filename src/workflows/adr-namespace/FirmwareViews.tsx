@@ -11,8 +11,8 @@ import {
   fwByManufacturer, fwByModel, cveBySeverity, cveByName,
   GROUP_MANUFACTURERS,
 } from './mockData'
-import { VBarChart, DonutChart, HBarChart, ChartCard } from './chartHelpers'
-import { severityColor, severityBg, HeroStat, SubViewHeader } from './sharedComponents'
+import { VBarChart, DonutChart, HBarChart, ChartCard } from './ChartHelpers'
+import { severityColor, severityBg, HeroStat, SubViewHeader } from './SharedComponents'
 
 const FW_TABS = ['Overview', 'Weaknesses', 'Software Components', 'Binary Hardening', 'Certificates', 'Password Hashes', 'Keys'] as const
 type FwTab = typeof FW_TABS[number]

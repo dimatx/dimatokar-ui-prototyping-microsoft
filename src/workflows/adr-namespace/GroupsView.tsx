@@ -9,8 +9,8 @@ import {
   mockGroups,
   GROUP_DEVICE_TYPES, GROUP_ASSET_TYPES, GROUP_SITES, GROUP_MANUFACTURERS, GROUP_STATUSES,
 } from './mockData'
-import { ChartCard, DonutChart, HBarChart } from './chartHelpers'
-import { CapabilityPageHeader, SortIcon } from './sharedComponents'
+import { ChartCard, DonutChart, HBarChart } from './ChartHelpers'
+import { CapabilityPageHeader, SortIcon } from './SharedComponents'
 
 /* ─── Types ──────────────────────────────────────────────────── */
 

@@ -4,8 +4,8 @@ import { ChevronRight, Search } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { mockAssets, mockDevices, mockCredentials, mockPolicies } from './mockData'
-import { SegBar, HBar } from './chartHelpers'
-import { SubViewHeader, statusBadgeLabel, normalizeHealth, ALL_RESOURCE_TYPE_STYLES } from './sharedComponents'
+import { SegBar, HBar } from './ChartHelpers'
+import { SubViewHeader, statusBadgeLabel, normalizeHealth, ALL_RESOURCE_TYPE_STYLES } from './SharedComponents'
 
 /* ─── All Resources View ─────────────────────────────────────── */
 

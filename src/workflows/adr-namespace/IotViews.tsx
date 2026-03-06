@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { Hub } from './mockData'
 import { aioInstances } from './mockData'
-import { SegBar, HBar } from './chartHelpers'
-import { SubViewHeader } from './sharedComponents'
+import { SegBar, HBar } from './ChartHelpers'
+import { SubViewHeader } from './SharedComponents'
 
 export function IotHubView({ hubs, onAddHub, unlinkedCount }: { hubs: Hub[]; onAddHub: () => void; unlinkedCount: number }) {
   return (

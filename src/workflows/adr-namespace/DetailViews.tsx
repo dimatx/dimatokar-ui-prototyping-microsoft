@@ -16,8 +16,8 @@ import {
   assetStackHealth,
   deviceHubHealthData,
 } from './mockData'
-import { SensitivitySelect } from './sharedComponents'
-import { MetricsRow, ConnectivityTimeline, AssetStackHealth, DeviceHubHealth, HealthSection } from './healthComponents'
+import { SensitivitySelect } from './SharedComponents'
+import { MetricsRow, ConnectivityTimeline, AssetStackHealth, DeviceHubHealth, HealthSection } from './HealthComponents'
 
 export function AssetDetailView({ assetId, onBack, onFirmwareSelect, onRunJob, onUpdateFirmware }: { assetId: string; onBack: () => void; onFirmwareSelect: (v: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void; onUpdateFirmware?: (prefill: JobPrefill) => void }) {
   const asset = mockAssets.find(a => a.id === assetId)

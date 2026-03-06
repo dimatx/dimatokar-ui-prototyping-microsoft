@@ -12,8 +12,8 @@ import {
   DEVICE_MANUFACTURERS, DEVICE_MODELS, DEVICE_SORT_FIELDS, DEVICE_ACTIONS,
   LATEST_DEVICE_FW_BY_MODEL,
 } from './mockData'
-import { ChartCard, DonutChart, HBarChart } from './chartHelpers'
-import { SubViewHeader, SortIcon, mkDropdown } from './sharedComponents'
+import { ChartCard, DonutChart, HBarChart } from './ChartHelpers'
+import { SubViewHeader, SortIcon, mkDropdown } from './SharedComponents'
 
 export function DevicesView({ initialSearch = '', initialFirmwareFilter = '', initialGroupFilter = '', onFirmwareSelect, onRunJob, onDeviceSelect, onClearGroupFilter, onUpdateFirmware }: { initialSearch?: string; initialFirmwareFilter?: string; initialGroupFilter?: string; onFirmwareSelect?: (version: string) => void; onRunJob?: (ids: string[], names: Record<string, string>) => void; onDeviceSelect?: (id: string) => void; onClearGroupFilter?: () => void; onUpdateFirmware?: (prefill: JobPrefill) => void }) {
   const [search, setSearch] = useState(initialSearch)

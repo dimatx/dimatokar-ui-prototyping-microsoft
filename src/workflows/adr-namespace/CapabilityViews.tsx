@@ -8,8 +8,8 @@ import {
   provRegistrationsL1D, provAssignedL1D, provAttestL1D,
   certOpsL1D, certRevokedL1D, certOpsL30D,
 } from './mockData'
-import { ChartCard, TinyLineChart } from './chartHelpers'
-import { CapabilityPageHeader } from './sharedComponents'
+import { ChartCard, TinyLineChart } from './ChartHelpers'
+import { CapabilityPageHeader } from './SharedComponents'
 
 /* ─── Provisioning View ──────────────────────────────────────── */
 

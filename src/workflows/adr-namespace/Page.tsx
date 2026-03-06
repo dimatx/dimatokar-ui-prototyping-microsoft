@@ -66,8 +66,8 @@ import {
   dashGroupsData,
   deviceFirmwareVersions,
 } from './mockData'
-import { ChartCard, DonutChart, HBarChart } from './chartHelpers'
-import { HeroStat, SectionHeading, CollapsibleHeading, SummaryStatusDots, PlaceholderView } from './sharedComponents'
+import { ChartCard, DonutChart, HBarChart } from './ChartHelpers'
+import { HeroStat, SectionHeading, CollapsibleHeading, SummaryStatusDots, PlaceholderView } from './SharedComponents'
 import { ProvisioningView, CertMgmtView, CredentialsPageView, PoliciesPageView, ThirdPartyView } from './CapabilityViews'
 import { GroupsView } from './GroupsView'
 import { AllResourcesView } from './AllResourcesView'
