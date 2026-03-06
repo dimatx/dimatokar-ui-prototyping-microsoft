@@ -233,16 +233,22 @@ export function NamespaceHealthView({ onViewAsset, onViewDevice }: NamespaceHeal
           </div>
           <div className="ml-auto flex items-center gap-2">
             {criticalCount > 0 && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full bg-red-100 text-red-700 border border-red-300">
+              <button
+                onClick={() => document.getElementById('active-alerts')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full bg-red-100 text-red-700 border border-red-300 hover:bg-red-200 transition-colors cursor-pointer"
+              >
                 <XCircle className="h-3 w-3" />
                 {criticalCount} Critical
-              </span>
+              </button>
             )}
             {warningCount > 0 && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-300">
+              <button
+                onClick={() => document.getElementById('active-alerts')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-200 transition-colors cursor-pointer"
+              >
                 <AlertTriangle className="h-3 w-3" />
                 {warningCount} Warning
-              </span>
+              </button>
             )}
           </div>
         </div>
@@ -311,7 +317,7 @@ export function NamespaceHealthView({ onViewAsset, onViewDevice }: NamespaceHeal
       </div>
 
       {/* Active alerts */}
-      <div>
+      <div id="active-alerts">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Active Alerts</p>
           <a href="#" className="text-[11px] text-blue-600 hover:underline font-medium">Manage in Azure Monitor</a>
