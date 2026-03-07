@@ -7,25 +7,17 @@ import {
   Cpu,
   Drill,
   RefreshCw,
-  KeyRound,
-  Upload,
   Activity,
   MapPin,
   Loader2,
   Plus,
   ChevronRight,
-  ChevronDown,
   ChevronLeft,
   Wind,
   X,
   Search,
   Shield,
-  Puzzle,
-  FileText,
   ExternalLink,
-  Users,
-  LayoutDashboard,
-  Layers,
   Play,
   Zap,
 } from 'lucide-react'
@@ -79,79 +71,16 @@ import { IotHubView, IotOpsView } from './IotViews'
 import { FirmwareDetailView, FirmwareAnalysisView, OtaManagementView } from './FirmwareViews'
 import { AssetDetailView, DeviceDetailView } from './DetailViews'
 import { NamespaceHealthView } from './HealthView'
+import { LeftMenu } from './LeftMenu'
+import {
+  ID_TO_SEGMENT,
+  parseFirmwareFromPath,
+  parseMenuFromPath,
+  SECTION_LABELS,
+  type NavState,
+} from './pageNavigation'
 
 export type { Hub } from './mockData'
-/* ─── URL mapping ────────────────────────────────────────────── */
-
-const ID_TO_SEGMENT: Record<string, string> = {
-  '':               '',
-  'health':         'health',
-  'all-resources':  'all-resources',
-  'assets':         'assets',
-  'devices':        'devices',
-  'credentials':    'credentials',
-  'policies':       'policies',
-  'provisioning':   'provisioning',
-  'cert-mgmt':      'cert-mgmt',
-  'groups':         'groups',
-  'jobs':           'jobs',
-  'device-update':  'device-update',
-  'firmware':       'firmware',
-  'ota-management': 'ota-management',
-  'iot-hub':        'iot-hubs',
-  'iot-ops':        'iot-ops',
-  '3p':             '3p',
-}
-const SEGMENT_TO_ID: Record<string, string> = Object.fromEntries(
-  Object.entries(ID_TO_SEGMENT).map(([k, v]) => [v || k, k])
-)
-
-function parseMenuFromPath(pathname: string): string {
-  const sub = pathname.replace(/^\/adr-namespace\/?/, '')
-  const seg = sub.split('/')[0]
-  return SEGMENT_TO_ID[seg] ?? ''
-}
-
-function parseFirmwareFromPath(pathname: string): string | null {
-  const parts = pathname.replace(/^\/adr-namespace\/?/, '').split('/')
-  if (parts[0] === 'firmware' && parts[1]) {
-    return parts[1].startsWith('v') ? parts[1].slice(1) : parts[1]
-  }
-  return null
-}
-
-/* ─── Navigation State ──────────────────────────────────────── */
-
-const SECTION_LABELS: Record<string, string> = {
-  '':               'Dashboard',
-  'health':         'Health',
-  'all-resources':  'All Resources',
-  'assets':         'Assets',
-  'devices':        'Devices',
-  'credentials':    'Credentials',
-  'policies':       'Policies',
-  'provisioning':   'Provisioning',
-  'cert-mgmt':      'Certificate Management',
-  'ota-management': 'Firmware Management',
-  'groups':         'Groups',
-  'jobs':           'Jobs',
-  'iot-hub':        'IoT Hubs',
-  'iot-ops':        'IoT Operations',
-  'firmware':       'Firmware Analysis',
-  'device-update':  'Device Update',
-  '3p':             '3P Capability',
-}
-
-type NavState = {
-  menuItem: string
-  firmwareTarget: string | null
-  devicePrefilter: string
-  deviceFirmwarePrefilter: string
-  assetPrefilter: string
-  deviceGroupPrefilter: string
-  assetDetailId: string | null
-  deviceDetailId: string | null
-}
 
 /* ─── Page ────────────────────────────────────────────────────── */
 
@@ -1204,145 +1133,4 @@ export default function AdrNamespacePage() {
   )
 }
 
-/* ─── Left Menu ─────────────────────────────────────────────── */
-
-const LEFT_MENU_SECTIONS = [
-  {
-    title: 'Dashboard',
-    items: [
-      { id: '', label: 'Dashboard', icon: LayoutDashboard },
-      { id: 'health', label: 'Health', icon: Activity },
-    ],
-  },
-  {
-    title: 'Resources',
-    items: [
-      { id: 'all-resources', label: 'All', icon: Layers },
-      { id: 'assets', label: 'Assets', icon: Drill },
-      { id: 'devices', label: 'Devices', icon: Cpu },
-      { id: 'credentials', label: 'Credentials', icon: KeyRound },
-      { id: 'policies', label: 'Policies', icon: FileText },
-    ],
-  },
-  {
-    title: 'Capabilities',
-    items: [
-      { id: 'provisioning', label: 'Provisioning', icon: Upload },
-      { id: 'cert-mgmt', label: 'Certificate Mgmt.', icon: KeyRound },
-      { id: 'ota-management', label: 'Firmware Management', icon: Zap },
-      { id: 'groups', label: 'Groups', icon: Users },
-      { id: 'jobs', label: 'Jobs', icon: Activity },
-      { id: '3p', label: '3P Capability', icon: Puzzle, disabled: true },
-    ],
-  },
-  {
-    title: 'Linked Instances',
-    items: [
-      { id: 'iot-hub', label: 'IoT Hub', icon: Server },
-      { id: 'iot-ops', label: 'IoT Operations', icon: Wind },
-    ],
-  },
-  {
-    title: 'Other',
-    collapsible: true,
-    defaultCollapsed: true,
-    items: [
-      { id: 'firmware', label: 'Firmware Analysis', icon: Shield },
-      { id: 'device-update', label: 'Device Update', icon: RefreshCw },
-    ],
-  },
-]
-
-function LeftMenu({
-  open,
-  onToggle,
-  activeItem,
-  onItemClick,
-}: {
-  open: boolean
-  onToggle: () => void
-  activeItem: string
-  onItemClick: (id: string) => void
-}) {
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
-    () => new Set((LEFT_MENU_SECTIONS as Array<{ title: string; collapsible?: boolean; defaultCollapsed?: boolean; items: unknown[] }>).filter(s => s.defaultCollapsed).map(s => s.title))
-  )
-  const { pathname } = useLocation()
-  const visibleSections = (LEFT_MENU_SECTIONS as Array<{ title: string; collapsible?: boolean; defaultCollapsed?: boolean; items: { id: string; label: string; icon: typeof Cpu; disabled?: boolean }[] }>).filter(
-    s => s.title !== 'Other' || pathname.includes('/other')
-  )
-  return (
-    <motion.div
-      animate={{ width: open ? 204 : 40 }}
-      initial={false}
-      transition={{ duration: 0.2, ease: 'easeInOut' }}
-      className="shrink-0 overflow-hidden border-r border-slate-100"
-    >
-      {/* Toggle button */}
-      <div className={`flex items-center border-b border-slate-100 py-2 ${open ? 'justify-end px-2' : 'justify-center'}`}>
-        <button
-          onClick={onToggle}
-          className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-          title={open ? 'Collapse menu' : 'Expand menu'}
-        >
-          <ChevronLeft className={`h-4 w-4 transition-transform duration-200 ${open ? '' : 'rotate-180'}`} />
-        </button>
-      </div>
-
-      {/* Menu sections */}
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="py-3"
-          >
-            {visibleSections.map((section, si) => {
-              const isSectionCollapsed = !!(section.collapsible && collapsedSections.has(section.title))
-              return (
-              <div key={section.title} className={si > 0 ? 'mt-3 pt-3 border-t border-slate-100' : ''}>
-                {section.collapsible ? (
-                  <button
-                    onClick={() => setCollapsedSections(p => { const n = new Set(p); n.has(section.title) ? n.delete(section.title) : n.add(section.title); return n })}
-                    className="w-full flex items-center justify-between px-3 py-0.5 mb-1 group"
-                  >
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 whitespace-nowrap group-hover:text-muted-foreground/80 transition-colors">
-                      {section.title}
-                    </span>
-                    <ChevronDown className={`h-3 w-3 text-muted-foreground/40 transition-transform duration-150 ${isSectionCollapsed ? '-rotate-90' : ''}`} />
-                  </button>
-                ) : (
-                  <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 whitespace-nowrap">
-                    {section.title}
-                  </p>
-                )}
-                {!isSectionCollapsed && section.items.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => !('disabled' in item && item.disabled) && onItemClick(item.id)}
-                    disabled={'disabled' in item && item.disabled}
-                    title={'disabled' in item && item.disabled ? 'Coming soon' : undefined}
-                    className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors whitespace-nowrap ${
-                      'disabled' in item && item.disabled
-                        ? 'text-slate-300 cursor-not-allowed'
-                        : activeItem === item.id
-                        ? 'bg-blue-50 text-blue-700 font-medium'
-                        : 'text-slate-600 hover:bg-muted/50 hover:text-foreground'
-                    }`}
-                  >
-                    <item.icon className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </button>
-                ))}
-              </div>
-              )
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  )
-}
 
