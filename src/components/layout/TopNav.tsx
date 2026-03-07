@@ -16,10 +16,11 @@ export function TopNav() {
   const [showTip, setShowTip] = useState(false)
 
   return (
-    <div className="flex h-14 shrink-0 items-center justify-between border-b px-8">
-      <div />
-      <div className="rounded-md bg-amber-100 px-4 py-1.5 text-xs font-medium text-amber-700">
-        Prototype for storytelling only — not a design or implementation direction.
+    <div className="relative flex h-14 shrink-0 items-center justify-end border-b px-4 sm:px-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-x-0 flex justify-center px-4 sm:px-6 lg:px-8">
+        <div className="rounded-md bg-amber-100 px-4 py-1.5 text-xs font-medium text-amber-700 max-w-[min(70vw,760px)] truncate">
+          Prototype for storytelling only — not a design or implementation direction.
+        </div>
       </div>
       <div className="flex items-center gap-4">
         {/* Deployment time */}

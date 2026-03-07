@@ -8,7 +8,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
     <div
       className={cn(
         'flex h-full shrink-0 flex-col bg-slate-900 text-white transition-all duration-200',
-        collapsed ? 'w-[52px]' : 'w-[240px]'
+        collapsed ? 'w-[44px] sm:w-[52px]' : 'w-[220px] sm:w-[240px]'
       )}
     >
       {/* Logo */}
@@ -24,7 +24,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         ) : (
           <>
             <Beaker className="h-5 w-5 shrink-0 text-blue-400 ml-2" />
-            <span className="text-sm font-semibold tracking-tight whitespace-nowrap overflow-hidden">Dima's Product Lab</span>
+            <span className="text-sm font-semibold tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">Dima's Product Lab</span>
             <button
               onClick={onToggle}
               className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-800 hover:text-white transition-colors"
